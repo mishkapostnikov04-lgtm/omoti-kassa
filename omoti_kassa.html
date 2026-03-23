@@ -230,7 +230,7 @@ function getPrice(name, pay) {
 function renderFlavors() {
   document.getElementById('flavors-grid').innerHTML = FLAVORS.map((f, i) => {
     const id = 'fb_' + i;
-    return `<button class="flavor-btn${PREMIUM.has(f)?' premium':''}" onclick="toggleFlavor(${JSON.stringify(f)})" id="${id}">${f}</button>`;
+    return `<button class="flavor-btn${PREMIUM.has(f)?' premium':''}" onclick='toggleFlavor(${JSON.stringify(f)})' id="${id}">${f}</button>`;
   }).join('');
 }
 
