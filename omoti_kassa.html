@@ -109,7 +109,28 @@ function nextCheckNum(){return allChecks.length?Math.max(...allChecks.map(x=>Num
 function nowDate(){const n=new Date(); return String(n.getDate()).padStart(2,'0')+'.'+String(n.getMonth()+1).padStart(2,'0')+'.'+n.getFullYear();}
 function nowTime(){const n=new Date(); return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
 
-function closeCheck(){var items=Object.entries(cart).filter(function(x){return x[1]>0;}); if(!items.length) return; var isEdit=!!editNum, num=isEdit?editNum:nextCheckNum(), date=isEdit?editDate:nowDate(), time=isEdit?editTime:nowTime(); var itemsData=items.map(function(x){return {name:x[0],qty:x[1],price:getPrice(x[0],payType)};}); var payload={action:'save_check',num:num,date:date,time:time,point:'Новогодняя',seller:seller,pay:payType,selfPay:payType==='Себе оплачено'?selfPayType:'',edited:isEdit,items:itemsData}; var btn=document.getElementById('close-btn'); btn.textContent='Сохраняю...'; btn.classList.add('loading'); btn.disabled=true; fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)}).then(function(res){return res.json();}).then(function(json){if(!json.ok) throw new Error(json.error||'Ошибка сохранения'); resetForm(); return loadRemoteData();}).then(function(){switchTab('kassa'); showToast(isEdit?'Чек №'+num+' обновлён':'Чек №'+num+' сохранён');}).catch(function(e){showToast('Ошибка сохранения: '+e.message); btn.textContent=isEdit?'Сохранить изменения':'Закрыть чек'; btn.classList.remove('loading'); updateCart();});}
+function closeCheck(){var items=Object.entries(cart).filter(function(x){return x[1]>0;}); if(!items.length) return; var isEdit=!!editNum, num=isEdit?editNum:nextCheckNum(), date=isEdit?editDate:nowDate(), time=isEdit?editTime:nowTime(); var itemsData=items.map(function(x){return {name:x[0],qty:x[1],price:getPrice(x[0],payType)};}); var payload={action:'save_check',num:num,date:date,time:time,point:'Новогодняя',seller:seller,pay:payType,selfPay:payType==='Себе оплачено'?selfPayType:'',edited:isEdit,items:itemsData};
+  var btn=document.getElementById('close-btn'); btn.textContent='Сохраняю...'; btn.classList.add('loading'); btn.disabled=true;
+  var isSelf=payType==='Себе оплачено'||payType==='Себе без оплаты';
+  var checkSum=itemsData.reduce(function(a,x){return a+x.price*x.qty;},0);
+  var checkEarn=isSelf?0:itemsData.reduce(function(a,x){return a+x.qty*30;},0);
+  fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)}).then(function(res){return res.json();}).then(function(json){
+    if(!json.ok) throw new Error(json.error||'Ошибка сохранения');
+    // Обновляем allChecks локально — не ждём перезагрузки с сервера
+    if(isEdit){
+      allChecks=allChecks.filter(function(x){return String(x.num)!==String(num);});
+    }
+    var byFlavor={};
+    itemsData.forEach(function(x){if(!byFlavor[x.name])byFlavor[x.name]={name:x.name,qty:0,sum:0}; byFlavor[x.name].qty+=x.qty; byFlavor[x.name].sum+=x.price*x.qty;});
+    var newCheck={num:num,date:date,time:time,point:'Новогодняя',seller:seller,pay:payType,selfPay:payType==='Себе оплачено'?selfPayType:'',edited:isEdit,items:Object.values(byFlavor),sum:checkSum,earn:checkEarn};
+    allChecks.unshift(newCheck);
+    allChecks.sort(function(a,b){return (Number(b.num)||0)-(Number(a.num)||0);});
+    resetForm();
+    renderJournal();
+    loadStats(currentPeriod);
+    switchTab('kassa');
+    showToast(isEdit?'Чек №'+num+' обновлён':'Чек №'+num+' сохранён');
+  }).catch(function(e){showToast('Ошибка сохранения: '+e.message); btn.textContent=isEdit?'Сохранить изменения':'Закрыть чек'; btn.classList.remove('loading'); updateCart();});}
 function resetForm(){cart={}; payType=''; selfPayType='Наличные'; seller=''; editNum=null; editDate=''; editTime=''; document.getElementById('close-btn').textContent='Закрыть чек'; document.getElementById('close-btn').classList.remove('loading'); document.getElementById('self-clarify').className='self-clarify'; renderSellers(); renderPayBtns(); document.querySelectorAll('.self-sub-btn').forEach((b,i)=>b.classList.toggle('active', i===0)); updateCart();}
 
 function renderJournal(){const el=document.getElementById('journal-list'); document.getElementById('journal-spinner').style.display=allChecks.length?'none':'block'; if(!allChecks.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);text-align:center;padding:28px 0">Чеков пока нет</div>'; return;} el.innerHTML=allChecks.map(j=>{const payLabel=j.selfPay?`${escHtml(j.pay)} · ${escHtml(j.selfPay)}`:escHtml(j.pay); const dot=j.edited?'<span class="edited-dot"></span>':''; const rows=j.items.map(x=>`<div class="ji-flavor-row"><span class="ji-flavor-name">${escHtml(x.name)} · ${x.qty} шт</span><span class="ji-flavor-sum">${money(x.sum)}</span></div>`).join(''); return `<div class="journal-item"><div class="ji-head"><span class="ji-who">${dot} №${escHtml(j.num)} · ${escHtml(j.seller)}</span><span class="ji-meta">${escHtml(j.date)} ${escHtml(j.time)}</span></div><div class="ji-pay">${payLabel}</div><div class="ji-flavors">${rows}</div><div class="ji-foot"><span class="ji-sum">${money(j.sum)}</span><button class="ji-edit" onclick="editCheck('${escJs(j.num)}')">Редактировать</button></div></div>`;}).join('');}
