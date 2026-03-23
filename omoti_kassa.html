@@ -1,592 +1,571 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>OMOTI - Касса</title>
-  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=ILWE7bU188BtoFRitfOPyJU2C1rXMoV3ksvWNLz4HuVgkHc3wGH7j4qlqj6jzbi4vdLL0-G70pvoj-VJLWHUot2BINkJxw-hDP7F66ELQs_TrRjbmTiX_ODyF3kS_uJCLF3LVqljb_MRfvq4pMNpT7f5PQl8sea9DksS6tvkKqsGrzjjZBC0M7OODX0W39srBe_Upi1Go3DuhvPzrSRmj2QTnKKDHeE_IMp6E74d0OKOsjdAAyYIQd8x4wUtbp6OpvOuGoCEUSo8e3N2dqnlkw" charset="UTF-8"></script><style>
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    :root{
-      --bg:#f7f6f2;
-      --card:#ffffff;
-      --text:#1a1a1a;
-      --muted:#8a8a8a;
-      --border:#e4e0d8;
-      --accent:#1a1a1a;
-      --accentText:#ffffff;
-      --gold:#caa453;
-      --danger:#d9534f;
-      --ok:#eef6ef;
-      --soft:#f1ede5;
-    }
-    body{
-      margin:0;
-      background:var(--bg);
-      color:var(--text);
-      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
-    }
-    .wrap{ max-width:460px; margin:0 auto; min-height:100vh; }
-    .topbar{
-      position:sticky; top:0; z-index:20;
-      background:rgba(247,246,242,.96);
-      backdrop-filter: blur(8px);
-      border-bottom:1px solid var(--border);
-      padding:14px 14px 10px;
-    }
-    .topline{
-      display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;
-    }
-    .title{ font-size:16px; font-weight:700; }
-    .tabs{ display:flex; gap:4px; background:#ece8df; padding:4px; border-radius:16px; }
-    .tab{
-      border:0; background:transparent; padding:8px 12px; border-radius:12px;
-      color:#666; font-size:13px; cursor:pointer;
-    }
-    .tab.active{ background:var(--card); color:var(--text); font-weight:700; box-shadow:0 1px 2px rgba(0,0,0,.06); }
-    .screen{ display:none; padding:14px; }
-    .screen.active{ display:block; }
-    .label{
-      font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin:2px 0 8px;
-    }
-    .card{
-      background:var(--card); border:1px solid var(--border); border-radius:16px; padding:12px; margin-bottom:14px;
-    }
-    .row{ display:flex; gap:8px; flex-wrap:wrap; }
-    .btn{
-      border:1px solid var(--border); background:var(--card); color:var(--text);
-      border-radius:12px; padding:11px 10px; font-size:13px; cursor:pointer; min-height:44px;
-    }
-    .btn.active{ background:var(--accent); color:var(--accentText); border-color:var(--accent); }
-    .seller-btn{ flex:1 1 calc(33.333% - 6px); min-width:110px; }
-    .flavors{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
-    .flavor{
-      min-height:48px; padding:8px 6px; font-size:12px; line-height:1.15; text-align:center; position:relative;
-    }
-    .flavor.gold{ border-color:var(--gold); }
-    .flavor.active{ background:#fff8eb; border-color:var(--gold); color:var(--text); font-weight:600; }
-    .flavor-qty{
-      position:absolute; right:6px; top:6px; min-width:18px; height:18px; padding:0 4px;
-      border-radius:999px; background:var(--accent); color:#fff; font-size:11px; line-height:18px; font-weight:700;
-    }
-    .pay-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-    .pay-btn{ width:100%; font-size:14px; }
-    .cart-empty{ color:var(--muted); font-size:14px; text-align:center; padding:8px 0; }
-    .cart-row{
-      display:grid; grid-template-columns:1fr auto auto; gap:10px; align-items:center; padding:10px 0; border-top:1px solid var(--border);
-    }
-    .cart-row:first-child{ border-top:0; }
-    .qty{ display:flex; align-items:center; gap:10px; white-space:nowrap; }
-    .qty button{
-      width:28px; height:28px; border-radius:999px; border:1px solid var(--border); background:#fff; cursor:pointer;
-    }
-    .sum{ font-weight:700; white-space:nowrap; }
-    .total{
-      display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border);
-      padding-top:10px; margin-top:6px; font-weight:700;
-    }
-    .main-action{
-      width:100%; border:0; border-radius:14px; padding:15px 16px; background:var(--accent);
-      color:var(--accentText); font-size:18px; font-weight:700; cursor:pointer;
-    }
-    .main-action:disabled{ opacity:.45; cursor:not-allowed; }
-    .muted{ color:var(--muted); }
-    .check{
-      background:var(--card); border:1px solid var(--border); border-radius:18px; padding:14px; margin-bottom:12px;
-    }
-    .check-head{
-      display:flex; justify-content:space-between; gap:10px; align-items:flex-start; margin-bottom:10px;
-    }
-    .check-num-wrap{ display:flex; align-items:center; gap:7px; margin-bottom:5px; }
-    .check-num{ font-weight:800; font-size:18px; line-height:1; color:var(--text); }
-    .edited-dot{
-      width:9px; height:9px; border-radius:999px; background:var(--danger); flex:0 0 auto;
-    }
-    .check-meta{ color:var(--text); font-size:13px; line-height:1.38; }
-    .check-submeta{ color:var(--muted); font-size:12px; line-height:1.35; }
-    .badge{
-      display:inline-block; padding:7px 10px; border-radius:999px; border:1px solid var(--border);
-      font-size:13px; font-weight:800; white-space:nowrap; color:var(--text); background:#fff;
-    }
-    .items{ margin:8px 0 12px; font-size:13px; line-height:1.55; color:var(--text); }
-    .item-qty{ font-weight:700; color:var(--text); }
-    .money{ font-weight:700; color:var(--text); }
-    .check-actions{ display:flex; justify-content:flex-end; }
-    .edit-btn{
-      border:1px solid var(--border); background:#fff; border-radius:10px; padding:9px 12px; cursor:pointer; font-size:13px;
-    }
-    .summary-box{
-      background:var(--card); border:1px solid var(--border); border-radius:16px; padding:14px; margin-bottom:12px;
-    }
-    .summary-title{ font-weight:700; margin-bottom:10px; font-size:15px; }
-    .summary-row{
-      display:flex; justify-content:space-between; gap:12px; padding:8px 0; border-top:1px solid var(--border);
-      font-size:14px;
-    }
-    .summary-row:first-child{ border-top:0; }
-    .summary-soft{
-      background:var(--soft); border-radius:12px; padding:10px 12px; margin-bottom:12px; font-size:13px; line-height:1.4;
-    }
-    .note{
-      background:var(--ok); border:1px solid #d5e8db; padding:11px 12px; border-radius:12px; font-size:13px; line-height:1.35;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>OMOTI · Касса</title>
+<script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=wv0J03Wb7S8N8Ag-P00D_mVg3o-8mFkeRNttegWwLCbRqTdmXihZ89ujiVjublBQFw3_l9BoZjy9EnLju9Iv6i79aQL2Ns-WMRg8rbeK5zfMZDr465b1bNC9FweokdRmHy676tJ5Cw31NfobpVI9JokKpCbeS_U5PqPQgDIuX8mtHLcsF_0MoCBMfD3bV09K1Q5U1sn4rclJWGos_EECHgWukY3pxRl4Q-POFFhHDLVxPBjuz0IwjopQ42Eu3Vu9eRmMM5J2RPDuSeLAJGb01w" charset="UTF-8"></script><style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#f7f6f2;--card:#ffffff;--text:#1a1a1a;--muted:#888;--border:#e0ddd6;
+  --accent:#1a1a1a;--accent-fg:#fff;--gold:#d3aa4f;--radius:16px;
+  --success-bg:#edf8ef;--success-border:#cfe5d3;--success-text:#234b2b;
+  --danger:#d95555;
+}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  background:var(--bg);color:var(--text);
+}
+.app{max-width:460px;margin:0 auto;min-height:100vh;padding-bottom:24px}
+.topbar{
+  position:sticky;top:0;z-index:30;background:rgba(247,246,242,.94);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--border);padding:14px 14px 10px
+}
+.topbar-title{display:block;font-size:16px;font-weight:700;margin-bottom:10px}
+.tab-switcher{display:flex;gap:4px;background:#ebe7df;padding:4px;border-radius:16px}
+.tab-btn{flex:1;border:none;background:transparent;border-radius:12px;padding:8px 10px;font-size:13px;color:#666;cursor:pointer}
+.tab-btn.active{background:#fff;color:var(--text);font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.screen{display:none;padding:14px}
+.screen.active{display:block}
+.sec-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:2px 0 8px}
+.seller-row{display:flex;gap:8px;flex-wrap:wrap}
+.seller-btn,.pay-btn,.self-sub-btn,.modal-btn{
+  border:1px solid var(--border);background:#fff;border-radius:12px;padding:11px 12px;font-size:13px;color:var(--text);cursor:pointer
+}
+.seller-btn{flex:1 1 calc(33.333% - 6px);min-width:110px}
+.seller-btn.active,.pay-btn.active,.self-sub-btn.active{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.add-btn{font-weight:700}
+.flavors-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.flavor-btn{
+  position:relative;border:1px solid var(--border);background:#fff;color:var(--text);
+  border-radius:12px;min-height:48px;padding:8px 6px;font-size:12px;line-height:1.15;cursor:pointer;text-align:center
+}
+.flavor-btn.gold{border-color:var(--gold)}
+.flavor-btn.active{background:#fff8eb;border-color:var(--gold);font-weight:600}
+.qty-badge{
+  position:absolute;right:6px;top:6px;min-width:18px;height:18px;padding:0 4px;border-radius:999px;
+  background:var(--accent);color:#fff;font-size:11px;line-height:18px;font-weight:700
+}
+.pay-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.self-clarify{display:none;gap:8px;align-items:center;margin-top:10px}
+.self-clarify.visible{display:flex}
+.cart-box{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:14px}
+.cart-empty{text-align:center;color:var(--muted);font-size:14px;padding:8px 0}
+.cart-item{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--border)}
+.cart-item:first-child{border-top:none}
+.ci-name{font-size:13px}
+.ci-ctrl{display:flex;align-items:center;gap:10px}
+.c-btn{
+  width:28px;height:28px;border-radius:999px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:16px
+}
+.ci-qty{font-size:13px;min-width:12px;text-align:center}
+.ci-price{font-size:13px;font-weight:700;min-width:52px;text-align:right}
+.cart-total{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);margin-top:6px;padding-top:10px;font-size:15px;font-weight:700}
+.close-btn{
+  width:100%;border:none;border-radius:14px;padding:15px 16px;background:var(--accent);color:#fff;
+  font-size:18px;font-weight:700;cursor:pointer
+}
+.close-btn:disabled{opacity:.45;cursor:not-allowed}
+.close-btn.loading{opacity:.7}
+.spinner{font-size:13px;color:var(--muted);text-align:center;padding:28px 0}
+.spinner.visible{display:block}
+
+/* Журнал */
+.journal-item{border:1px solid var(--border);border-radius:var(--radius);padding:11px 13px;margin-bottom:8px;background:var(--card)}
+.ji-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:4px}
+.ji-who{font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px}
+.ji-meta{font-size:11px;color:var(--muted)}
+.ji-pay{font-size:12px;font-weight:700;margin-bottom:4px;color:var(--text)}
+.ji-flavors{font-size:11px;color:var(--muted);line-height:1.5}
+.ji-foot{display:flex;justify-content:space-between;align-items:center;margin-top:7px}
+.ji-sum{font-size:14px;font-weight:700;color:var(--text)}
+.ji-edit{font-size:12px;color:#1a73e8;cursor:pointer;border:none;background:none;font-family:inherit;padding:0}
+.edited-dot{display:inline-block;width:8px;height:8px;border-radius:999px;background:var(--danger);vertical-align:middle}
+
+/* Итоги */
+.period-row{display:flex;gap:5px;margin-bottom:14px}
+.period-btn{padding:7px 13px;border:1px solid var(--border);border-radius:18px;background:var(--bg);font-size:12px;cursor:pointer;font-family:inherit;color:var(--muted)}
+.period-btn.active{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.metrics-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.metric-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px}
+.m-label{font-size:11px;color:var(--muted);margin-bottom:3px}
+.m-val{font-size:22px;font-weight:700;color:var(--text)}
+.m-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.payout-card{border:1px solid var(--success-border);border-radius:var(--radius);padding:13px;margin-bottom:14px;background:var(--success-bg)}
+.payout-title{font-size:11px;color:var(--success-text);margin-bottom:3px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.payout-period{font-size:11px;color:var(--success-text);margin-bottom:10px;opacity:.75}
+.payout-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;color:var(--success-text)}
+.payout-row.total{font-weight:700;font-size:16px;border-top:1px solid var(--success-border);margin-top:7px;padding-top:9px}
+.flavor-stat-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)}
+.fs-name{font-size:13px;flex:1;color:var(--text)}
+.fs-bar-wrap{flex:1.1;height:6px;background:#ece8df;border-radius:4px;overflow:hidden}
+.fs-bar{height:100%;background:var(--accent);border-radius:4px}
+.fs-qty{font-size:13px;font-weight:700;min-width:24px;text-align:right;color:var(--text)}
+
+/* Modal + toast */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.18);z-index:40}
+.modal{
+  display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:41;
+  width:min(92vw,360px);background:#fff;border:1px solid var(--border);border-radius:18px;padding:16px
+}
+.modal-title{font-size:15px;font-weight:700;margin-bottom:10px}
+.modal-input{
+  width:100%;border:1px solid var(--border);border-radius:12px;padding:12px 13px;font-size:14px;outline:none;margin-bottom:10px
+}
+.modal-btn{width:100%;font-weight:700}
+.toast{
+  position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:#1f1f1f;color:#fff;
+  padding:11px 14px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:50
+}
+.toast.show{opacity:1}
+</style>
 </head>
 <body>
-<div class="wrap">
+<div class="app">
   <div class="topbar">
-    <div class="topline">
-      <div class="title">OMOTI - Новогодняя</div>
-      <div class="tabs">
-        <button class="tab active" data-tab="cashbox">Касса</button>
-        <button class="tab" data-tab="journal">Журнал</button>
-        <button class="tab" data-tab="summary">Итоги</button>
-      </div>
+    <span class="topbar-title">OMOTI · Новогодняя</span>
+    <div class="tab-switcher">
+      <button class="tab-btn active" onclick="switchTab('kassa')">Касса</button>
+      <button class="tab-btn" onclick="switchTab('journal')">Журнал</button>
+      <button class="tab-btn" onclick="switchTab('stats')">Итоги</button>
     </div>
   </div>
 
-  <section class="screen active" id="cashbox">
-    <div class="label">Имя</div>
-    <div class="row" id="sellerRow"></div>
+  <div class="screen active" id="screen-kassa">
+    <div class="sec-label">Имя</div>
+    <div class="seller-row" id="seller-row"></div>
 
-    <div class="label" style="margin-top:16px;">Вкус</div>
-    <div class="flavors" id="flavorGrid"></div>
+    <div class="sec-label" style="margin-top:16px">Вкус</div>
+    <div class="flavors-grid" id="flavors-grid"></div>
 
-    <div class="label" style="margin-top:16px;">Оплата</div>
-    <div class="pay-grid" id="payGrid"></div>
+    <div class="sec-label" style="margin-top:16px">Оплата</div>
+    <div class="pay-grid" id="pay-grid"></div>
 
-    <div id="selfPayWrap" style="display:none;">
-      <div class="label" style="margin-top:16px;">Как оплатили себе</div>
-      <div class="pay-grid" id="selfPayGrid"></div>
+    <div class="self-clarify" id="self-clarify">
+      <span style="font-size:11px;color:var(--muted);white-space:nowrap">Как оплатили:</span>
+      <button class="self-sub-btn active" onclick="setSelfPay(this,'Наличные')">Наличные</button>
+      <button class="self-sub-btn" onclick="setSelfPay(this,'Перевод')">Перевод</button>
     </div>
 
-    <div class="label" style="margin-top:16px;">Чек</div>
-    <div class="card">
-      <div id="cart"></div>
+    <div class="sec-label" style="margin-top:16px">Чек</div>
+    <div class="cart-box">
+      <div class="cart-empty" id="cart-empty">Выбери вкусы</div>
+      <div id="cart-items"></div>
+      <div class="cart-total" id="cart-total" style="display:none"><span>Итого</span><span id="total-sum"></span></div>
     </div>
 
-    <button class="main-action" id="saveBtn" disabled>Закрыть чек</button>
-  </section>
+    <button class="close-btn" id="close-btn" onclick="closeCheck()" disabled>Закрыть чек</button>
+  </div>
 
-  <section class="screen" id="journal">
-    <div id="journalList" class="muted">Загрузка...</div>
-  </section>
+  <div class="screen" id="screen-journal">
+    <div class="spinner" id="journal-spinner">Загружаю...</div>
+    <div id="journal-list"></div>
+  </div>
 
-  <section class="screen" id="summary">
-    <div id="summaryContent" class="muted">Загрузка...</div>
-  </section>
+  <div class="screen" id="screen-stats">
+    <div class="period-row">
+      <button class="period-btn active" onclick="setPeriod(this,'week')">Неделя</button>
+      <button class="period-btn" onclick="setPeriod(this,'month')">Месяц</button>
+      <button class="period-btn" onclick="setPeriod(this,'all')">Всё время</button>
+    </div>
+    <div class="spinner" id="stats-spinner">Загружаю...</div>
+    <div id="stats-content" style="display:none">
+      <div class="metrics-grid">
+        <div class="metric-card"><div class="m-label">Продано, шт</div><div class="m-val" id="s-qty">—</div><div class="m-sub" id="s-sub"></div></div>
+        <div class="metric-card"><div class="m-label">Заработано</div><div class="m-val" id="s-earn">—</div><div class="m-sub">30 ₽/шт</div></div>
+        <div class="metric-card"><div class="m-label">Наличные</div><div class="m-val" id="s-cash">—</div><div class="m-sub">вычтется</div></div>
+        <div class="metric-card"><div class="m-label">Яндекс, шт</div><div class="m-val" id="s-ya">—</div><div class="m-sub">засчитаны</div></div>
+      </div>
+      <div class="payout-card">
+        <div class="payout-title">К выплате</div>
+        <div class="payout-period" id="payout-period"></div>
+        <div class="payout-row"><span>Продажи × 30₽</span><span id="p-sales">—</span></div>
+        <div class="payout-row"><span>Наличные от клиентов</span><span id="p-cash">—</span></div>
+        <div class="payout-row"><span>Себе без оплаты</span><span id="p-self">—</span></div>
+        <div class="payout-row total"><span>К выплате</span><span id="p-total">—</span></div>
+      </div>
+      <div class="sec-label" style="margin-top:0">Топ вкусов</div>
+      <div id="flavor-stat-list"></div>
+    </div>
+  </div>
 </div>
 
-<script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyIji64r8q217pHVTpW0bA_eNRP9SJUELxWiW6VARz8khIYPIeUv7D5UvSEq8gAJIPs3g/exec';
-const POINT_NAME = 'Новогодняя';
+<div class="overlay" id="overlay" onclick="hideModal()"></div>
+<div class="modal" id="modal">
+  <div class="modal-title" id="modal-title">Добавить имя</div>
+  <input class="modal-input" id="modal-input" placeholder="Введите имя">
+  <button class="modal-btn" onclick="modalConfirm()">Добавить</button>
+</div>
+<div class="toast" id="toast"></div>
 
-const DEFAULT_SELLERS = ['Алексей', 'Галина', 'Кирилл'];
-const PREMIUM = new Set(['Дубайский шоколад', 'Криспи']);
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbyIji64r8q217pHVTpW0bA_eNRP9SJUELxWiW6VARz8khIYPIeUv7D5UvSEq8gAJIPs3g/exec';
+const POINT = 'Новогодняя';
+
 const FLAVORS = [
   'Арбуз-Дыня','Бабл Гам','Банан-Нутелла','Вишня-Тонка','Дубайский шоколад',
   'Киви-Алоэ','Клубника','Кокос-Маракуйя','Кокосовый пломбир','Кофе-Карамель',
-  'Криспи','Малина-Ваниль','Матча-Манго','Мохито','Печенье','Сливочный лимон',
-  'Смородина','Сникерс','Твикс','Трюфель','Шоколад'
+  'Криспи','Малина-Ваниль','Матча-Манго','Мохито','Печенье',
+  'Сливочный лимон','Смородина','Сникерс','Трюфель','Твикс','Шоколад'
 ].sort((a,b)=>a.localeCompare(b,'ru'));
 
-const PAYMENTS = ['Безналичный','Наличный','Перевод','Яндекс','Себе оплачено','Себе без оплаты'];
-const SELF_PAYMENTS = ['Наличный','Перевод'];
+const PREMIUM = new Set(['Дубайский шоколад','Криспи']);
+const PAY_TYPES = ['Безналичный','Наличный','Перевод','Яндекс','Себе оплачено','Себе без оплаты'];
 
-let sellers = loadSellers_();
-let selectedSeller = '';
-let selectedPay = '';
-let selectedSelfPay = '';
+let sellers = loadSellers();
 let cart = {};
+let seller = sellers[0] || 'Алексей';
+let payType = 'Безналичный';
+let selfPayType = 'Наличные';
+let currentPeriod = 'week';
 let allChecks = [];
-let editCheckNum = null;
-let editOriginalDate = '';
-let editOriginalTime = '';
+let editNum = null;
+let editDate = '';
+let editTime = '';
+let modalMode = 'seller';
 
-const tabs = [...document.querySelectorAll('.tab')];
-tabs.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
-document.getElementById('saveBtn').addEventListener('click', saveCheck);
-
-function switchTab(tabName){
-  tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tabName));
-  document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === tabName));
-  if (tabName === 'journal') renderJournal();
-  if (tabName === 'summary') renderSummary();
-}
-
-function loadSellers_(){
+function loadSellers(){
   try{
-    const raw = localStorage.getItem('omoti_sellers');
-    if (!raw) return [...DEFAULT_SELLERS];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length ? parsed : [...DEFAULT_SELLERS];
+    const x = JSON.parse(localStorage.getItem('omoti_sellers') || 'null');
+    return Array.isArray(x) && x.length ? x : ['Алексей','Галина','Кирилл'];
   }catch(e){
-    return [...DEFAULT_SELLERS];
+    return ['Алексей','Галина','Кирилл'];
   }
 }
-function saveSellers_(){ localStorage.setItem('omoti_sellers', JSON.stringify(sellers)); }
+function saveSellers(){
+  localStorage.setItem('omoti_sellers', JSON.stringify(sellers));
+}
+
+function getPrice(name, pay) {
+  const p = PREMIUM.has(name);
+  if (pay === 'Яндекс') return p ? 250 : 200;
+  if (pay === 'Себе оплачено' || pay === 'Себе без оплаты') return p ? 110 : 100;
+  return p ? 200 : 180;
+}
 
 function renderSellers(){
-  const row = document.getElementById('sellerRow');
-  row.innerHTML = '';
-  sellers.forEach(name => {
-    const btn = document.createElement('button');
-    btn.className = 'btn seller-btn' + (selectedSeller === name ? ' active' : '');
-    btn.textContent = name;
-    btn.onclick = () => {
-      selectedSeller = name;
-      renderSellers();
-      updateSaveBtn();
-    };
-    row.appendChild(btn);
-  });
-
-  const addBtn = document.createElement('button');
-  addBtn.className = 'btn seller-btn';
-  addBtn.textContent = '+';
-  addBtn.onclick = () => {
-    const name = prompt('Новое имя');
-    if (!name) return;
-    const clean = name.trim();
-    if (!clean) return;
-    if (!sellers.includes(clean)) {
-      sellers.push(clean);
-      sellers.sort((a,b)=>a.localeCompare(b,'ru'));
-      saveSellers_();
-    }
-    selectedSeller = clean;
-    renderSellers();
-    updateSaveBtn();
-  };
-  row.appendChild(addBtn);
+  const row = document.getElementById('seller-row');
+  row.innerHTML = sellers.map(name =>
+    `<button class="seller-btn ${name===seller?'active':''}" onclick="setSeller(this,'${escJs(name)}')">${escHtml(name)}</button>`
+  ).join('') + `<button class="seller-btn add-btn" onclick="showModal('seller')">+</button>`;
 }
 
-function renderFlavors(){
-  const grid = document.getElementById('flavorGrid');
-  grid.innerHTML = '';
-  FLAVORS.forEach(flavor => {
-    const qty = cart[flavor] || 0;
-    const btn = document.createElement('button');
-    btn.className = 'btn flavor' + (PREMIUM.has(flavor) ? ' gold' : '') + (qty > 0 ? ' active' : '');
-    btn.innerHTML = `${escapeHtml(flavor)}${qty > 0 ? `<span class="flavor-qty">${qty}</span>` : ''}`;
-    btn.onclick = () => {
-      cart[flavor] = (cart[flavor] || 0) + 1;
-      renderFlavors();
-      renderCart();
-      updateSaveBtn();
-    };
-    grid.appendChild(btn);
-  });
+function renderPayBtns(){
+  document.getElementById('pay-grid').innerHTML = PAY_TYPES.map(type =>
+    `<button class="pay-btn ${type===payType?'active':''}" onclick="setPay(this,'${escJs(type)}')">${escHtml(type)}</button>`
+  ).join('');
 }
 
-function renderPayments(){
-  const wrap = document.getElementById('payGrid');
-  wrap.innerHTML = '';
-  PAYMENTS.forEach(pay => {
-    const btn = document.createElement('button');
-    btn.className = 'btn pay-btn' + (selectedPay === pay ? ' active' : '');
-    btn.textContent = pay;
-    btn.onclick = () => {
-      selectedPay = pay;
-      if (pay !== 'Себе оплачено') selectedSelfPay = '';
-      document.getElementById('selfPayWrap').style.display = pay === 'Себе оплачено' ? 'block' : 'none';
-      renderPayments();
-      renderSelfPayments();
-      renderCart();
-      updateSaveBtn();
-    };
-    wrap.appendChild(btn);
-  });
+function renderFlavors() {
+  document.getElementById('flavors-grid').innerHTML = FLAVORS.map(f => {
+    const q = cart[f] || 0;
+    return `<button class="flavor-btn ${PREMIUM.has(f)?'gold':''} ${q>0?'active':''}" onclick="changeQty('${escJs(f)}',1)">
+      ${escHtml(f)}${q?`<span class="qty-badge">${q}</span>`:''}
+    </button>`;
+  }).join('');
 }
 
-function renderSelfPayments(){
-  const wrap = document.getElementById('selfPayGrid');
-  wrap.innerHTML = '';
-  SELF_PAYMENTS.forEach(pay => {
-    const btn = document.createElement('button');
-    btn.className = 'btn pay-btn' + (selectedSelfPay === pay ? ' active' : '');
-    btn.textContent = pay;
-    btn.onclick = () => {
-      selectedSelfPay = pay;
-      renderSelfPayments();
-      updateSaveBtn();
-    };
-    wrap.appendChild(btn);
-  });
+function changeQty(name, delta){
+  cart[name] = (cart[name] || 0) + delta;
+  if (cart[name] <= 0) delete cart[name];
+  updateCart();
 }
 
-function getPrice(flavor, pay){
-  const premium = PREMIUM.has(flavor);
-  if (pay === 'Яндекс') return premium ? 250 : 200;
-  if (pay === 'Себе оплачено' || pay === 'Себе без оплаты') return premium ? 110 : 100;
-  return premium ? 200 : 180;
-}
+function updateCart() {
+  const items = Object.entries(cart).filter(([k,v])=>v>0);
+  const empty = document.getElementById('cart-empty');
+  const itemsEl = document.getElementById('cart-items');
+  const totalEl = document.getElementById('cart-total');
+  const closeBtn = document.getElementById('close-btn');
 
-function renderCart(){
-  const cartWrap = document.getElementById('cart');
-  const entries = Object.entries(cart).filter(([,qty]) => qty > 0);
+  renderFlavors();
 
-  if (!entries.length){
-    cartWrap.innerHTML = '<div class="cart-empty">Выбери вкусы</div>';
-    renderFlavors();
+  if (!items.length) {
+    empty.style.display='block';
+    itemsEl.innerHTML='';
+    totalEl.style.display='none';
+    closeBtn.disabled=true;
     return;
   }
 
+  empty.style.display='none';
+  closeBtn.disabled = !(seller && payType && (payType !== 'Себе оплачено' || selfPayType));
+
   let total = 0;
-  cartWrap.innerHTML = '';
-  entries.sort((a,b)=>a[0].localeCompare(b[0],'ru')).forEach(([name, qty]) => {
-    const price = getPrice(name, selectedPay);
-    const sum = price * qty;
-    total += sum;
-
-    const row = document.createElement('div');
-    row.className = 'cart-row';
-    row.innerHTML = `
-      <div>${escapeHtml(name)}</div>
-      <div class="qty">
-        <button type="button">−</button>
-        <span>${qty}</span>
-        <button type="button">+</button>
+  itemsEl.innerHTML = items.map(([n,q]) => {
+    const p = getPrice(n, payType);
+    total += p*q;
+    return `<div class="cart-item">
+      <span class="ci-name">${escHtml(n)}</span>
+      <div class="ci-ctrl">
+        <button class="c-btn" onclick="changeQty('${escJs(n)}',-1)">−</button>
+        <span class="ci-qty">${q}</span>
+        <button class="c-btn" onclick="changeQty('${escJs(n)}',1)">+</button>
+        <span class="ci-price">${money(p*q)}</span>
       </div>
-      <div class="sum">${formatMoney(sum)}</div>
-    `;
-    const [minus, plus] = row.querySelectorAll('button');
-    minus.onclick = () => {
-      cart[name] = (cart[name] || 0) - 1;
-      if (cart[name] <= 0) delete cart[name];
-      renderFlavors();
-      renderCart();
-      updateSaveBtn();
-    };
-    plus.onclick = () => {
-      cart[name] = (cart[name] || 0) + 1;
-      renderFlavors();
-      renderCart();
-      updateSaveBtn();
-    };
-    cartWrap.appendChild(row);
-  });
+    </div>`;
+  }).join('');
 
-  const totalRow = document.createElement('div');
-  totalRow.className = 'total';
-  totalRow.innerHTML = `<span>Итого</span><span>${formatMoney(total)}</span>`;
-  cartWrap.appendChild(totalRow);
+  totalEl.style.display='flex';
+  document.getElementById('total-sum').textContent = money(total);
 }
 
-function updateSaveBtn(){
-  const hasItems = Object.keys(cart).length > 0;
-  const needSelfPay = selectedPay === 'Себе оплачено';
-  const disabled = !selectedSeller || !selectedPay || !hasItems || (needSelfPay && !selectedSelfPay);
-  document.getElementById('saveBtn').disabled = disabled;
+function setSeller(el, name) {
+  seller = name;
+  document.querySelectorAll('.seller-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  updateCart();
+}
+function setPay(el, type) {
+  payType = type;
+  document.querySelectorAll('.pay-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('self-clarify').className = 'self-clarify' + (type==='Себе оплачено'?' visible':'');
+  updateCart();
+}
+function setSelfPay(el, type) {
+  selfPayType = type;
+  document.querySelectorAll('.self-sub-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  updateCart();
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['kassa','journal','stats'][i]===tab));
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+tab).classList.add('active');
+  if (tab==='journal') renderJournal();
+  if (tab==='stats') loadStats(currentPeriod);
 }
 
 function nextCheckNum(){
-  if (!allChecks.length) return '1';
-  const maxNum = Math.max(...allChecks.map(c => Number(c.num) || 0), 0);
-  return String(maxNum + 1);
+  return allChecks.length ? Math.max(...allChecks.map(x => Number(x.num)||0)) + 1 : 1;
 }
 
-function getNowDate(){
-  const d = new Date();
-  const dd = String(d.getDate()).padStart(2,'0');
-  const mm = String(d.getMonth()+1).padStart(2,'0');
-  const yyyy = d.getFullYear();
-  return `${dd}.${mm}.${yyyy}`;
+function nowDate(){
+  const now = new Date();
+  return String(now.getDate()).padStart(2,'0') + '.' + String(now.getMonth()+1).padStart(2,'0') + '.' + now.getFullYear();
 }
-function getNowTime(){
-  const d = new Date();
-  const hh = String(d.getHours()).padStart(2,'0');
-  const mm = String(d.getMinutes()).padStart(2,'0');
-  return `${hh}:${mm}`;
+function nowTime(){
+  const now = new Date();
+  return String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
 }
 
-async function saveCheck(){
-  const items = Object.entries(cart).filter(([,qty]) => qty > 0).map(([name, qty]) => ({
-    name,
-    qty,
-    price: getPrice(name, selectedPay)
-  }));
+async function closeCheck() {
+  const items = Object.entries(cart).filter(([k,v])=>v>0);
   if (!items.length) return;
 
-  const isEdit = !!editCheckNum;
-  const num = editCheckNum || nextCheckNum();
-  const date = isEdit ? editOriginalDate : getNowDate();
-  const time = isEdit ? editOriginalTime : getNowTime();
+  const isEdit = !!editNum;
+  const num = isEdit ? editNum : nextCheckNum();
+  const date = isEdit ? editDate : nowDate();
+  const time = isEdit ? editTime : nowTime();
+
+  const itemsData = items.map(([n,q]) => ({name:n, qty:q, price:getPrice(n,payType)}));
 
   const payload = {
-    action: 'save_check',
+    action:'save_check',
     num,
     date,
     time,
-    point: POINT_NAME,
-    seller: selectedSeller,
-    pay: selectedPay,
-    selfPay: selectedPay === 'Себе оплачено' ? selectedSelfPay : '',
-    includedInPayout: 'нет',
+    point: POINT,
+    seller,
+    pay: payType,
+    selfPay: payType==='Себе оплачено' ? selfPayType : '',
     edited: isEdit,
-    items
+    items: itemsData
   };
 
-  document.getElementById('saveBtn').disabled = true;
+  const btn = document.getElementById('close-btn');
+  btn.textContent = isEdit ? 'Сохраняю...' : 'Сохраняю...';
+  btn.classList.add('loading');
+  btn.disabled = true;
 
-  try{
-    const res = await fetch(SCRIPT_URL, {
-      method: 'POST',
-      headers: {'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify(payload)
+  try {
+    const res = await fetch(API, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify(payload)
     });
     const json = await res.json();
     if (!json.ok) throw new Error(json.error || 'Ошибка сохранения');
 
     resetForm();
-    await loadChecks();
+    await loadRemoteData();
     switchTab('journal');
-  }catch(err){
-    alert('Не удалось сохранить чек. ' + err.message);
-    updateSaveBtn();
+    showToast(isEdit ? `Чек №${num} обновлён` : `Чек №${num} сохранён`);
+  } catch(e) {
+    showToast('Ошибка сохранения');
+    btn.textContent = isEdit ? 'Сохранить изменения' : 'Закрыть чек';
+    btn.classList.remove('loading');
+    updateCart();
   }
 }
 
 function resetForm(){
-  selectedSeller = '';
-  selectedPay = '';
-  selectedSelfPay = '';
   cart = {};
-  editCheckNum = null;
-  editOriginalDate = '';
-  editOriginalTime = '';
-  document.getElementById('selfPayWrap').style.display = 'none';
-  document.getElementById('saveBtn').textContent = 'Закрыть чек';
+  payType = 'Безналичный';
+  selfPayType = 'Наличные';
+  seller = sellers[0] || seller;
+  editNum = null;
+  editDate = '';
+  editTime = '';
+  document.getElementById('close-btn').textContent = 'Закрыть чек';
+  document.getElementById('close-btn').classList.remove('loading');
+  document.getElementById('self-clarify').className = 'self-clarify';
   renderSellers();
-  renderPayments();
-  renderSelfPayments();
-  renderFlavors();
-  renderCart();
-  updateSaveBtn();
+  renderPayBtns();
+  document.querySelectorAll('.self-sub-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
+  updateCart();
 }
 
-function renderJournal(){
-  const box = document.getElementById('journalList');
-  if (!allChecks.length){
-    box.innerHTML = '<div class="muted">Чеков пока нет</div>';
+function renderJournal() {
+  const el = document.getElementById('journal-list');
+  document.getElementById('journal-spinner').style.display = allChecks.length ? 'none' : 'block';
+
+  if (!allChecks.length) {
+    el.innerHTML='<div style="font-size:13px;color:var(--muted);text-align:center;padding:28px 0">Чеков пока нет</div>';
     return;
   }
 
-  box.innerHTML = '';
-  allChecks.forEach(check => {
-    const sum = check.items.reduce((acc,i)=>acc + i.sum, 0);
-    const editedDot = check.edited ? '<span class="edited-dot" title="Чек редактировали"></span>' : '';
-    const div = document.createElement('div');
-    div.className = 'check';
-    div.innerHTML = `
-      <div class="check-head">
-        <div>
-          <div class="check-num-wrap">${editedDot}<div class="check-num">№${escapeHtml(check.num)}</div></div>
-          <div class="check-meta"><strong>${escapeHtml(check.date)}</strong> · <strong>${escapeHtml(check.time)}</strong></div>
-          <div class="check-submeta">${escapeHtml(check.seller)} · ${escapeHtml(check.point)}</div>
-        </div>
-        <div class="badge">${escapeHtml(check.pay)}${check.selfPay ? ' · ' + escapeHtml(check.selfPay) : ''}</div>
+  el.innerHTML = allChecks.map(j => {
+    const flavors = j.items.map(x => x.qty>1 ? `${escHtml(x.name)} ×${x.qty}` : escHtml(x.name)).join(', ');
+    const payLabel = j.selfPay ? `${escHtml(j.pay)} · ${escHtml(j.selfPay)}` : escHtml(j.pay);
+    const editDot = j.edited ? '<span class="edited-dot"></span>' : '';
+    return `<div class="journal-item">
+      <div class="ji-head">
+        <span class="ji-who">${editDot} №${escHtml(j.num)} · ${escHtml(j.seller)}</span>
+        <span class="ji-meta">${escHtml(j.date)} ${escHtml(j.time)}</span>
       </div>
-      <div class="items">${check.items.map(i => `${escapeHtml(i.name)} - <span class="item-qty">${i.qty}</span> шт - <span class="money">${formatMoney(i.sum)}</span>`).join('<br>')}</div>
-      <div class="total"><strong>Итого</strong><strong>${formatMoney(sum)}</strong></div>
-      <div class="check-actions" style="margin-top:10px;">
-        <button class="edit-btn" type="button">Редактировать</button>
+      <div class="ji-pay">${payLabel}</div>
+      <div class="ji-flavors">${flavors}</div>
+      <div class="ji-foot">
+        <span class="ji-sum">${money(j.sum)}</span>
+        <button class="ji-edit" onclick="editCheck('${escJs(j.num)}')">Редактировать</button>
       </div>
-    `;
-    div.querySelector('.edit-btn').onclick = () => loadToForm(check);
-    box.appendChild(div);
-  });
+    </div>`;
+  }).join('');
 }
 
-function loadToForm(check){
-  editCheckNum = check.num;
-  editOriginalDate = check.date;
-  editOriginalTime = check.time;
-  selectedSeller = check.seller;
-  selectedPay = check.pay;
-  selectedSelfPay = check.selfPay || '';
+function editCheck(num) {
+  const j = allChecks.find(x => String(x.num) === String(num));
+  if (!j) return;
   cart = {};
-  check.items.forEach(i => cart[i.name] = i.qty);
-  document.getElementById('selfPayWrap').style.display = selectedPay === 'Себе оплачено' ? 'block' : 'none';
+  j.items.forEach(it => cart[it.name] = it.qty);
+  payType = j.pay;
+  seller = j.seller;
+  selfPayType = j.selfPay || 'Наличные';
+  editNum = j.num;
+  editDate = j.date;
+  editTime = j.time;
 
-  document.getElementById('saveBtn').textContent = 'Сохранить изменения';
   renderSellers();
-  renderPayments();
-  renderSelfPayments();
-  renderFlavors();
-  renderCart();
-  updateSaveBtn();
-  switchTab('cashbox');
-  window.scrollTo({top:0, behavior:'smooth'});
+  renderPayBtns();
+  document.getElementById('self-clarify').className = 'self-clarify' + (payType==='Себе оплачено'?' visible':'');
+  document.querySelectorAll('.self-sub-btn').forEach(b=>b.classList.toggle('active', b.textContent===selfPayType));
+  document.getElementById('close-btn').textContent = 'Сохранить изменения';
+  updateCart();
+  switchTab('kassa');
+  showToast('Чек №' + j.num + ' открыт для правки');
 }
 
-function renderSummary(){
-  const box = document.getElementById('summaryContent');
-  if (!allChecks.length){
-    box.innerHTML = '<div class="muted">Данных пока нет</div>';
-    return;
-  }
-
-  const monday = startOfWeek(new Date());
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-
-  const inWeek = allChecks.filter(check => {
-    const d = parseRuDate(check.date);
-    return d && d >= monday && d <= endOfDay(sunday);
-  });
-
-  const soldChecks = inWeek.filter(c => c.pay !== 'Себе оплачено' && c.pay !== 'Себе без оплаты');
-  const soldQty = soldChecks.reduce((acc, c) => acc + c.items.reduce((s, i) => s + i.qty, 0), 0);
-  const earnings = soldQty * 30;
-  const cash = inWeek.filter(c => c.pay === 'Наличный').reduce((acc,c)=>acc + c.items.reduce((s,i)=>s+i.sum,0),0);
-  const selfDebt = inWeek.filter(c => c.pay === 'Себе без оплаты').reduce((acc,c)=>acc + c.items.reduce((s,i)=>s+i.sum,0),0);
-  const selfCash = inWeek.filter(c => c.pay === 'Себе оплачено' && c.selfPay === 'Наличный').reduce((acc,c)=>acc + c.items.reduce((s,i)=>s+i.sum,0),0);
-  const payout = earnings - cash - selfDebt - selfCash;
-  const bySeller = {};
-
-  inWeek.forEach(c => {
-    const name = c.seller || 'Без имени';
-    if (!bySeller[name]) bySeller[name] = {qty:0, earn:0};
-    if (c.pay !== 'Себе оплачено' && c.pay !== 'Себе без оплаты') {
-      const qty = c.items.reduce((s,i)=>s+i.qty,0);
-      bySeller[name].qty += qty;
-      bySeller[name].earn += qty * 30;
-    }
-  });
-
-  const sellerHtml = Object.entries(bySeller)
-    .sort((a,b)=>a[0].localeCompare(b[0],'ru'))
-    .map(([name, info]) => `<div class="summary-row"><span>${escapeHtml(name)}</span><span>${info.qty} шт · ${formatMoney(info.earn)}</span></div>`)
-    .join('');
-
-  box.innerHTML = `
-    <div class="summary-soft">
-      Период сейчас считается по текущей неделе. Пн - Вс. Вторничную логику с захватом понедельника докрутим отдельно.
-    </div>
-    <div class="summary-box">
-      <div class="summary-title">Итог недели</div>
-      <div class="summary-row"><span>Период</span><span>${formatDate(monday)} - ${formatDate(sunday)}</span></div>
-      <div class="summary-row"><span>Продано штук</span><span>${soldQty}</span></div>
-      <div class="summary-row"><span>Начислено по 30 ₽</span><span>${formatMoney(earnings)}</span></div>
-      <div class="summary-row"><span>Наличные клиентов</span><span>${formatMoney(cash)}</span></div>
-      <div class="summary-row"><span>Себе без оплаты</span><span>${formatMoney(selfDebt)}</span></div>
-      <div class="summary-row"><span>Себе оплачено наличными</span><span>${formatMoney(selfCash)}</span></div>
-      <div class="summary-row"><strong>К выплате</strong><strong>${formatMoney(payout)}</strong></div>
-    </div>
-    <div class="summary-box">
-      <div class="summary-title">По именам</div>
-      ${sellerHtml || '<div class="muted">Нет данных</div>'}
-    </div>
-    <div class="note">Красная точка в журнале означает, что чек уже редактировали.</div>
-  `;
+function setPeriod(btn, period) {
+  document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  loadStats(period);
 }
 
-async function loadChecks(){
+function loadStats(period) {
+  currentPeriod = period;
+  document.getElementById('stats-spinner').className='spinner visible';
+  document.getElementById('stats-content').style.display='none';
+
+  const range = getRange(period);
+  const from = range.from, to = range.to;
+
+  const inRange = allChecks.filter(j => {
+    const d = parseDate(j.date);
+    if (!d) return false;
+    if (!from && !to) return true;
+    return d >= from && d <= to;
+  });
+
+  const soldRecords = inRange.filter(j => j.pay !== 'Себе оплачено' && j.pay !== 'Себе без оплаты');
+  const selfDebtRecords = inRange.filter(j => j.pay === 'Себе без оплаты');
+  const cashRecords = inRange.filter(j => j.pay === 'Наличный');
+  const yaRecords = soldRecords.filter(j => j.pay === 'Яндекс');
+
+  const soldQty = soldRecords.reduce((a,j)=>a + j.items.reduce((s,x)=>s + x.qty,0), 0);
+  const earn = soldQty * 30;
+  const cash = cashRecords.reduce((a,j)=>a + j.sum, 0);
+  const yaQty = yaRecords.reduce((a,j)=>a + j.items.reduce((s,x)=>s + x.qty,0), 0);
+  const selfDebt = selfDebtRecords.reduce((a,j)=>a + j.sum, 0);
+  const payout = earn - cash - selfDebt;
+
+  document.getElementById('s-qty').textContent = soldQty;
+  document.getElementById('s-earn').textContent = money(earn);
+  document.getElementById('s-cash').textContent = money(cash);
+  document.getElementById('s-ya').textContent = yaQty;
+  document.getElementById('s-sub').textContent = range.label;
+  document.getElementById('payout-period').textContent = range.label;
+  document.getElementById('p-sales').textContent = money(earn);
+  document.getElementById('p-cash').textContent = money(cash);
+  document.getElementById('p-self').textContent = money(selfDebt);
+  document.getElementById('p-total').textContent = money(payout);
+
+  const flavorMap = {};
+  soldRecords.forEach(j => j.items.forEach(x => flavorMap[x.name] = (flavorMap[x.name] || 0) + x.qty));
+  const flavors = Object.entries(flavorMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const max = flavors.length ? flavors[0][1] : 1;
+
+  document.getElementById('flavor-stat-list').innerHTML = flavors.length
+    ? flavors.map(([name, qty]) => `<div class="flavor-stat-row">
+        <div class="fs-name">${escHtml(name)}</div>
+        <div class="fs-bar-wrap"><div class="fs-bar" style="width:${Math.max(6, qty/max*100)}%"></div></div>
+        <div class="fs-qty">${qty}</div>
+      </div>`).join('')
+    : `<div style="font-size:13px;color:var(--muted);text-align:center;padding:16px 0">Нет данных</div>`;
+
+  document.getElementById('stats-spinner').className='spinner';
+  document.getElementById('stats-content').style.display='block';
+}
+
+function getRange(period){
+  const now = new Date();
+  const weekStart = getWeekStart(now);
+  const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate()+6); weekEnd.setHours(23,59,59,999);
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthEnd = new Date(now.getFullYear(), now.getMonth()+1, 0); monthEnd.setHours(23,59,59,999);
+
+  if (period === 'week') return {from:weekStart, to:weekEnd, label:`${formatDate(weekStart)} - ${formatDate(weekEnd)}`};
+  if (period === 'month') return {from:monthStart, to:monthEnd, label:monthStart.toLocaleDateString('ru-RU',{month:'long',year:'numeric'})};
+  return {from:null, to:null, label:'Всё время'};
+}
+
+function getWeekStart(d) {
+  const x = new Date(d);
+  const day = x.getDay() || 7;
+  x.setHours(0,0,0,0);
+  x.setDate(x.getDate() - day + 1);
+  return x;
+}
+function parseDate(s) {
+  const p = String(s).split('.');
+  if (p.length !== 3) return null;
+  return new Date(Number(p[2]), Number(p[1])-1, Number(p[0]), 0, 0, 0, 0);
+}
+function formatDate(d) {
+  return String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+d.getFullYear();
+}
+
+async function loadRemoteData(){
+  document.getElementById('journal-spinner').style.display = 'block';
+  document.getElementById('stats-spinner').className = 'spinner visible';
+
   try{
-    const res = await fetch(SCRIPT_URL);
+    const res = await fetch(API);
     const json = await res.json();
-    if (!json.ok && json.ok !== undefined) throw new Error(json.error || 'Ошибка загрузки');
-
     const rows = Array.isArray(json.rows) ? json.rows : [];
     const dataRows = rows.length && String(rows[0][0]).trim() === '№' ? rows.slice(1) : rows;
 
@@ -594,107 +573,102 @@ async function loadChecks(){
     dataRows.forEach(r => {
       if (!r || !r[0]) return;
       const num = String(r[0]).trim();
-      const rawDate = normalizeDateValue(r[1]);
-      const rawTime = normalizeTimeValue(r[2]);
       if (!map.has(num)) {
         map.set(num, {
           num,
-          date: rawDate,
-          time: rawTime,
+          date: normalizeDate(r[1]),
+          time: normalizeTime(r[2]),
           point: String(r[3] || '').trim(),
           seller: String(r[4] || '').trim(),
           pay: String(r[5] || '').trim(),
           selfPay: String(r[6] || '').trim(),
           edited: String(r[13] || '').trim().toLowerCase() === 'да',
-          items: []
+          items:[]
         });
       }
       map.get(num).items.push({
-        name: String(r[7] || '').trim(),
-        qty: toNum(r[8]),
-        price: toNum(r[9]),
-        sum: toNum(r[10])
+        name:String(r[7] || '').trim(),
+        qty:toNum(r[8]),
+        price:toNum(r[9]),
+        sum:toNum(r[10])
       });
     });
 
-    allChecks = [...map.values()].sort((a,b) => (Number(b.num) || 0) - (Number(a.num) || 0));
+    allChecks = [...map.values()].map(x => {
+      x.sum = x.items.reduce((a,it)=>a+it.sum,0);
+      return x;
+    }).sort((a,b)=>(Number(b.num)||0)-(Number(a.num)||0));
+
     renderJournal();
-    renderSummary();
-  }catch(err){
-    document.getElementById('journalList').innerHTML = '<div class="muted">Не удалось загрузить журнал</div>';
-    document.getElementById('summaryContent').innerHTML = '<div class="muted">Не удалось загрузить итоги</div>';
+    loadStats(currentPeriod);
+  }catch(e){
+    document.getElementById('journal-list').innerHTML = '<div style="font-size:13px;color:var(--muted);text-align:center;padding:28px 0">Не удалось загрузить журнал</div>';
   }
 }
 
-function toNum(value){
-  return Number(String(value || '0').replace(/\s/g,'').replace(',', '.')) || 0;
-}
-function normalizeDateValue(value){
-  const s = String(value || '').trim();
-  if (!s) return '';
+function normalizeDate(v){
+  const s = String(v || '').trim();
   if (/^\d{2}\.\d{2}\.\d{4}$/.test(s)) return s;
   if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {
     const d = new Date(s);
-    if (!isNaN(d)) return formatDateLocal(d);
+    if (!isNaN(d)) return formatDate(d);
   }
   return s;
 }
-function normalizeTimeValue(value){
-  const s = String(value || '').trim();
-  if (!s) return '';
+function normalizeTime(v){
+  const s = String(v || '').trim();
   if (/^\d{2}:\d{2}$/.test(s)) return s;
   if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {
     const d = new Date(s);
-    if (!isNaN(d)) return formatTimeLocal(d);
+    if (!isNaN(d)) return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
   }
   return s;
 }
-function formatMoney(v){ return `${Number(v || 0).toLocaleString('ru-RU')} ₽`; }
-function escapeHtml(str){
-  return String(str)
-    .replaceAll('&','&amp;')
-    .replaceAll('<','&lt;')
-    .replaceAll('>','&gt;')
-    .replaceAll('"','&quot;')
-    .replaceAll("'","&#039;");
+function toNum(v){ return Number(String(v || '0').replace(/\s/g,'').replace(',', '.')) || 0; }
+function money(n){ return Number(n || 0).toLocaleString('ru-RU') + ' ₽'; }
+function escHtml(s){ return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;"); }
+function escJs(s){ return String(s).replaceAll('\\','\\\\').replaceAll("'","\\'"); }
+
+function showModal(mode){
+  modalMode = mode;
+  document.getElementById('modal-title').textContent = 'Добавить имя';
+  document.getElementById('modal-input').value = '';
+  document.getElementById('overlay').style.display = 'block';
+  document.getElementById('modal').style.display = 'block';
+  setTimeout(()=>document.getElementById('modal-input').focus(), 50);
 }
-function parseRuDate(str){
-  const parts = String(str).split('.');
-  if (parts.length !== 3) return null;
-  const [dd,mm,yyyy] = parts.map(Number);
-  return new Date(yyyy, mm - 1, dd, 0, 0, 0, 0);
+function hideModal(){
+  document.getElementById('overlay').style.display = 'none';
+  document.getElementById('modal').style.display = 'none';
 }
-function formatDate(d){
-  const dd = String(d.getDate()).padStart(2,'0');
-  const mm = String(d.getMonth()+1).padStart(2,'0');
-  const yyyy = d.getFullYear();
-  return `${dd}.${mm}.${yyyy}`;
+function modalConfirm(){
+  if (modalMode === 'seller') {
+    const v = document.getElementById('modal-input').value.trim();
+    if (!v) return;
+    if (!sellers.includes(v)) {
+      sellers.push(v);
+      sellers.sort((a,b)=>a.localeCompare(b,'ru'));
+      saveSellers();
+    }
+    seller = v;
+    renderSellers();
+    updateCart();
+  }
+  hideModal();
 }
-function formatDateLocal(d){ return formatDate(d); }
-function formatTimeLocal(d){
-  const hh = String(d.getHours()).padStart(2,'0');
-  const mm = String(d.getMinutes()).padStart(2,'0');
-  return `${hh}:${mm}`;
-}
-function startOfWeek(date){
-  const d = new Date(date);
-  const day = d.getDay() || 7;
-  d.setHours(0,0,0,0);
-  d.setDate(d.getDate() - day + 1);
-  return d;
-}
-function endOfDay(date){
-  const d = new Date(date);
-  d.setHours(23,59,59,999);
-  return d;
+function showToast(text){
+  const el = document.getElementById('toast');
+  el.textContent = text;
+  el.classList.add('show');
+  clearTimeout(showToast.t);
+  showToast.t = setTimeout(()=>el.classList.remove('show'), 1800);
 }
 
 renderSellers();
+renderPayBtns();
 renderFlavors();
-renderPayments();
-renderSelfPayments();
-renderCart();
-loadChecks();
+updateCart();
+loadRemoteData();
 </script>
 </body>
 </html>
