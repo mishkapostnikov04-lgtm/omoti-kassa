@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>OMOTI - Касса</title>
-  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=_r4lNQ7xSka49tD9KOXHQ7VpuhKagg8yXFPmtcGg3oSBYHKEPIEL1DDHeB0P_jxG0_lN59OKaiXGmHMTyQXFlwcAYsfTPf6DvKXmEYkWhK7RhgZoFTJ2RT-Ko2HdHTGfYKSxyKMceiFwQgPIgpJyWlaa4dPbf9iJjR5UsIoCs_D0LPBkmbU_W_wACHScr6eY1Z7rBIbjzaM_J9jtJNFYoapcjxA92KoX9xnX6rGTnQcwNsLRFUYklqlUXNi1-FUlirQjK1EGSl2FCUw6apZNDA" charset="UTF-8"></script><style>
+  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=1ldS-w3IYxLu1SRaoTAf7iMmgGsPp3L6NYAIV_lpHvWFhKGbzqJpr6C8LJXmuyqcs7SH4P7d87_mg3wZm60VovVT9t_Xgx6nD3vbl5Ej-mapdukBQOAMET6Mb-7ZRpud3RNgTnHLEZ4jnyEEEnDSNkQ6FDYZ3ny33DyeQg75m2TagZrYR_7nHvRhvoow7eqBPIkeKN1DH3-Ety9TkRQk74tI8E9DFXQc2aJCL8iiwvr46IdSoi6X9MzWpwH2Rx6ULGW_PZx-Tm_IWbJdFhF_1Q" charset="UTF-8"></script><style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     :root{
       --bg:#f7f6f2;
@@ -15,7 +15,7 @@
       --accent:#1a1a1a;
       --accentText:#ffffff;
       --gold:#caa453;
-      --danger:#b45151;
+      --danger:#ce4a4a;
       --ok:#eaf4ed;
     }
     body{
@@ -24,251 +24,103 @@
       color:var(--text);
       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
     }
-    .wrap{
-      max-width:460px;
-      margin:0 auto;
-      min-height:100vh;
-    }
+    .wrap{ max-width:460px; margin:0 auto; min-height:100vh; }
     .topbar{
-      position:sticky;
-      top:0;
-      z-index:20;
+      position:sticky; top:0; z-index:20;
       background:rgba(247,246,242,.96);
       backdrop-filter: blur(8px);
       border-bottom:1px solid var(--border);
       padding:14px 14px 10px;
     }
     .topline{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      margin-bottom:10px;
+      display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;
     }
-    .title{
-      font-size:16px;
-      font-weight:700;
-    }
-    .tabs{
-      display:flex;
-      gap:4px;
-      background:#ece8df;
-      padding:4px;
-      border-radius:16px;
-    }
+    .title{ font-size:16px; font-weight:700; }
+    .tabs{ display:flex; gap:4px; background:#ece8df; padding:4px; border-radius:16px; }
     .tab{
-      border:0;
-      background:transparent;
-      padding:8px 12px;
-      border-radius:12px;
-      color:#666;
-      font-size:13px;
-      cursor:pointer;
+      border:0; background:transparent; padding:8px 12px; border-radius:12px;
+      color:#666; font-size:13px; cursor:pointer;
     }
-    .tab.active{
-      background:var(--card);
-      color:var(--text);
-      font-weight:700;
-      box-shadow:0 1px 2px rgba(0,0,0,.06);
-    }
+    .tab.active{ background:var(--card); color:var(--text); font-weight:700; box-shadow:0 1px 2px rgba(0,0,0,.06); }
     .screen{ display:none; padding:14px; }
     .screen.active{ display:block; }
     .label{
-      font-size:11px;
-      color:var(--muted);
-      text-transform:uppercase;
-      letter-spacing:.08em;
-      margin:2px 0 8px;
+      font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin:2px 0 8px;
     }
     .card{
-      background:var(--card);
-      border:1px solid var(--border);
-      border-radius:16px;
-      padding:12px;
-      margin-bottom:14px;
+      background:var(--card); border:1px solid var(--border); border-radius:16px; padding:12px; margin-bottom:14px;
     }
-    .row{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-    }
+    .row{ display:flex; gap:8px; flex-wrap:wrap; }
     .btn{
-      border:1px solid var(--border);
-      background:var(--card);
-      color:var(--text);
-      border-radius:12px;
-      padding:11px 10px;
-      font-size:13px;
-      cursor:pointer;
-      min-height:44px;
+      border:1px solid var(--border); background:var(--card); color:var(--text);
+      border-radius:12px; padding:11px 10px; font-size:13px; cursor:pointer; min-height:44px;
     }
-    .btn.active{
-      background:var(--accent);
-      color:var(--accentText);
-      border-color:var(--accent);
-    }
-    .seller-btn{
-      flex:1 1 calc(33.333% - 6px);
-      min-width:110px;
-    }
-    .flavors{
-      display:grid;
-      grid-template-columns:repeat(3,1fr);
-      gap:8px;
-    }
+    .btn.active{ background:var(--accent); color:var(--accentText); border-color:var(--accent); }
+    .seller-btn{ flex:1 1 calc(33.333% - 6px); min-width:110px; }
+    .flavors{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
     .flavor{
-      min-height:42px;
-      padding:8px 6px;
-      font-size:12px;
-      line-height:1.15;
-      text-align:center;
+      min-height:48px; padding:8px 6px; font-size:12px; line-height:1.15; text-align:center; position:relative;
     }
-    .flavor.gold{
-      border-color:var(--gold);
+    .flavor.gold{ border-color:var(--gold); }
+    .flavor.active{ background:#fff7e7; border-color:var(--gold); color:var(--text); }
+    .flavor-qty{
+      position:absolute; right:6px; top:6px; min-width:18px; height:18px; padding:0 4px;
+      border-radius:999px; background:var(--accent); color:#fff; font-size:11px; line-height:18px; font-weight:700;
     }
-    .pay-grid{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:8px;
-    }
-    .pay-btn{
-      width:100%;
-      font-size:14px;
-    }
-    .cart-empty{
-      color:var(--muted);
-      font-size:14px;
-      text-align:center;
-      padding:8px 0;
-    }
+    .pay-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .pay-btn{ width:100%; font-size:14px; }
+    .cart-empty{ color:var(--muted); font-size:14px; text-align:center; padding:8px 0; }
     .cart-row{
-      display:grid;
-      grid-template-columns:1fr auto auto;
-      gap:10px;
-      align-items:center;
-      padding:10px 0;
-      border-top:1px solid var(--border);
+      display:grid; grid-template-columns:1fr auto auto; gap:10px; align-items:center; padding:10px 0; border-top:1px solid var(--border);
     }
     .cart-row:first-child{ border-top:0; }
-    .qty{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      white-space:nowrap;
-    }
+    .qty{ display:flex; align-items:center; gap:10px; white-space:nowrap; }
     .qty button{
-      width:28px;
-      height:28px;
-      border-radius:999px;
-      border:1px solid var(--border);
-      background:#fff;
-      cursor:pointer;
+      width:28px; height:28px; border-radius:999px; border:1px solid var(--border); background:#fff; cursor:pointer;
     }
-    .sum{
-      font-weight:700;
-      white-space:nowrap;
-    }
+    .sum{ font-weight:700; white-space:nowrap; }
     .total{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      border-top:1px solid var(--border);
-      padding-top:10px;
-      margin-top:6px;
-      font-weight:700;
+      display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border);
+      padding-top:10px; margin-top:6px; font-weight:700;
     }
     .main-action{
-      width:100%;
-      border:0;
-      border-radius:14px;
-      padding:15px 16px;
-      background:var(--accent);
-      color:var(--accentText);
-      font-size:18px;
-      font-weight:700;
-      cursor:pointer;
+      width:100%; border:0; border-radius:14px; padding:15px 16px; background:var(--accent);
+      color:var(--accentText); font-size:18px; font-weight:700; cursor:pointer;
     }
-    .main-action:disabled{
-      opacity:.45;
-      cursor:not-allowed;
-    }
+    .main-action:disabled{ opacity:.45; cursor:not-allowed; }
     .muted{ color:var(--muted); }
     .check{
-      background:var(--card);
-      border:1px solid var(--border);
-      border-radius:16px;
-      padding:12px;
-      margin-bottom:10px;
+      background:var(--card); border:1px solid var(--border); border-radius:16px; padding:12px; margin-bottom:10px;
     }
     .check-head{
-      display:flex;
-      justify-content:space-between;
-      gap:10px;
-      align-items:flex-start;
-      margin-bottom:8px;
+      display:flex; justify-content:space-between; gap:10px; align-items:flex-start; margin-bottom:8px;
     }
-    .check-num{
-      font-weight:700;
-      font-size:15px;
-      margin-bottom:3px;
+    .check-num-wrap{ display:flex; align-items:center; gap:7px; margin-bottom:4px; }
+    .check-num{ font-weight:800; font-size:26px; line-height:1; }
+    .edited-dot{
+      width:10px; height:10px; border-radius:999px; background:var(--danger); flex:0 0 auto;
     }
-    .check-meta{
-      color:var(--muted);
-      font-size:12px;
-      line-height:1.35;
-    }
+    .check-meta{ color:var(--muted); font-size:12px; line-height:1.35; }
     .badge{
-      display:inline-block;
-      padding:7px 10px;
-      border-radius:999px;
-      border:1px solid var(--border);
-      font-size:12px;
-      font-weight:700;
-      white-space:nowrap;
+      display:inline-block; padding:7px 10px; border-radius:999px; border:1px solid var(--border);
+      font-size:13px; font-weight:800; white-space:nowrap;
     }
-    .items{
-      margin:8px 0 10px;
-      font-size:13px;
-      line-height:1.5;
-    }
-    .check-actions{
-      display:flex;
-      justify-content:flex-end;
-    }
+    .items{ margin:8px 0 10px; font-size:13px; line-height:1.5; }
+    .item-qty{ font-weight:700; }
+    .check-actions{ display:flex; justify-content:flex-end; }
     .edit-btn{
-      border:1px solid var(--border);
-      background:#fff;
-      border-radius:10px;
-      padding:9px 12px;
-      cursor:pointer;
-      font-size:13px;
+      border:1px solid var(--border); background:#fff; border-radius:10px; padding:9px 12px; cursor:pointer; font-size:13px;
     }
     .summary-box{
-      background:var(--card);
-      border:1px solid var(--border);
-      border-radius:16px;
-      padding:14px;
-      margin-bottom:12px;
+      background:var(--card); border:1px solid var(--border); border-radius:16px; padding:14px; margin-bottom:12px;
     }
-    .summary-title{
-      font-weight:700;
-      margin-bottom:8px;
-    }
+    .summary-title{ font-weight:700; margin-bottom:8px; }
     .summary-row{
-      display:flex;
-      justify-content:space-between;
-      gap:12px;
-      padding:7px 0;
-      border-top:1px solid var(--border);
+      display:flex; justify-content:space-between; gap:12px; padding:7px 0; border-top:1px solid var(--border);
     }
     .summary-row:first-child{ border-top:0; }
     .note{
-      background:var(--ok);
-      border:1px solid #d5e8db;
-      padding:11px 12px;
-      border-radius:12px;
-      font-size:13px;
-      line-height:1.35;
+      background:var(--ok); border:1px solid #d5e8db; padding:11px 12px; border-radius:12px; font-size:13px; line-height:1.35;
     }
   </style>
 </head>
@@ -318,7 +170,7 @@
 </div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyIji64r8q217pHVTpW0bA_eNRP9SJUELxWiW6VARz8khIYPIeUv7D5UvSEq8gAJIPs3g/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwJUNri2OdJ5gHOQPeJVqQs3IkYTb-ypc26l4JqKAzVREKhkr4a7qqIXFknyPfV4w4CRw/exec';
 const POINT_NAME = 'Новогодняя';
 
 const DEFAULT_SELLERS = ['Алексей', 'Галина', 'Кирилл'];
@@ -345,7 +197,6 @@ let editOriginalTime = '';
 
 const tabs = [...document.querySelectorAll('.tab')];
 tabs.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
-
 document.getElementById('saveBtn').addEventListener('click', saveCheck);
 
 function switchTab(tabName){
@@ -365,9 +216,7 @@ function loadSellers_(){
     return [...DEFAULT_SELLERS];
   }
 }
-function saveSellers_(){
-  localStorage.setItem('omoti_sellers', JSON.stringify(sellers));
-}
+function saveSellers_(){ localStorage.setItem('omoti_sellers', JSON.stringify(sellers)); }
 
 function renderSellers(){
   const row = document.getElementById('sellerRow');
@@ -408,11 +257,13 @@ function renderFlavors(){
   const grid = document.getElementById('flavorGrid');
   grid.innerHTML = '';
   FLAVORS.forEach(flavor => {
+    const qty = cart[flavor] || 0;
     const btn = document.createElement('button');
-    btn.className = 'btn flavor' + (PREMIUM.has(flavor) ? ' gold' : '');
-    btn.textContent = flavor;
+    btn.className = 'btn flavor' + (PREMIUM.has(flavor) ? ' gold' : '') + (qty > 0 ? ' active' : '');
+    btn.innerHTML = `${escapeHtml(flavor)}${qty > 0 ? `<span class="flavor-qty">${qty}</span>` : ''}`;
     btn.onclick = () => {
       cart[flavor] = (cart[flavor] || 0) + 1;
+      renderFlavors();
       renderCart();
       updateSaveBtn();
     };
@@ -469,6 +320,7 @@ function renderCart(){
 
   if (!entries.length){
     cartWrap.innerHTML = '<div class="cart-empty">Выбери вкусы</div>';
+    renderFlavors();
     return;
   }
 
@@ -494,11 +346,13 @@ function renderCart(){
     minus.onclick = () => {
       cart[name] = (cart[name] || 0) - 1;
       if (cart[name] <= 0) delete cart[name];
+      renderFlavors();
       renderCart();
       updateSaveBtn();
     };
     plus.onclick = () => {
       cart[name] = (cart[name] || 0) + 1;
+      renderFlavors();
       renderCart();
       updateSaveBtn();
     };
@@ -546,9 +400,10 @@ async function saveCheck(){
   }));
   if (!items.length) return;
 
+  const isEdit = !!editCheckNum;
   const num = editCheckNum || nextCheckNum();
-  const date = editCheckNum ? editOriginalDate : getNowDate();
-  const time = editCheckNum ? editOriginalTime : getNowTime();
+  const date = isEdit ? editOriginalDate : getNowDate();
+  const time = isEdit ? editOriginalTime : getNowTime();
 
   const payload = {
     action: 'save_check',
@@ -560,6 +415,7 @@ async function saveCheck(){
     pay: selectedPay,
     selfPay: selectedPay === 'Себе оплачено' ? selectedSelfPay : '',
     includedInPayout: 'нет',
+    edited: isEdit,
     items
   };
 
@@ -592,12 +448,13 @@ function resetForm(){
   editOriginalDate = '';
   editOriginalTime = '';
   document.getElementById('selfPayWrap').style.display = 'none';
+  document.getElementById('saveBtn').textContent = 'Закрыть чек';
   renderSellers();
   renderPayments();
   renderSelfPayments();
+  renderFlavors();
   renderCart();
   updateSaveBtn();
-  document.getElementById('saveBtn').textContent = 'Закрыть чек';
 }
 
 function renderJournal(){
@@ -610,18 +467,19 @@ function renderJournal(){
   box.innerHTML = '';
   allChecks.forEach(check => {
     const sum = check.items.reduce((acc,i)=>acc + i.sum, 0);
+    const editedDot = check.edited ? '<span class="edited-dot" title="Чек редактировался"></span>' : '';
     const div = document.createElement('div');
     div.className = 'check';
     div.innerHTML = `
       <div class="check-head">
         <div>
-          <div class="check-num">№${escapeHtml(check.num)}</div>
-          <div class="check-meta">${escapeHtml(check.date)} · ${escapeHtml(check.time)}<br>${escapeHtml(check.seller)} · ${escapeHtml(check.point)}</div>
+          <div class="check-num-wrap">${editedDot}<div class="check-num">№${escapeHtml(check.num)}</div></div>
+          <div class="check-meta"><strong>${escapeHtml(check.date)}</strong> · <strong>${escapeHtml(check.time)}</strong><br>${escapeHtml(check.seller)} · ${escapeHtml(check.point)}</div>
         </div>
         <div class="badge"><strong>${escapeHtml(check.pay)}</strong>${check.selfPay ? ' · ' + escapeHtml(check.selfPay) : ''}</div>
       </div>
-      <div class="items">${check.items.map(i => `${escapeHtml(i.name)} - ${i.qty} шт - ${formatMoney(i.sum)}`).join('<br>')}</div>
-      <div class="total"><span>Итого</span><span>${formatMoney(sum)}</span></div>
+      <div class="items">${check.items.map(i => `${escapeHtml(i.name)} - <span class="item-qty">${i.qty}</span> шт - <strong>${formatMoney(i.sum)}</strong>`).join('<br>')}</div>
+      <div class="total"><strong>Итого</strong><strong>${formatMoney(sum)}</strong></div>
       <div class="check-actions" style="margin-top:10px;">
         <button class="edit-btn" type="button">Редактировать</button>
       </div>
@@ -642,12 +500,13 @@ function loadToForm(check){
   check.items.forEach(i => cart[i.name] = i.qty);
   document.getElementById('selfPayWrap').style.display = selectedPay === 'Себе оплачено' ? 'block' : 'none';
 
+  document.getElementById('saveBtn').textContent = 'Сохранить изменения';
   renderSellers();
   renderPayments();
   renderSelfPayments();
+  renderFlavors();
   renderCart();
   updateSaveBtn();
-  document.getElementById('saveBtn').textContent = 'Сохранить изменения';
   switchTab('cashbox');
   window.scrollTo({top:0, behavior:'smooth'});
 }
@@ -675,7 +534,6 @@ function renderSummary(){
   const cash = inWeek.filter(c => c.pay === 'Наличный').reduce((acc,c)=>acc + c.items.reduce((s,i)=>s+i.sum,0),0);
   const selfDebt = inWeek.filter(c => c.pay === 'Себе без оплаты').reduce((acc,c)=>acc + c.items.reduce((s,i)=>s+i.sum,0),0);
   const selfCash = inWeek.filter(c => c.pay === 'Себе оплачено' && c.selfPay === 'Наличный').reduce((acc,c)=>acc + c.items.reduce((s,i)=>s+i.sum,0),0);
-
   const payout = earnings - cash - selfDebt - selfCash;
   const bySeller = {};
 
@@ -709,7 +567,7 @@ function renderSummary(){
       <div class="summary-title">По именам</div>
       ${sellerHtml || '<div class="muted">Нет данных</div>'}
     </div>
-    <div class="note">Важно. Это базовый расчёт по данным из журнала. Логику вторничной выплаты с захватом понедельника можно докрутить следующим этапом.</div>
+    <div class="note">Красная точка в журнале означает, что чек уже редактировали.</div>
   `;
 }
 
@@ -725,33 +583,29 @@ async function loadChecks(){
     const map = new Map();
     dataRows.forEach(r => {
       if (!r || !r[0]) return;
-      const num = String(r[0]);
+      const num = String(r[0]).trim();
       if (!map.has(num)) {
         map.set(num, {
           num,
-          date: String(r[1] || ''),
-          time: String(r[2] || ''),
-          point: String(r[3] || ''),
-          seller: String(r[4] || ''),
-          pay: String(r[5] || ''),
-          selfPay: String(r[6] || ''),
+          date: String(r[1] || '').trim(),
+          time: String(r[2] || '').trim(),
+          point: String(r[3] || '').trim(),
+          seller: String(r[4] || '').trim(),
+          pay: String(r[5] || '').trim(),
+          selfPay: String(r[6] || '').trim(),
+          edited: String(r[13] || '').trim().toLowerCase() === 'да',
           items: []
         });
       }
       map.get(num).items.push({
-        name: String(r[7] || ''),
-        qty: Number(r[8] || 0),
-        price: Number(r[9] || 0),
-        sum: Number(r[10] || 0)
+        name: String(r[7] || '').trim(),
+        qty: Number(String(r[8] || '0').replace(',', '.')) || 0,
+        price: Number(String(r[9] || '0').replace(/\s/g,'').replace(',', '.')) || 0,
+        sum: Number(String(r[10] || '0').replace(/\s/g,'').replace(',', '.')) || 0
       });
     });
 
-    allChecks = [...map.values()].sort((a,b) => {
-      const an = Number(a.num) || 0;
-      const bn = Number(b.num) || 0;
-      return bn - an;
-    });
-
+    allChecks = [...map.values()].sort((a,b) => (Number(b.num) || 0) - (Number(a.num) || 0));
     renderJournal();
     renderSummary();
   }catch(err){
@@ -760,9 +614,7 @@ async function loadChecks(){
   }
 }
 
-function formatMoney(v){
-  return `${Number(v || 0).toLocaleString('ru-RU')} ₽`;
-}
+function formatMoney(v){ return `${Number(v || 0).toLocaleString('ru-RU')} ₽`; }
 function escapeHtml(str){
   return String(str)
     .replaceAll('&','&amp;')
