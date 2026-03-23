@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>OMOTI - Касса</title>
-  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=1ldS-w3IYxLu1SRaoTAf7iMmgGsPp3L6NYAIV_lpHvWFhKGbzqJpr6C8LJXmuyqcs7SH4P7d87_mg3wZm60VovVT9t_Xgx6nD3vbl5Ej-mapdukBQOAMET6Mb-7ZRpud3RNgTnHLEZ4jnyEEEnDSNkQ6FDYZ3ny33DyeQg75m2TagZrYR_7nHvRhvoow7eqBPIkeKN1DH3-Ety9TkRQk74tI8E9DFXQc2aJCL8iiwvr46IdSoi6X9MzWpwH2Rx6ULGW_PZx-Tm_IWbJdFhF_1Q" charset="UTF-8"></script><style>
+  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=ILWE7bU188BtoFRitfOPyJU2C1rXMoV3ksvWNLz4HuVgkHc3wGH7j4qlqj6jzbi4vdLL0-G70pvoj-VJLWHUot2BINkJxw-hDP7F66ELQs_TrRjbmTiX_ODyF3kS_uJCLF3LVqljb_MRfvq4pMNpT7f5PQl8sea9DksS6tvkKqsGrzjjZBC0M7OODX0W39srBe_Upi1Go3DuhvPzrSRmj2QTnKKDHeE_IMp6E74d0OKOsjdAAyYIQd8x4wUtbp6OpvOuGoCEUSo8e3N2dqnlkw" charset="UTF-8"></script><style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     :root{
       --bg:#f7f6f2;
@@ -15,8 +15,9 @@
       --accent:#1a1a1a;
       --accentText:#ffffff;
       --gold:#caa453;
-      --danger:#ce4a4a;
-      --ok:#eaf4ed;
+      --danger:#d9534f;
+      --ok:#eef6ef;
+      --soft:#f1ede5;
     }
     body{
       margin:0;
@@ -62,7 +63,7 @@
       min-height:48px; padding:8px 6px; font-size:12px; line-height:1.15; text-align:center; position:relative;
     }
     .flavor.gold{ border-color:var(--gold); }
-    .flavor.active{ background:#fff7e7; border-color:var(--gold); color:var(--text); }
+    .flavor.active{ background:#fff8eb; border-color:var(--gold); color:var(--text); font-weight:600; }
     .flavor-qty{
       position:absolute; right:6px; top:6px; min-width:18px; height:18px; padding:0 4px;
       border-radius:999px; background:var(--accent); color:#fff; font-size:11px; line-height:18px; font-weight:700;
@@ -90,23 +91,25 @@
     .main-action:disabled{ opacity:.45; cursor:not-allowed; }
     .muted{ color:var(--muted); }
     .check{
-      background:var(--card); border:1px solid var(--border); border-radius:16px; padding:12px; margin-bottom:10px;
+      background:var(--card); border:1px solid var(--border); border-radius:18px; padding:14px; margin-bottom:12px;
     }
     .check-head{
-      display:flex; justify-content:space-between; gap:10px; align-items:flex-start; margin-bottom:8px;
+      display:flex; justify-content:space-between; gap:10px; align-items:flex-start; margin-bottom:10px;
     }
-    .check-num-wrap{ display:flex; align-items:center; gap:7px; margin-bottom:4px; }
-    .check-num{ font-weight:800; font-size:26px; line-height:1; }
+    .check-num-wrap{ display:flex; align-items:center; gap:7px; margin-bottom:5px; }
+    .check-num{ font-weight:800; font-size:18px; line-height:1; color:var(--text); }
     .edited-dot{
-      width:10px; height:10px; border-radius:999px; background:var(--danger); flex:0 0 auto;
+      width:9px; height:9px; border-radius:999px; background:var(--danger); flex:0 0 auto;
     }
-    .check-meta{ color:var(--muted); font-size:12px; line-height:1.35; }
+    .check-meta{ color:var(--text); font-size:13px; line-height:1.38; }
+    .check-submeta{ color:var(--muted); font-size:12px; line-height:1.35; }
     .badge{
       display:inline-block; padding:7px 10px; border-radius:999px; border:1px solid var(--border);
-      font-size:13px; font-weight:800; white-space:nowrap;
+      font-size:13px; font-weight:800; white-space:nowrap; color:var(--text); background:#fff;
     }
-    .items{ margin:8px 0 10px; font-size:13px; line-height:1.5; }
-    .item-qty{ font-weight:700; }
+    .items{ margin:8px 0 12px; font-size:13px; line-height:1.55; color:var(--text); }
+    .item-qty{ font-weight:700; color:var(--text); }
+    .money{ font-weight:700; color:var(--text); }
     .check-actions{ display:flex; justify-content:flex-end; }
     .edit-btn{
       border:1px solid var(--border); background:#fff; border-radius:10px; padding:9px 12px; cursor:pointer; font-size:13px;
@@ -114,11 +117,15 @@
     .summary-box{
       background:var(--card); border:1px solid var(--border); border-radius:16px; padding:14px; margin-bottom:12px;
     }
-    .summary-title{ font-weight:700; margin-bottom:8px; }
+    .summary-title{ font-weight:700; margin-bottom:10px; font-size:15px; }
     .summary-row{
-      display:flex; justify-content:space-between; gap:12px; padding:7px 0; border-top:1px solid var(--border);
+      display:flex; justify-content:space-between; gap:12px; padding:8px 0; border-top:1px solid var(--border);
+      font-size:14px;
     }
     .summary-row:first-child{ border-top:0; }
+    .summary-soft{
+      background:var(--soft); border-radius:12px; padding:10px 12px; margin-bottom:12px; font-size:13px; line-height:1.4;
+    }
     .note{
       background:var(--ok); border:1px solid #d5e8db; padding:11px 12px; border-radius:12px; font-size:13px; line-height:1.35;
     }
@@ -170,7 +177,7 @@
 </div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwJUNri2OdJ5gHOQPeJVqQs3IkYTb-ypc26l4JqKAzVREKhkr4a7qqIXFknyPfV4w4CRw/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyIji64r8q217pHVTpW0bA_eNRP9SJUELxWiW6VARz8khIYPIeUv7D5UvSEq8gAJIPs3g/exec';
 const POINT_NAME = 'Новогодняя';
 
 const DEFAULT_SELLERS = ['Алексей', 'Галина', 'Кирилл'];
@@ -467,18 +474,19 @@ function renderJournal(){
   box.innerHTML = '';
   allChecks.forEach(check => {
     const sum = check.items.reduce((acc,i)=>acc + i.sum, 0);
-    const editedDot = check.edited ? '<span class="edited-dot" title="Чек редактировался"></span>' : '';
+    const editedDot = check.edited ? '<span class="edited-dot" title="Чек редактировали"></span>' : '';
     const div = document.createElement('div');
     div.className = 'check';
     div.innerHTML = `
       <div class="check-head">
         <div>
           <div class="check-num-wrap">${editedDot}<div class="check-num">№${escapeHtml(check.num)}</div></div>
-          <div class="check-meta"><strong>${escapeHtml(check.date)}</strong> · <strong>${escapeHtml(check.time)}</strong><br>${escapeHtml(check.seller)} · ${escapeHtml(check.point)}</div>
+          <div class="check-meta"><strong>${escapeHtml(check.date)}</strong> · <strong>${escapeHtml(check.time)}</strong></div>
+          <div class="check-submeta">${escapeHtml(check.seller)} · ${escapeHtml(check.point)}</div>
         </div>
-        <div class="badge"><strong>${escapeHtml(check.pay)}</strong>${check.selfPay ? ' · ' + escapeHtml(check.selfPay) : ''}</div>
+        <div class="badge">${escapeHtml(check.pay)}${check.selfPay ? ' · ' + escapeHtml(check.selfPay) : ''}</div>
       </div>
-      <div class="items">${check.items.map(i => `${escapeHtml(i.name)} - <span class="item-qty">${i.qty}</span> шт - <strong>${formatMoney(i.sum)}</strong>`).join('<br>')}</div>
+      <div class="items">${check.items.map(i => `${escapeHtml(i.name)} - <span class="item-qty">${i.qty}</span> шт - <span class="money">${formatMoney(i.sum)}</span>`).join('<br>')}</div>
       <div class="total"><strong>Итого</strong><strong>${formatMoney(sum)}</strong></div>
       <div class="check-actions" style="margin-top:10px;">
         <button class="edit-btn" type="button">Редактировать</button>
@@ -518,8 +526,7 @@ function renderSummary(){
     return;
   }
 
-  const now = new Date();
-  const monday = startOfWeek(now);
+  const monday = startOfWeek(new Date());
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
 
@@ -553,8 +560,11 @@ function renderSummary(){
     .join('');
 
   box.innerHTML = `
+    <div class="summary-soft">
+      Период сейчас считается по текущей неделе. Пн - Вс. Вторничную логику с захватом понедельника докрутим отдельно.
+    </div>
     <div class="summary-box">
-      <div class="summary-title">Текущая неделя</div>
+      <div class="summary-title">Итог недели</div>
       <div class="summary-row"><span>Период</span><span>${formatDate(monday)} - ${formatDate(sunday)}</span></div>
       <div class="summary-row"><span>Продано штук</span><span>${soldQty}</span></div>
       <div class="summary-row"><span>Начислено по 30 ₽</span><span>${formatMoney(earnings)}</span></div>
@@ -584,11 +594,13 @@ async function loadChecks(){
     dataRows.forEach(r => {
       if (!r || !r[0]) return;
       const num = String(r[0]).trim();
+      const rawDate = normalizeDateValue(r[1]);
+      const rawTime = normalizeTimeValue(r[2]);
       if (!map.has(num)) {
         map.set(num, {
           num,
-          date: String(r[1] || '').trim(),
-          time: String(r[2] || '').trim(),
+          date: rawDate,
+          time: rawTime,
           point: String(r[3] || '').trim(),
           seller: String(r[4] || '').trim(),
           pay: String(r[5] || '').trim(),
@@ -599,9 +611,9 @@ async function loadChecks(){
       }
       map.get(num).items.push({
         name: String(r[7] || '').trim(),
-        qty: Number(String(r[8] || '0').replace(',', '.')) || 0,
-        price: Number(String(r[9] || '0').replace(/\s/g,'').replace(',', '.')) || 0,
-        sum: Number(String(r[10] || '0').replace(/\s/g,'').replace(',', '.')) || 0
+        qty: toNum(r[8]),
+        price: toNum(r[9]),
+        sum: toNum(r[10])
       });
     });
 
@@ -614,6 +626,29 @@ async function loadChecks(){
   }
 }
 
+function toNum(value){
+  return Number(String(value || '0').replace(/\s/g,'').replace(',', '.')) || 0;
+}
+function normalizeDateValue(value){
+  const s = String(value || '').trim();
+  if (!s) return '';
+  if (/^\d{2}\.\d{2}\.\d{4}$/.test(s)) return s;
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {
+    const d = new Date(s);
+    if (!isNaN(d)) return formatDateLocal(d);
+  }
+  return s;
+}
+function normalizeTimeValue(value){
+  const s = String(value || '').trim();
+  if (!s) return '';
+  if (/^\d{2}:\d{2}$/.test(s)) return s;
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {
+    const d = new Date(s);
+    if (!isNaN(d)) return formatTimeLocal(d);
+  }
+  return s;
+}
 function formatMoney(v){ return `${Number(v || 0).toLocaleString('ru-RU')} ₽`; }
 function escapeHtml(str){
   return String(str)
@@ -634,6 +669,12 @@ function formatDate(d){
   const mm = String(d.getMonth()+1).padStart(2,'0');
   const yyyy = d.getFullYear();
   return `${dd}.${mm}.${yyyy}`;
+}
+function formatDateLocal(d){ return formatDate(d); }
+function formatTimeLocal(d){
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mm = String(d.getMinutes()).padStart(2,'0');
+  return `${hh}:${mm}`;
 }
 function startOfWeek(date){
   const d = new Date(date);
