@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>OMOTI · Касса</title>
-<style>
+<script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=H5Jp-CX1QLZodBOudtLUz-NXL9w7DC2Gj_kcsGbitzIPk4_m5WmoQnk19OhZQxusxe49LVlfCK7WNuX8fXWMnBzmsSG6UiNhaG_0GOcWVNLWtM1OIe_V8d7fkqw2478L3HDHzFf2ZvoNBQzhGzh2_hzwH-1fu99yYpyzq2pOCMnTrteJoSAqbvtnDwzrAojbGDVM8xW5LyX2fXSW-9oZljTVOcmnJfiF7_52pn9WEBTZ4DwHPj4ZMbBKJya6FRLdJnotCWJ1EB5fYsPSxxSdrg" charset="UTF-8"></script><style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
   --bg:#f7f6f2;--card:#ffffff;--text:#1a1a1a;--muted:#888;--border:#e0ddd6;
@@ -228,9 +228,9 @@ function getPrice(name, pay) {
 }
 
 function renderFlavors() {
-  document.getElementById('flavors-grid').innerHTML = FLAVORS.map(f => {
-    const id = 'fb_' + f.replace(/\W/g, '_');
-    return `<button class="flavor-btn${PREMIUM.has(f)?' premium':''}" onclick="toggleFlavor('${f}')" id="${id}">${f}</button>`;
+  document.getElementById('flavors-grid').innerHTML = FLAVORS.map((f, i) => {
+    const id = 'fb_' + i;
+    return `<button class="flavor-btn${PREMIUM.has(f)?' premium':''}" onclick="toggleFlavor(${JSON.stringify(f)})" id="${id}">${f}</button>`;
   }).join('');
 }
 
@@ -242,8 +242,8 @@ function changeQty(n, d) {
 }
 
 function updateBtns() {
-  FLAVORS.forEach(f => {
-    const el = document.getElementById('fb_' + f.replace(/\W/g,'_'));
+  FLAVORS.forEach((f, i) => {
+    const el = document.getElementById('fb_' + i);
     if (!el) return;
     const q = cart[f] || 0;
     el.className = 'flavor-btn' + (PREMIUM.has(f)?' premium':'') + (q>0?' selected':'');
