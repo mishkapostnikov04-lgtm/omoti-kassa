@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>OMOTI · Аникина</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--bg:#f7f6f2;--card:#fff;--text:#1a1a1a;--muted:#888;--border:#e0ddd6;--accent:#1a1a1a;--accent-fg:#fff;--gold:#d3aa4f;--radius:16px;--success-bg:#edf8ef;--success-border:#cfe5d3;--success-text:#234b2b;--danger:#d95555}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+.app{max-width:460px;margin:0 auto;min-height:100vh;padding-bottom:24px}
+.topbar{position:sticky;top:0;z-index:30;background:rgba(247,246,242,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:14px 14px 10px}
+.topbar-title{display:block;font-size:16px;font-weight:700;margin-bottom:10px}
+.tab-switcher{display:flex;gap:4px;background:#ebe7df;padding:4px;border-radius:16px}
+.tab-btn{flex:1;border:none;background:transparent;border-radius:12px;padding:8px 10px;font-size:13px;color:#666;cursor:pointer}
+.tab-btn.active{background:#fff;color:var(--text);font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.screen{display:none;padding:14px}.screen.active{display:block}
+.sec-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:2px 0 8px}
+.seller-row{display:flex;gap:8px;flex-wrap:wrap}
+.seller-btn,.pay-btn,.self-sub-btn,.modal-btn{border:1px solid var(--border);background:#fff;border-radius:12px;padding:11px 12px;font-size:13px;color:var(--text);cursor:pointer}
+.seller-btn{flex:1 1 calc(33.333% - 6px);min-width:110px}.seller-btn.active,.pay-btn.active,.self-sub-btn.active{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.add-btn{font-weight:700}
+.flavors-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.flavor-btn{position:relative;border:1px solid var(--border);background:#fff;color:var(--text);border-radius:12px;min-height:48px;padding:8px 6px;font-size:12px;line-height:1.15;cursor:pointer;text-align:center}
+.flavor-btn.gold{border-color:var(--gold)}.flavor-btn.active{background:#fff8eb;border-color:var(--gold);font-weight:600}
+.qty-badge{position:absolute;right:6px;top:6px;min-width:18px;height:18px;padding:0 4px;border-radius:999px;background:var(--accent);color:#fff;font-size:11px;line-height:18px;font-weight:700}
+.pay-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.self-clarify{display:none;gap:8px;align-items:center;margin-top:10px}.self-clarify.visible{display:flex}
+.cart-box{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:14px}
+.cart-empty{text-align:center;color:var(--muted);font-size:14px;padding:8px 0}
+.cart-item{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--border)}
+.cart-item:first-child{border-top:none}.ci-name{font-size:13px}.ci-ctrl{display:flex;align-items:center;gap:10px}
+.c-btn{width:28px;height:28px;border-radius:999px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:16px}
+.ci-qty{font-size:13px;min-width:12px;text-align:center}.ci-price{font-size:13px;font-weight:700;min-width:52px;text-align:right}
+.cart-total{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);margin-top:6px;padding-top:10px;font-size:15px;font-weight:700}
+.close-btn{width:100%;border:none;border-radius:14px;padding:15px 16px;background:var(--accent);color:#fff;font-size:18px;font-weight:700;cursor:pointer}
+.close-btn:disabled{opacity:.45;cursor:not-allowed}.close-btn.loading{opacity:.7}
+.spinner{font-size:13px;color:var(--muted);text-align:center;padding:28px 0}
+.journal-item{border:1px solid var(--border);border-radius:var(--radius);padding:11px 13px;margin-bottom:8px;background:var(--card)}
+.ji-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:4px}
+.ji-who{font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px}
+.ji-meta{font-size:11px;color:var(--muted)}.ji-pay{font-size:12px;font-weight:700;margin-bottom:6px;color:var(--text)}
+.ji-flavors{font-size:12px;color:var(--text);line-height:1.55}.ji-flavor-row{display:flex;justify-content:space-between;gap:10px;padding:1px 0}.ji-flavor-name{color:var(--muted);flex:1}.ji-flavor-sum{font-weight:700;white-space:nowrap}
+.ji-foot{display:flex;justify-content:space-between;align-items:center;margin-top:8px}.ji-sum{font-size:14px;font-weight:700;color:var(--text)}.ji-edit{font-size:12px;color:#1a73e8;cursor:pointer;border:none;background:none;font-family:inherit;padding:0}
+.edited-dot{display:inline-block;width:8px;height:8px;border-radius:999px;background:var(--danger);vertical-align:middle}
+.period-row{display:flex;gap:5px;margin-bottom:14px}.period-btn{padding:7px 13px;border:1px solid var(--border);border-radius:18px;background:var(--bg);font-size:12px;cursor:pointer;font-family:inherit;color:var(--muted)}.period-btn.active{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.metrics-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}.metric-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px}.m-label{font-size:11px;color:var(--muted);margin-bottom:3px}.m-val{font-size:22px;font-weight:700;color:var(--text)}.m-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.payout-card{border:1px solid var(--success-border);border-radius:var(--radius);padding:13px;margin-bottom:14px;background:var(--success-bg)}.payout-title{font-size:11px;color:var(--success-text);margin-bottom:3px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}.payout-period{font-size:11px;color:var(--success-text);margin-bottom:10px;opacity:.75}.payout-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;color:var(--success-text);gap:8px}.payout-row span:last-child{text-align:right;flex-shrink:0}.payout-row.total{font-weight:700;font-size:16px;border-top:1px solid var(--success-border);margin-top:7px;padding-top:9px}
+.staff-stat-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)}.ss-name{font-size:13px;font-weight:600;flex:1}.ss-qty{font-size:13px;color:var(--muted);min-width:54px;text-align:right}.ss-payout{font-size:13px;font-weight:700;min-width:80px;text-align:right}
+.flavor-stat-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)}.fs-name{font-size:13px;flex:1;color:var(--text)}.fs-bar-wrap{flex:1.1;height:6px;background:#ece8df;border-radius:4px;overflow:hidden}.fs-bar{height:100%;background:var(--accent);border-radius:4px}.fs-qty{font-size:13px;font-weight:700;min-width:24px;text-align:right;color:var(--text)}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.18);z-index:40}.modal{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:41;width:min(92vw,360px);background:#fff;border:1px solid var(--border);border-radius:18px;padding:16px}.modal-title{font-size:15px;font-weight:700;margin-bottom:10px}.modal-input{width:100%;border:1px solid var(--border);border-radius:12px;padding:12px 13px;font-size:14px;outline:none;margin-bottom:10px}.modal-btn{width:100%;font-weight:700}
+.toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:#1f1f1f;color:#fff;padding:11px 14px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:50}.toast.show{opacity:1}
+.comment-input{width:100%;border:1px solid var(--border);background:#fff;border-radius:12px;padding:11px 13px;font-size:13px;font-family:inherit;color:var(--text);outline:none;resize:none;margin-top:0}.comment-input:focus{border-color:#aaa}
+.ji-comment{font-size:12px;color:var(--muted);margin-top:5px;font-style:italic;line-height:1.4}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="topbar"><span class="topbar-title">OMOTI · Аникина</span><div class="tab-switcher"><button class="tab-btn active" onclick="switchTab('kassa')">Касса</button><button class="tab-btn" onclick="switchTab('journal')">Журнал</button><button class="tab-btn" onclick="switchTab('stats')">Итоги</button></div></div>
+
+<div class="screen active" id="screen-kassa">
+<div class="sec-label">Имя</div><div class="seller-row" id="seller-row"></div>
+<div class="sec-label" style="margin-top:16px">Вкус</div><div class="flavors-grid" id="flavors-grid"></div>
+<div class="sec-label" style="margin-top:16px">Оплата</div><div class="pay-grid" id="pay-grid"></div>
+<div class="self-clarify" id="self-clarify"><span style="font-size:11px;color:var(--muted);white-space:nowrap">Как оплатили:</span><button class="self-sub-btn active" onclick="setSelfPay(this,'Наличные')">Наличные</button><button class="self-sub-btn" onclick="setSelfPay(this,'Перевод')">Перевод</button></div>
+<div class="sec-label" style="margin-top:16px">Чек</div>
+<div class="cart-box"><div class="cart-empty" id="cart-empty">Выбери вкусы</div><div id="cart-items"></div><div class="cart-total" id="cart-total" style="display:none"><span>Итого</span><span id="total-sum"></span></div></div>
+<div class="sec-label" style="margin-top:12px">Комментарий <span style="font-weight:400;color:var(--muted)">(необязательно)</span></div>
+<textarea class="comment-input" id="comment-input" rows="2" placeholder="Например: 500 ₽ наличными + 300 ₽ переводом"></textarea>
+<button class="close-btn" id="close-btn" onclick="closeCheck()" disabled style="margin-top:14px">Закрыть чек</button>
+</div>
+
+<div class="screen" id="screen-journal"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span class="sec-label" style="margin:0">История чеков</span><button onclick="refreshData()" style="font-size:12px;color:#1a73e8;background:none;border:none;cursor:pointer;font-family:inherit;padding:4px 0">↻ Обновить</button></div><div class="spinner" id="journal-spinner">Загружаю...</div><div id="journal-list"></div></div>
+
+<div class="screen" id="screen-stats">
+<div class="period-row"><button class="period-btn active" onclick="setPeriod(this,'week')">Неделя</button><button class="period-btn" onclick="setPeriod(this,'month')">Месяц</button><button class="period-btn" onclick="setPeriod(this,'all')">Всё время</button></div>
+<div class="spinner" id="stats-spinner">Загружаю...</div>
+<div id="stats-content" style="display:none">
+<div class="metrics-grid"><div class="metric-card"><div class="m-label">Продано, шт</div><div class="m-val" id="s-qty">—</div><div class="m-sub" id="s-sub"></div></div><div class="metric-card"><div class="m-label">Выручка</div><div class="m-val" id="s-earn">—</div><div class="m-sub">все продажи</div></div><div class="metric-card"><div class="m-label">Наличные в кассе</div><div class="m-val" id="s-cash">—</div><div class="m-sub">за период</div></div><div class="metric-card"><div class="m-label">Яндекс, шт</div><div class="m-val" id="s-ya">—</div><div class="m-sub">засчитаны</div></div></div>
+<div class="sec-label" style="margin-top:14px">По сотрудникам</div><div id="staff-stat-list"></div>
+<div class="sec-label" style="margin-top:14px">Топ вкусов</div><div id="flavor-stat-list"></div>
+</div></div>
+</div>
+
+<div class="overlay" id="overlay" onclick="hideModal()"></div>
+<div class="modal" id="modal"><div class="modal-title">Добавить имя</div><input class="modal-input" id="modal-input" placeholder="Введите имя"><button class="modal-btn" onclick="modalConfirm()">Добавить</button></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbznt8e7FypO0RAxgSKz7zW67ExgT1hMpZvRX5uJIcj0c_GtmJhs4ETi4S1Si907DUIk/exec';
+const FLAVORS = ['Арбуз-Дыня','Бабл Гам','Банан-Нутелла','Вишня-Тонка','Дубайский шоколад','Киви-Алоэ','Клубника','Кокос-Маракуйя','Кокосовый пломбир','Кофе-Карамель','Криспи','Малина-Ваниль','Матча-Манго','Мохито','Печенье','Сливочный лимон','Смородина','Сникерс','Трюфель','Твикс','Шоколад'].sort((a,b)=>a.localeCompare(b,'ru'));
+const PREMIUM = new Set(['Дубайский шоколад','Криспи']);
+const PAY_TYPES = ['Безналичный','Наличный','Перевод','Яндекс','Себе оплачено','Себе без оплаты'];
+let sellers = loadSellers(), cart = {}, seller = '', payType = '', selfPayType = 'Наличные', currentPeriod = 'week', allChecks = [], editNum = null, editDate = '', editTime = '', comment = '';
+
+function loadSellers(){try{const x=JSON.parse(localStorage.getItem('omoti_sellers_anikina')||'null'); return Array.isArray(x)&&x.length?x:['Анна','Евгений','Людмила','Марина'];}catch(e){return ['Анна','Евгений','Людмила','Марина'];}}
+function saveSellers(){localStorage.setItem('omoti_sellers_anikina', JSON.stringify(sellers));}
+function getPrice(name,pay){const p=PREMIUM.has(name); if(pay==='Яндекс') return p?250:200; if(pay==='Себе оплачено'||pay==='Себе без оплаты') return p?110:100; return p?200:180;}
+function escHtml(s){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;");}
+function escJs(s){return String(s).replaceAll('\\','\\\\').replaceAll("'","\\'");}
+function money(n){return Number(n||0).toLocaleString('ru-RU')+' ₽';}
+
+function renderSellers(){document.getElementById('seller-row').innerHTML=sellers.map(name=>`<button class="seller-btn ${name===seller?'active':''}" onclick="setSeller(this,'${escJs(name)}')">${escHtml(name)}</button>`).join('')+`<button class="seller-btn add-btn" onclick="showModal()">+</button>`;}
+function renderPayBtns(){document.getElementById('pay-grid').innerHTML=PAY_TYPES.map(type=>`<button class="pay-btn ${type===payType?'active':''}" onclick="setPay(this,'${escJs(type)}')">${escHtml(type)}</button>`).join('');}
+function renderFlavors(){var isEdit=!!editNum; document.getElementById('flavors-grid').innerHTML=FLAVORS.map(f=>{const q=cart[f]||0; var disabled=isEdit?'disabled style="opacity:0.5;cursor:not-allowed"':''; return `<button class="flavor-btn ${PREMIUM.has(f)?'gold':''} ${q>0?'active':''}" onclick="if(!editNum)changeQty('${escJs(f)}',1)" ${disabled}>${escHtml(f)}${q?`<span class="qty-badge">${q}</span>`:''}</button>`;}).join(''); if(isEdit){var hint=document.getElementById('flavor-edit-hint'); if(!hint){hint=document.createElement('div'); hint.id='flavor-edit-hint'; hint.style='font-size:11px;color:var(--muted);margin-bottom:8px'; hint.textContent='При редактировании используй + / − в чеке'; document.getElementById('flavors-grid').before(hint);}}else{var h=document.getElementById('flavor-edit-hint'); if(h)h.remove();}}
+function changeQty(name,delta){cart[name]=(cart[name]||0)+delta; if(cart[name]<=0) delete cart[name]; updateCart();}
+function updateCart(){const items=Object.entries(cart).filter(([k,v])=>v>0), empty=document.getElementById('cart-empty'), itemsEl=document.getElementById('cart-items'), totalEl=document.getElementById('cart-total'), btn=document.getElementById('close-btn'); renderFlavors(); if(!items.length){empty.style.display='block';itemsEl.innerHTML='';totalEl.style.display='none';btn.disabled=true;return;} empty.style.display='none'; btn.disabled=!(seller&&payType&&(payType!=='Себе оплачено'||selfPayType)); let total=0; itemsEl.innerHTML=items.map(([n,q])=>{const p=getPrice(n,payType); total+=p*q; return `<div class="cart-item"><span class="ci-name">${escHtml(n)}</span><div class="ci-ctrl"><button class="c-btn" onclick="changeQty('${escJs(n)}',-1)">−</button><span class="ci-qty">${q}</span><button class="c-btn" onclick="changeQty('${escJs(n)}',1)">+</button><span class="ci-price">${money(p*q)}</span></div></div>`;}).join(''); totalEl.style.display='flex'; document.getElementById('total-sum').textContent=money(total);}
+function setSeller(el,name){seller=name; document.querySelectorAll('.seller-btn').forEach(b=>b.classList.remove('active')); el.classList.add('active'); updateCart();}
+function setPay(el,type){payType=type; document.querySelectorAll('.pay-btn').forEach(b=>b.classList.remove('active')); el.classList.add('active'); document.getElementById('self-clarify').className='self-clarify'+(type==='Себе оплачено'?' visible':''); updateCart();}
+function setSelfPay(el,type){selfPayType=type; document.querySelectorAll('.self-sub-btn').forEach(b=>b.classList.remove('active')); el.classList.add('active'); updateCart();}
+let dataLoaded = false;
+function switchTab(tab){document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['kassa','journal','stats'][i]===tab)); document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('screen-'+tab).classList.add('active'); if(tab==='journal'||tab==='stats'){if(!dataLoaded){dataLoaded=true; loadRemoteData().then(function(){if(tab==='stats') loadStats(currentPeriod);});}else{if(tab==='journal') renderJournal(); if(tab==='stats') loadStats(currentPeriod);}}}
+function nextCheckNum(){return allChecks.length?Math.max(...allChecks.map(x=>Number(x.num)||0))+1:1;}
+function nowDate(){const n=new Date(); return String(n.getDate()).padStart(2,'0')+'.'+String(n.getMonth()+1).padStart(2,'0')+'.'+n.getFullYear();}
+function nowTime(){const n=new Date(); return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
+
+function closeCheck(){var items=Object.entries(cart).filter(function(x){return x[1]>0;}); if(!items.length) return; var isEdit=!!editNum, num=isEdit?editNum:nextCheckNum(), date=isEdit?editDate:nowDate(), time=isEdit?editTime:nowTime(); var itemsData=items.map(function(x){return {name:x[0],qty:x[1],price:getPrice(x[0],payType)};}); comment=document.getElementById('comment-input').value.trim(); var payload={action:'save_check',num:num,date:date,time:time,point:'Аникина',seller:seller,pay:payType,selfPay:payType==='Себе оплачено'?selfPayType:'',edited:isEdit,comment:comment,items:itemsData};
+  var btn=document.getElementById('close-btn'); btn.textContent='Сохраняю...'; btn.classList.add('loading'); btn.disabled=true;
+  var isSelf=payType==='Себе оплачено'||payType==='Себе без оплаты';
+  var checkSum=itemsData.reduce(function(a,x){return a+x.price*x.qty;},0);
+  var checkEarn=isSelf?0:itemsData.reduce(function(a,x){return a+x.qty*30;},0);
+  fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)}).then(function(res){return res.json();}).then(function(json){
+    if(!json.ok) throw new Error(json.error||'Ошибка сохранения');
+    if(isEdit){allChecks=allChecks.filter(function(x){return String(x.num)!==String(num);});}
+    var byFlavor={};
+    itemsData.forEach(function(x){if(!byFlavor[x.name])byFlavor[x.name]={name:x.name,qty:0,sum:0}; byFlavor[x.name].qty+=x.qty; byFlavor[x.name].sum+=x.price*x.qty;});
+    var newCheck={num:num,date:date,time:time,point:'Аникина',seller:seller,pay:payType,selfPay:payType==='Себе оплачено'?selfPayType:'',edited:isEdit,comment:comment,items:Object.values(byFlavor),sum:checkSum,earn:checkEarn};
+    allChecks.unshift(newCheck);
+    allChecks.sort(function(a,b){return (Number(b.num)||0)-(Number(a.num)||0);});
+    dataLoaded=true;
+    resetForm();
+    renderJournal();
+    loadStats(currentPeriod);
+    switchTab('kassa');
+    showToast(isEdit?'Чек №'+num+' обновлён':'Чек №'+num+' сохранён');
+  }).catch(function(e){showToast('Ошибка сохранения: '+e.message); btn.textContent=isEdit?'Сохранить изменения':'Закрыть чек'; btn.classList.remove('loading'); updateCart();});}
+function resetForm(){cart={}; payType=''; selfPayType='Наличные'; seller=''; editNum=null; editDate=''; editTime=''; comment=''; document.getElementById('comment-input').value=''; document.getElementById('close-btn').textContent='Закрыть чек'; document.getElementById('close-btn').classList.remove('loading'); document.getElementById('self-clarify').className='self-clarify'; renderSellers(); renderPayBtns(); document.querySelectorAll('.self-sub-btn').forEach((b,i)=>b.classList.toggle('active', i===0)); updateCart();}
+
+function renderJournal(){const el=document.getElementById('journal-list'); document.getElementById('journal-spinner').style.display=allChecks.length?'none':'block'; if(!allChecks.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);text-align:center;padding:28px 0">Чеков пока нет</div>'; return;} el.innerHTML=allChecks.map(j=>{const payLabel=j.selfPay?`${escHtml(j.pay)} · ${escHtml(j.selfPay)}`:escHtml(j.pay); const dot=j.edited?'<span class="edited-dot"></span>':''; const rows=j.items.map(x=>`<div class="ji-flavor-row"><span class="ji-flavor-name">${escHtml(x.name)} · ${x.qty} шт</span><span class="ji-flavor-sum">${money(x.sum)}</span></div>`).join(''); const commentHtml=j.comment?`<div class="ji-comment">${escHtml(j.comment)}</div>`:''; return `<div class="journal-item"><div class="ji-head"><span class="ji-who">${dot} №${escHtml(j.num)} · ${escHtml(j.seller)}</span><span class="ji-meta">${escHtml(j.date)} ${escHtml(j.time)}</span></div><div class="ji-pay">${payLabel}</div><div class="ji-flavors">${rows}</div>${commentHtml}<div class="ji-foot"><span class="ji-sum">${money(j.sum)}</span><button class="ji-edit" onclick="editCheck('${escJs(j.num)}')">Редактировать</button></div></div>`;}).join('');}
+function editCheck(num){const j=allChecks.find(x=>String(x.num)===String(num)); if(!j) return; const fresh={}; j.items.forEach(it=>fresh[it.name]=(fresh[it.name]||0)+Number(it.qty||0)); cart=fresh; payType=j.pay; seller=j.seller; selfPayType=j.selfPay||'Наличные'; editNum=j.num; editDate=j.date; editTime=j.time; comment=j.comment||''; document.getElementById('comment-input').value=comment; renderSellers(); renderPayBtns(); document.getElementById('self-clarify').className='self-clarify'+(payType==='Себе оплачено'?' visible':''); document.querySelectorAll('.self-sub-btn').forEach(b=>b.classList.toggle('active', b.textContent===selfPayType)); document.getElementById('close-btn').textContent='Сохранить изменения'; updateCart(); switchTab('kassa'); showToast('Чек №'+j.num+' открыт для правки');}
+function setPeriod(btn,period){document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); loadStats(period);}
+function loadStats(period){currentPeriod=period; document.getElementById('stats-spinner').style.display='block'; document.getElementById('stats-content').style.display='none'; const range=getRange(period), from=range.from,to=range.to;
+  const inRange=allChecks.filter(j=>{const d=parseDate(j.date); if(!d) return false; if(!from&&!to) return true; return d>=from&&d<=to;});
+  const sold=inRange.filter(j=>j.pay!=='Себе оплачено'&&j.pay!=='Себе без оплаты');
+  const cash=inRange.filter(j=>j.pay==='Наличный');
+  const ya=sold.filter(j=>j.pay==='Яндекс');
+  const soldQty=sold.reduce((a,j)=>a+j.items.reduce((s,x)=>s+x.qty,0),0);
+  const revenue=sold.reduce((a,j)=>a+j.sum,0);
+  const cashSum=cash.reduce((a,j)=>a+j.sum,0);
+  const yaQty=ya.reduce((a,j)=>a+j.items.reduce((s,x)=>s+x.qty,0),0);
+  document.getElementById('s-qty').textContent=soldQty;
+  document.getElementById('s-earn').textContent=money(revenue);
+  document.getElementById('s-cash').textContent=money(cashSum);
+  document.getElementById('s-ya').textContent=yaQty;
+  document.getElementById('s-sub').textContent=range.label;
+  // Топ вкусов
+  const flavorMap={}; sold.forEach(j=>j.items.forEach(x=>flavorMap[x.name]=(flavorMap[x.name]||0)+x.qty)); const flavors=Object.entries(flavorMap).sort((a,b)=>b[1]-a[1]).slice(0,8), max=flavors.length?flavors[0][1]:1; document.getElementById('flavor-stat-list').innerHTML=flavors.length?flavors.map(([name,qty])=>`<div class="flavor-stat-row"><div class="fs-name">${escHtml(name)}</div><div class="fs-bar-wrap"><div class="fs-bar" style="width:${Math.max(6,qty/max*100)}%"></div></div><div class="fs-qty">${qty}</div></div>`).join(''):`<div style="font-size:13px;color:var(--muted);text-align:center;padding:16px 0">Нет данных</div>`;
+  // По сотрудникам — только продано шт
+  const staffMap={};
+  inRange.forEach(function(j){
+    const s=j.seller||'—';
+    if(!staffMap[s]) staffMap[s]={qty:0};
+    const isSelf=j.pay==='Себе оплачено'||j.pay==='Себе без оплаты';
+    if(!isSelf) staffMap[s].qty+=j.items.reduce((a,x)=>a+x.qty,0);
+  });
+  const staffRows=Object.entries(staffMap).sort((a,b)=>b[1].qty-a[1].qty);
+  document.getElementById('staff-stat-list').innerHTML=staffRows.length?
+    `<div class="staff-stat-row" style="border-bottom:2px solid var(--border)"><span class="ss-name" style="color:var(--muted);font-weight:400;font-size:11px">Имя</span><span class="ss-qty" style="color:var(--muted);font-weight:400;font-size:11px;text-align:right">Продано</span></div>`+
+    staffRows.map(([name,s])=>`<div class="staff-stat-row"><span class="ss-name">${escHtml(name)}</span><span class="ss-qty">${s.qty} шт</span></div>`).join(''):
+    `<div style="font-size:13px;color:var(--muted);text-align:center;padding:16px 0">Нет данных</div>`;
+  document.getElementById('stats-spinner').style.display='none'; document.getElementById('stats-content').style.display='block';}
+function getRange(period){const now=new Date(), ws=getWeekStart(now), we=new Date(ws); we.setDate(we.getDate()+6); we.setHours(23,59,59,999); const ms=new Date(now.getFullYear(),now.getMonth(),1), me=new Date(now.getFullYear(),now.getMonth()+1,0); me.setHours(23,59,59,999); if(period==='week') return {from:ws,to:we,label:`${formatDate(ws)} - ${formatDate(we)}`}; if(period==='month') return {from:ms,to:me,label:ms.toLocaleDateString('ru-RU',{month:'long',year:'numeric'})}; return {from:null,to:null,label:'Всё время'};}
+function getWeekStart(d){const x=new Date(d); const day=x.getDay()||7; x.setHours(0,0,0,0); x.setDate(x.getDate()-day+1); return x;}
+function parseDate(s){const p=String(s).split('.'); if(p.length!==3) return null; return new Date(Number(p[2]),Number(p[1])-1,Number(p[0]),0,0,0,0);}
+function formatDate(d){return String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+d.getFullYear();}
+
+function ensureHeader(){return fetch(API).then(function(r){return r.json();}).then(function(json){var rows=Array.isArray(json.rows)?json.rows:[]; if(!rows.length||String(rows[0][0]).trim()!=='№'){return fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'init_header'})});}}).catch(function(){});}
+
+function parseChecksFromRows(rows){
+  var dataRows=rows.length&&String(rows[0][0]).trim()==='№'?rows.slice(1):rows;
+  // берём только последние 100 уникальных чеков
+  var map=new Map();
+  dataRows.forEach(function(r){if(!r||!r[0]) return; var num=String(r[0]).trim(); if(!map.has(num)){map.set(num,{num:num,date:normalizeDate(r[1]),time:normalizeTime(r[2]),point:String(r[3]||'').trim(),seller:String(r[4]||'').trim(),pay:String(r[5]||'').trim(),selfPay:String(r[6]||'').trim(),edited:String(r[13]||'').trim().toLowerCase()==='да',comment:String(r[14]||'').trim(),items:[]});} map.get(num).items.push({name:String(r[7]||'').trim(),qty:toNum(r[8]),price:toNum(r[9]),sum:toNum(r[10])});});
+  var all=Array.from(map.values()).map(function(x){var byFlavor={}; x.items.forEach(function(it){if(!byFlavor[it.name]) byFlavor[it.name]={name:it.name,qty:0,sum:0}; byFlavor[it.name].qty+=Number(it.qty||0); byFlavor[it.name].sum+=Number(it.sum||0);}); x.items=Object.values(byFlavor); x.sum=x.items.reduce(function(a,it){return a+it.sum;},0); return x;}).sort(function(a,b){return (Number(b.num)||0)-(Number(a.num)||0);});
+  return all.slice(0,100);
+}
+
+function saveCacheChecks(checks){try{localStorage.setItem('omoti_checks_cache_anikina',JSON.stringify(checks)); localStorage.setItem('omoti_checks_ts_anikina',Date.now());}catch(e){}}
+function loadCacheChecks(){try{var d=localStorage.getItem('omoti_checks_cache_anikina'); return d?JSON.parse(d):null;}catch(e){return null;}}
+
+function fetchWithTimeout(url,opts,ms){
+  var controller=typeof AbortController!=='undefined'?new AbortController():null;
+  var timer=null;
+  var p=fetch(url,Object.assign({},opts,controller?{signal:controller.signal}:{}));
+  var timeout=new Promise(function(_,rej){timer=setTimeout(function(){if(controller)controller.abort(); rej(new Error('timeout'));},ms);});
+  return Promise.race([p,timeout]).then(function(r){clearTimeout(timer);return r;}).catch(function(e){clearTimeout(timer);throw e;});
+}
+
+function loadRemoteData(silent){
+  if(!silent){document.getElementById('journal-spinner').style.display='block'; document.getElementById('stats-spinner').style.display='block';}
+  // Сразу показываем кэш если есть
+  var cached=loadCacheChecks();
+  if(cached&&cached.length){allChecks=cached; renderJournal(); loadStats(currentPeriod); document.getElementById('journal-spinner').style.display='none';}
+  // Грузим свежие данные с таймаутом 10 сек
+  return fetchWithTimeout(API+'?limit=100',{cache:'no-store'},10000)
+    .then(function(res){return res.json();})
+    .then(function(json){
+      var rows=Array.isArray(json.rows)?json.rows:[];
+      allChecks=parseChecksFromRows(rows);
+      saveCacheChecks(allChecks);
+      renderJournal();
+      loadStats(currentPeriod);
+      document.getElementById('journal-spinner').style.display='none';
+      document.getElementById('stats-spinner').style.display='none';
+    })
+    .catch(function(e){
+      document.getElementById('journal-spinner').style.display='none';
+      document.getElementById('stats-spinner').style.display='none';
+      if(!cached||!cached.length){
+        document.getElementById('journal-list').innerHTML='<div style="font-size:13px;color:var(--muted);text-align:center;padding:28px 0">Нет связи. <button onclick="refreshData()" style="color:#1a73e8;background:none;border:none;font-size:13px;cursor:pointer;font-family:inherit">Повторить</button></div>';
+      } else {
+        showToast('Нет связи — показаны кэшированные данные');
+      }
+    });
+}
+
+function refreshData(){dataLoaded=false; switchTab('journal');}
+function normalizeDate(v){const s=String(v||'').trim(); if(/^\d{2}\.\d{2}\.\d{4}$/.test(s)) return s; if(/^\d{4}-\d{2}-\d{2}T/.test(s)){const d=new Date(s); if(!isNaN(d)) return formatDate(d);} return s;}
+function normalizeTime(v){const s=String(v||'').trim(); if(/^\d{2}:\d{2}$/.test(s)) return s; if(/^\d{4}-\d{2}-\d{2}T/.test(s)){const d=new Date(s); if(!isNaN(d)) return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');} return s;}
+function toNum(v){return Number(String(v||'0').replace(/\s/g,'').replace(',', '.'))||0;}
+function showModal(){document.getElementById('modal-input').value=''; document.getElementById('overlay').style.display='block'; document.getElementById('modal').style.display='block'; setTimeout(()=>document.getElementById('modal-input').focus(),50);}
+function hideModal(){document.getElementById('overlay').style.display='none'; document.getElementById('modal').style.display='none';}
+function modalConfirm(){const v=document.getElementById('modal-input').value.trim(); if(!v) return; if(!sellers.includes(v)){sellers.push(v); sellers.sort((a,b)=>a.localeCompare(b,'ru')); saveSellers();} seller=v; renderSellers(); updateCart(); hideModal();}
+function showToast(text){const el=document.getElementById('toast'); el.textContent=text; el.classList.add('show'); clearTimeout(showToast.t); showToast.t=setTimeout(()=>el.classList.remove('show'),1800);}
+resetForm();
+</script>
+</body>
+</html>
