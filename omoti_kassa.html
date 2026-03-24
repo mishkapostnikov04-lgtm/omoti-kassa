@@ -89,14 +89,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbyxuRjHj6VoPcXk95pARvGpM8FyiE277zah2W3XQDqM4V53wjjcJWyNv2FFwHyVm5GPLw/exec';
-const FLAVORS = ['Арбуз-Дыня','Бабл Гам','Банан-Нутелла','Вишня-Тонка','Дубайский шоколад','Киви-Алоэ','Клубника','Кокос-Маракуйя','Кокосовый пломбир','Кофе-Карамель','Криспи','Малина-Ваниль','Матча-Манго','Мохито','Печенье','Сливочный лимон','Смородина','Сникерс','Трюфель','Твикс','Шоколад'].sort((a,b)=>a.localeCompare(b,'ru'));
+const FLAVORS = ['Арбуз-Дыня','Бабл Гам','Банан-Нутелла','Вишня-Тонка','Дубайский шоколад','Киви-Алоэ','Клубника','Кокос-Маракуйя','Кокосовый пломбир','Кофе-Карамель','Криспи','Малина-Ваниль','Матча-Манго','Мохито','Мункейки (набор)','Печенье','Сливочный лимон','Смородина','Сникерс','Трюфель','Твикс','Шоколад'].sort((a,b)=>a.localeCompare(b,'ru'));
 const PREMIUM = new Set(['Дубайский шоколад','Криспи']);
 const PAY_TYPES = ['Безналичный','Наличный','Перевод','Яндекс','Себе оплачено','Себе без оплаты'];
 let sellers = loadSellers(), cart = {}, seller = '', payType = '', selfPayType = 'Наличные', currentPeriod = 'week', allChecks = [], editNum = null, editDate = '', editTime = '', comment = '';
 
 function loadSellers(){try{const x=JSON.parse(localStorage.getItem('omoti_sellers')||'null'); return Array.isArray(x)&&x.length?x:['Алексей','Галина','Кирилл'];}catch(e){return ['Алексей','Галина','Кирилл'];}}
 function saveSellers(){localStorage.setItem('omoti_sellers', JSON.stringify(sellers));}
-function getPrice(name,pay){const p=PREMIUM.has(name); if(pay==='Яндекс') return p?250:200; if(pay==='Себе оплачено'||pay==='Себе без оплаты') return p?110:100; return p?200:180;}
+function getPrice(name,pay){if(name==='Мункейки (набор)'){if(pay==='Яндекс') return 750; if(pay==='Себе оплачено'||pay==='Себе без оплаты') return 360; return 600;} const p=PREMIUM.has(name); if(pay==='Яндекс') return p?250:200; if(pay==='Себе оплачено'||pay==='Себе без оплаты') return p?110:100; return p?200:180;}
 function escHtml(s){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;");}
 function escJs(s){return String(s).replaceAll('\\','\\\\').replaceAll("'","\\'");}
 function money(n){return Number(n||0).toLocaleString('ru-RU')+' ₽';}
