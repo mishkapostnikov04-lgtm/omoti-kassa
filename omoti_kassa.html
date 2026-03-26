@@ -119,7 +119,7 @@ function closeCheck(){var items=Object.entries(cart).filter(function(x){return x
   var btn=document.getElementById('close-btn'); btn.textContent='Сохраняю...'; btn.classList.add('loading'); btn.disabled=true;
   var isSelf=payType==='Себе оплачено'||payType==='Себе без оплаты';
   var checkSum=itemsData.reduce(function(a,x){return a+x.price*x.qty;},0);
-  var checkEarn=isSelf?0:itemsData.reduce(function(a,x){return a+x.qty*30;},0);
+  var checkEarn=isSelf?0:itemsData.reduce(function(a,x){return a+(x.name==='Мункейки (набор)'?x.qty*90:x.qty*30);},0);
   fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)}).then(function(res){return res.json();}).then(function(json){
     if(!json.ok) throw new Error(json.error||'Ошибка сохранения');
     // Обновляем allChecks локально — не ждём перезагрузки с сервера
@@ -152,7 +152,7 @@ function loadStats(period){currentPeriod=period; document.getElementById('stats-
   const cash=inRange.filter(j=>j.pay==='Наличный');
   const ya=sold.filter(j=>j.pay==='Яндекс');
   const soldQty=sold.reduce((a,j)=>a+j.items.reduce((s,x)=>s+x.qty,0),0);
-  const earn=soldQty*30;
+  const earn=sold.reduce(function(a,j){return a+j.items.reduce(function(b,x){return b+(x.name==='Мункейки (набор)'?x.qty*90:x.qty*30);},0);},0);
   const cashSum=cash.reduce((a,j)=>a+j.sum,0);
   const selfPaidCashSum=selfPaidCash.reduce((a,j)=>a+j.sum,0);
   const yaQty=ya.reduce((a,j)=>a+j.items.reduce((s,x)=>s+x.qty,0),0);
@@ -165,7 +165,7 @@ function loadStats(period){currentPeriod=period; document.getElementById('stats-
   document.getElementById('s-ya').textContent=yaQty;
   document.getElementById('s-sub').textContent=range.label;
   document.getElementById('payout-period').textContent=range.label;
-  document.getElementById('p-sales').textContent=soldQty+' шт × 30₽ = '+money(earn);
+  document.getElementById('p-sales').textContent=money(earn);
   document.getElementById('p-cash').textContent=money(cashSum);
   document.getElementById('p-self-paid-cash').textContent=money(selfPaidCashSum);
   document.getElementById('p-self').textContent=money(selfDebtSum);
@@ -176,15 +176,19 @@ function loadStats(period){currentPeriod=period; document.getElementById('stats-
   const staffMap={};
   inRange.forEach(function(j){
     const s=j.seller||'—';
-    if(!staffMap[s]) staffMap[s]={qty:0,selfDeductSum:0};
+    if(!staffMap[s]) staffMap[s]={qty:0,earn:0,selfDeductSum:0};
     const isSelf=j.pay==='Себе оплачено'||j.pay==='Себе без оплаты';
-    if(!isSelf) staffMap[s].qty+=j.items.reduce((a,x)=>a+x.qty,0);
-    else staffMap[s].selfDeductSum+=j.sum; // оптовая цена уже в j.sum
+    if(!isSelf){
+      j.items.forEach(function(x){
+        staffMap[s].qty+=x.qty;
+        staffMap[s].earn+=(x.name==='Мункейки (набор)'?x.qty*90:x.qty*30);
+      });
+    } else staffMap[s].selfDeductSum+=j.sum; // оптовая цена уже в j.sum
   });
   const staffRows=Object.entries(staffMap).sort((a,b)=>b[1].qty-a[1].qty);
   document.getElementById('staff-stat-list').innerHTML=staffRows.length?
     `<div class="staff-stat-row" style="border-bottom:2px solid var(--border)"><span class="ss-name" style="color:var(--muted);font-weight:400;font-size:11px">Имя</span><span class="ss-qty" style="color:var(--muted);font-weight:400;font-size:11px">Продано</span><span class="ss-payout" style="color:var(--muted);font-weight:400;font-size:11px">К выплате</span></div>`+
-    staffRows.map(([name,s])=>{const p=s.qty*30-s.selfDeductSum; return `<div class="staff-stat-row"><span class="ss-name">${escHtml(name)}</span><span class="ss-qty">${s.qty} шт</span><span class="ss-payout">${money(p)}</span></div>`;}).join(''):
+    staffRows.map(([name,s])=>{const p=s.earn-s.selfDeductSum; return `<div class="staff-stat-row"><span class="ss-name">${escHtml(name)}</span><span class="ss-qty">${s.qty} шт</span><span class="ss-payout">${money(p)}</span></div>`;}).join(''):
     `<div style="font-size:13px;color:var(--muted);text-align:center;padding:16px 0">Нет данных</div>`;
   document.getElementById('stats-spinner').style.display='none'; document.getElementById('stats-content').style.display='block';}
 function getRange(period){const now=new Date(), ws=getWeekStart(now), we=new Date(ws); we.setDate(we.getDate()+6); we.setHours(23,59,59,999); const ms=new Date(now.getFullYear(),now.getMonth(),1), me=new Date(now.getFullYear(),now.getMonth()+1,0); me.setHours(23,59,59,999); if(period==='week') return {from:ws,to:we,label:`${formatDate(ws)} - ${formatDate(we)}`}; if(period==='month') return {from:ms,to:me,label:ms.toLocaleDateString('ru-RU',{month:'long',year:'numeric'})}; return {from:null,to:null,label:'Всё время'};}
