@@ -50,6 +50,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 .flavor-stat-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)}.fs-name{font-size:13px;flex:1;color:var(--text)}.fs-bar-wrap{flex:1.1;height:6px;background:#ece8df;border-radius:4px;overflow:hidden}.fs-bar{height:100%;background:var(--accent);border-radius:4px}.fs-qty{font-size:13px;font-weight:700;min-width:24px;text-align:right;color:var(--text)}
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.18);z-index:40}.modal{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:41;width:min(92vw,360px);background:#fff;border:1px solid var(--border);border-radius:18px;padding:16px}.modal-title{font-size:15px;font-weight:700;margin-bottom:10px}.modal-input{width:100%;border:1px solid var(--border);border-radius:12px;padding:12px 13px;font-size:14px;outline:none;margin-bottom:10px}.modal-btn{width:100%;font-weight:700}
 .toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:#1f1f1f;color:#fff;padding:11px 14px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:50}.toast.show{opacity:1}
+.period-dropdown{position:relative;display:inline-block}
+.period-dropdown-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:35;background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:180px;overflow:hidden}
+.period-dropdown-menu.open{display:block}
+.period-dropdown-item{display:block;width:100%;border:none;background:none;text-align:left;padding:10px 14px;font-size:13px;font-family:inherit;color:var(--text);cursor:pointer}
+.period-dropdown-item:hover{background:var(--bg)}
+.period-dropdown-item.selected{font-weight:700;color:var(--accent)}
 .comment-input{width:100%;border:1px solid var(--border);background:#fff;border-radius:12px;padding:11px 13px;font-size:13px;font-family:inherit;color:var(--text);outline:none;resize:none;margin-top:0}.comment-input:focus{border-color:#aaa}
 .ji-comment{font-size:12px;color:var(--muted);margin-top:5px;font-style:italic;line-height:1.4}
 </style>
@@ -73,7 +79,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 <div class="screen" id="screen-journal"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span class="sec-label" style="margin:0">История чеков</span><button onclick="refreshData()" style="font-size:12px;color:#1a73e8;background:none;border:none;cursor:pointer;font-family:inherit;padding:4px 0">↻ Обновить</button></div><div class="spinner" id="journal-spinner">Загружаю...</div><div id="journal-list"></div></div>
 
 <div class="screen" id="screen-stats">
-<div class="period-row"><button class="period-btn active" onclick="setPeriod(this,'week')">Неделя</button><button class="period-btn" onclick="setPeriod(this,'month')">Месяц</button><button class="period-btn" onclick="setPeriod(this,'all')">Всё время</button></div>
+<div class="period-row">
+  <div class="period-dropdown" id="dd-week">
+    <button class="period-btn active" id="btn-week" onclick="toggleDropdown('week',event)">Неделя ▾</button>
+    <div class="period-dropdown-menu" id="menu-week"></div>
+  </div>
+  <div class="period-dropdown" id="dd-month">
+    <button class="period-btn" id="btn-month" onclick="toggleDropdown('month',event)">Месяц ▾</button>
+    <div class="period-dropdown-menu" id="menu-month"></div>
+  </div>
+  <button class="period-btn" id="btn-all" onclick="selectAll()">Всё время</button>
+</div>
 <div class="spinner" id="stats-spinner">Загружаю...</div>
 <div id="stats-content" style="display:none">
 <div class="metrics-grid"><div class="metric-card"><div class="m-label">Продано, шт</div><div class="m-val" id="s-qty">—</div><div class="m-sub" id="s-sub"></div></div><div class="metric-card"><div class="m-label">Заработано</div><div class="m-val" id="s-earn">—</div><div class="m-sub">30 ₽/шт</div></div><div class="metric-card"><div class="m-label">Наличные</div><div class="m-val" id="s-cash">—</div><div class="m-sub">вычтется</div></div><div class="metric-card"><div class="m-label">Яндекс, шт</div><div class="m-val" id="s-ya">—</div><div class="m-sub">засчитаны</div></div></div>
@@ -92,7 +108,7 @@ const API = 'https://script.google.com/macros/s/AKfycbyxuRjHj6VoPcXk95pARvGpM8Fy
 const FLAVORS = ['Арбуз-Дыня','Бабл Гам','Банан-Нутелла','Вишня-Тонка','Дубайский шоколад','Киви-Алоэ','Клубника','Кокос-Маракуйя','Кокосовый пломбир','Кофе-Карамель','Криспи','Малина-Ваниль','Матча-Манго','Мохито','Печенье','Сливочный лимон','Смородина','Сникерс','Трюфель','Твикс','Шоколад'].sort((a,b)=>a.localeCompare(b,'ru')).concat(['Мункейки (набор)']);
 const PREMIUM = new Set(['Дубайский шоколад','Криспи']);
 const PAY_TYPES = ['Безналичный','Наличный','Перевод','Яндекс','Себе оплачено','Себе без оплаты'];
-let sellers = loadSellers(), cart = {}, seller = '', payType = '', selfPayType = 'Наличные', currentPeriod = 'week', allChecks = [], editNum = null, editDate = '', editTime = '', comment = '';
+let sellers = loadSellers(), cart = {}, seller = '', payType = '', selfPayType = 'Наличные', allChecks = [], editNum = null, editDate = '', editTime = '', comment = '';
 
 function loadSellers(){try{const x=JSON.parse(localStorage.getItem('omoti_sellers')||'null'); return Array.isArray(x)&&x.length?x:['Алексей','Галина','Кирилл'];}catch(e){return ['Алексей','Галина','Кирилл'];}}
 function saveSellers(){localStorage.setItem('omoti_sellers', JSON.stringify(sellers));}
@@ -110,7 +126,7 @@ function setSeller(el,name){seller=name; document.querySelectorAll('.seller-btn'
 function setPay(el,type){payType=type; document.querySelectorAll('.pay-btn').forEach(b=>b.classList.remove('active')); el.classList.add('active'); document.getElementById('self-clarify').className='self-clarify'+(type==='Себе оплачено'?' visible':''); updateCart();}
 function setSelfPay(el,type){selfPayType=type; document.querySelectorAll('.self-sub-btn').forEach(b=>b.classList.remove('active')); el.classList.add('active'); updateCart();}
 let dataLoaded = false;
-function switchTab(tab){document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['kassa','journal','stats'][i]===tab)); document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('screen-'+tab).classList.add('active'); if(tab==='journal'||tab==='stats'){if(!dataLoaded){dataLoaded=true; loadRemoteData().then(function(){if(tab==='stats') loadStats(currentPeriod);});}else{if(tab==='journal') renderJournal(); if(tab==='stats') loadStats(currentPeriod);}}}
+function switchTab(tab){document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['kassa','journal','stats'][i]===tab)); document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('screen-'+tab).classList.add('active'); if(tab==='journal'||tab==='stats'){if(!dataLoaded){dataLoaded=true; loadRemoteData().then(function(){if(tab==='stats') loadStats();});}else{if(tab==='journal') renderJournal(); if(tab==='stats') loadStats();}}}
 function nextCheckNum(){return Date.now();}
 function nowDate(){const n=new Date(); return String(n.getDate()).padStart(2,'0')+'.'+String(n.getMonth()+1).padStart(2,'0')+'.'+n.getFullYear();}
 function nowTime(){const n=new Date(); return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
@@ -133,7 +149,7 @@ function closeCheck(){var items=Object.entries(cart).filter(function(x){return x
     allChecks.sort(function(a,b){var ta=a.date+' '+a.time, tb=b.date+' '+b.time; return tb>ta?1:tb<ta?-1:0;});
     resetForm();
     renderJournal();
-    loadStats(currentPeriod);
+    loadStats();
     switchTab('kassa');
     showToast(isEdit?'Чек №'+num+' обновлён':'Чек №'+num+' сохранён');
   }).catch(function(e){showToast('Ошибка сохранения: '+e.message); btn.textContent=isEdit?'Сохранить изменения':'Закрыть чек'; btn.classList.remove('loading'); updateCart();});}
@@ -141,8 +157,111 @@ function resetForm(){cart={}; payType=''; selfPayType='Наличные'; seller
 
 function renderJournal(){const el=document.getElementById('journal-list'); document.getElementById('journal-spinner').style.display=allChecks.length?'none':'block'; if(!allChecks.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);text-align:center;padding:28px 0">Чеков пока нет</div>'; return;} el.innerHTML=allChecks.map(function(j,idx){const payLabel=j.selfPay?`${escHtml(j.pay)} · ${escHtml(j.selfPay)}`:escHtml(j.pay); const dot=j.edited?'<span class="edited-dot"></span>':''; const rows=j.items.map(x=>`<div class="ji-flavor-row"><span class="ji-flavor-name">${escHtml(x.name)} · ${x.qty} шт</span><span class="ji-flavor-sum">${money(x.sum)}</span></div>`).join(''); const commentHtml=j.comment?`<div class="ji-comment">${escHtml(j.comment)}</div>`:''; return `<div class="journal-item"><div class="ji-head"><span class="ji-who">${dot} №${allChecks.length-idx} · ${escHtml(j.seller)}</span><span class="ji-meta">${escHtml(j.date)} ${escHtml(j.time)}</span></div><div class="ji-pay">${payLabel}</div><div class="ji-flavors">${rows}</div>${commentHtml}<div class="ji-foot"><span class="ji-sum">${money(j.sum)}</span><button class="ji-edit" onclick="editCheck('${escJs(j.num)}')">Редактировать</button></div></div>`;}).join('');}
 function editCheck(num){const j=allChecks.find(x=>String(x.num)===String(num)); if(!j) return; const fresh={}; j.items.forEach(it=>fresh[it.name]=(fresh[it.name]||0)+Number(it.qty||0)); cart=fresh; payType=j.pay; seller=j.seller; selfPayType=j.selfPay||'Наличные'; editNum=j.num; editDate=j.date; editTime=j.time; comment=j.comment||''; document.getElementById('comment-input').value=comment; renderSellers(); renderPayBtns(); document.getElementById('self-clarify').className='self-clarify'+(payType==='Себе оплачено'?' visible':''); document.querySelectorAll('.self-sub-btn').forEach(b=>b.classList.toggle('active', b.textContent===selfPayType)); document.getElementById('close-btn').textContent='Сохранить изменения'; updateCart(); switchTab('kassa'); showToast('Чек №'+j.num+' открыт для правки');}
-function setPeriod(btn,period){document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); loadStats(period);}
-function loadStats(period){currentPeriod=period; document.getElementById('stats-spinner').style.display='block'; document.getElementById('stats-content').style.display='none'; const range=getRange(period), from=range.from,to=range.to;
+// ---- Period picker state ----
+let currentPeriodRange = null; // {from, to, label}
+let activePeriodType = 'week'; // 'week' | 'month' | 'all'
+
+function getWeekStart(d){const x=new Date(d); const day=x.getDay()||7; x.setHours(0,0,0,0); x.setDate(x.getDate()-day+1); return x;}
+function parseDate(s){const p=String(s).split('.'); if(p.length!==3) return null; return new Date(Number(p[2]),Number(p[1])-1,Number(p[0]),0,0,0,0);}
+function formatDate(d){return String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+d.getFullYear();}
+
+// Build list: current week first, then N-1 completed weeks
+function getPastWeeks(n){
+  const result=[];
+  const now=new Date();
+  const curWeekStart=getWeekStart(now);
+  const curWeekEnd=new Date(curWeekStart); curWeekEnd.setDate(curWeekEnd.getDate()+6); curWeekEnd.setHours(23,59,59,999);
+  result.push({from:new Date(curWeekStart),to:curWeekEnd,label:`${formatDate(curWeekStart)} - ${formatDate(curWeekEnd)} (текущая)`});
+  for(let i=1;i<n;i++){
+    const ws=new Date(curWeekStart); ws.setDate(ws.getDate()-i*7);
+    const we=new Date(ws); we.setDate(we.getDate()+6); we.setHours(23,59,59,999);
+    result.push({from:ws,to:we,label:`${formatDate(ws)} - ${formatDate(we)}`});
+  }
+  return result;
+}
+
+// Build list of last N months (going back from last completed month)
+function getPastMonths(n){
+  const result=[];
+  const now=new Date();
+  for(let i=1;i<=n;i++){
+    const ms=new Date(now.getFullYear(),now.getMonth()-(i-1),1);
+    const me=new Date(ms.getFullYear(),ms.getMonth()+1,0); me.setHours(23,59,59,999);
+    result.push({from:ms,to:me,label:ms.toLocaleDateString('ru-RU',{month:'long',year:'numeric'})});
+  }
+  return result;
+}
+
+function buildDropdowns(){
+  const weeks=getPastWeeks(5);
+  document.getElementById('menu-week').innerHTML=weeks.map((w,i)=>
+    `<button class="period-dropdown-item${i===0?' selected':''}" onclick="selectWeek(${i})">${w.label}</button>`
+  ).join('');
+
+  const months=getPastMonths(6);
+  document.getElementById('menu-month').innerHTML=months.map((m,i)=>
+    `<button class="period-dropdown-item${i===0?' selected':''}" onclick="selectMonth(${i})">${m.label}</button>`
+  ).join('');
+
+  // Default: first completed week
+  currentPeriodRange=weeks[0];
+}
+
+function toggleDropdown(type,e){
+  e.stopPropagation();
+  const menuId='menu-'+type;
+  const otherType=type==='week'?'month':'week';
+  document.getElementById('menu-'+otherType).classList.remove('open');
+  document.getElementById(menuId).classList.toggle('open');
+}
+
+document.addEventListener('click',function(){
+  document.querySelectorAll('.period-dropdown-menu').forEach(m=>m.classList.remove('open'));
+});
+
+function setAllBtnsInactive(){
+  ['btn-week','btn-month','btn-all'].forEach(id=>document.getElementById(id).classList.remove('active'));
+}
+
+function selectWeek(idx){
+  const weeks=getPastWeeks(5);
+  currentPeriodRange=weeks[idx];
+  activePeriodType='week';
+  setAllBtnsInactive();
+  document.getElementById('btn-week').classList.add('active');
+  document.getElementById('btn-week').textContent='Неделя ▾';
+  // mark selected
+  document.querySelectorAll('#menu-week .period-dropdown-item').forEach((el,i)=>el.classList.toggle('selected',i===idx));
+  document.getElementById('menu-week').classList.remove('open');
+  loadStats();
+}
+
+function selectMonth(idx){
+  const months=getPastMonths(6);
+  currentPeriodRange=months[idx];
+  activePeriodType='month';
+  setAllBtnsInactive();
+  document.getElementById('btn-month').classList.add('active');
+  document.getElementById('btn-month').textContent='Месяц ▾';
+  document.querySelectorAll('#menu-month .period-dropdown-item').forEach((el,i)=>el.classList.toggle('selected',i===idx));
+  document.getElementById('menu-month').classList.remove('open');
+  loadStats();
+}
+
+function selectAll(){
+  currentPeriodRange={from:null,to:null,label:'Всё время'};
+  activePeriodType='all';
+  setAllBtnsInactive();
+  document.getElementById('btn-all').classList.add('active');
+  document.querySelectorAll('.period-dropdown-menu').forEach(m=>m.classList.remove('open'));
+  loadStats();
+}
+
+function loadStats(){
+  document.getElementById('stats-spinner').style.display='block';
+  document.getElementById('stats-content').style.display='none';
+  const range=currentPeriodRange||{from:null,to:null,label:'Всё время'};
+  const from=range.from, to=range.to;
   const inRange=allChecks.filter(j=>{const d=parseDate(j.date); if(!d) return false; if(!from&&!to) return true; return d>=from&&d<=to;});
   // Только реальные продажи клиентам (без «себе»)
   const sold=inRange.filter(j=>j.pay!=='Себе оплачено'&&j.pay!=='Себе без оплаты');
@@ -190,12 +309,8 @@ function loadStats(period){currentPeriod=period; document.getElementById('stats-
     `<div class="staff-stat-row" style="border-bottom:2px solid var(--border)"><span class="ss-name" style="color:var(--muted);font-weight:400;font-size:11px">Имя</span><span class="ss-qty" style="color:var(--muted);font-weight:400;font-size:11px">Продано</span><span class="ss-payout" style="color:var(--muted);font-weight:400;font-size:11px">К выплате</span></div>`+
     staffRows.map(([name,s])=>{const p=s.earn-s.selfDeductSum; return `<div class="staff-stat-row"><span class="ss-name">${escHtml(name)}</span><span class="ss-qty">${s.qty} шт</span><span class="ss-payout">${money(p)}</span></div>`;}).join(''):
     `<div style="font-size:13px;color:var(--muted);text-align:center;padding:16px 0">Нет данных</div>`;
-  document.getElementById('stats-spinner').style.display='none'; document.getElementById('stats-content').style.display='block';}
-function getRange(period){const now=new Date(), ws=getWeekStart(now), we=new Date(ws); we.setDate(we.getDate()+6); we.setHours(23,59,59,999); const ms=new Date(now.getFullYear(),now.getMonth(),1), me=new Date(now.getFullYear(),now.getMonth()+1,0); me.setHours(23,59,59,999); if(period==='week') return {from:ws,to:we,label:`${formatDate(ws)} - ${formatDate(we)}`}; if(period==='month') return {from:ms,to:me,label:ms.toLocaleDateString('ru-RU',{month:'long',year:'numeric'})}; return {from:null,to:null,label:'Всё время'};}
-function getWeekStart(d){const x=new Date(d); const day=x.getDay()||7; x.setHours(0,0,0,0); x.setDate(x.getDate()-day+1); return x;}
-function parseDate(s){const p=String(s).split('.'); if(p.length!==3) return null; return new Date(Number(p[2]),Number(p[1])-1,Number(p[0]),0,0,0,0);}
-function formatDate(d){return String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+d.getFullYear();}
-
+  document.getElementById('stats-spinner').style.display='none'; document.getElementById('stats-content').style.display='block';
+}
 function ensureHeader(){return fetch(API).then(function(r){return r.json();}).then(function(json){var rows=Array.isArray(json.rows)?json.rows:[]; if(!rows.length||String(rows[0][0]).trim()!=='№'){return fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'init_header'})});}}).catch(function(){});}
 
 function parseChecksFromRows(rows){
@@ -222,7 +337,7 @@ function loadRemoteData(silent){
   if(!silent){document.getElementById('journal-spinner').style.display='block'; document.getElementById('stats-spinner').style.display='block';}
   // Сразу показываем кэш если есть
   var cached=loadCacheChecks();
-  if(cached&&cached.length){allChecks=cached; renderJournal(); loadStats(currentPeriod); document.getElementById('journal-spinner').style.display='none';}
+  if(cached&&cached.length){allChecks=cached; renderJournal(); loadStats(); document.getElementById('journal-spinner').style.display='none';}
   // Грузим свежие данные с таймаутом 10 сек
   return fetchWithTimeout(API+'?limit=100',{cache:'no-store'},10000)
     .then(function(res){return res.json();})
@@ -231,7 +346,7 @@ function loadRemoteData(silent){
       allChecks=parseChecksFromRows(rows);
       saveCacheChecks(allChecks);
       renderJournal();
-      loadStats(currentPeriod);
+      loadStats();
       document.getElementById('journal-spinner').style.display='none';
       document.getElementById('stats-spinner').style.display='none';
     })
@@ -255,6 +370,7 @@ function hideModal(){document.getElementById('overlay').style.display='none'; do
 function modalConfirm(){const v=document.getElementById('modal-input').value.trim(); if(!v) return; if(!sellers.includes(v)){sellers.push(v); sellers.sort((a,b)=>a.localeCompare(b,'ru')); saveSellers();} seller=v; renderSellers(); updateCart(); hideModal();}
 function showToast(text){const el=document.getElementById('toast'); el.textContent=text; el.classList.add('show'); clearTimeout(showToast.t); showToast.t=setTimeout(()=>el.classList.remove('show'),1800);}
 resetForm();
+buildDropdowns();
 </script>
 </body>
 </html>
