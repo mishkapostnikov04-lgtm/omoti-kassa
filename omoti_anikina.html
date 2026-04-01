@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>OMOTI · Аникина</title>
-<style>
+<script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=vXxwO8hOLJS_Mz_zYCWNJmtRQyd6XeROHF8KRadGAu21egMfEDDBosgGT8WIKFmd2Unbh-P9_CTekQgrjhPb0A0BtJkiKf0EBxAoaIWTIotE3ld9EeYPWmN1VHD8Ke1ont5Vd0TPb4-VPWk0uD4-s_1Oz5tBh1wpl09eouOJ0tXf81rLGXDIufsWxjikDbDIXl-WsPJtfW3zHL_S3vm2woaUm6f4bx2HfFfVIposNLtg0DUyyGScGFEj7mh6EyZRYqiobDxUVDueZweaIXgAyw" charset="UTF-8"></script><style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{--bg:#f7f6f2;--card:#fff;--text:#1a1a1a;--muted:#888;--border:#e0ddd6;--accent:#1a1a1a;--accent-fg:#fff;--gold:#d3aa4f;--radius:16px;--success-bg:#edf8ef;--success-border:#cfe5d3;--success-text:#234b2b;--danger:#d95555}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
@@ -115,6 +115,7 @@ function getPrice(name,pay){if(name==='Мункейки'){if(pay==='Яндекс
 function escHtml(s){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;");}
 function escJs(s){return String(s).replaceAll('\\','\\\\').replaceAll("'","\\'");}
 function money(n){return Number(n||0).toLocaleString('ru-RU')+' ₽';}
+function parseDateTime(dateStr,timeStr){const d=parseDate(dateStr); if(!d) return 0; const m=String(timeStr||'').match(/^(\d{2}):(\d{2})$/); if(m){d.setHours(Number(m[1]),Number(m[2]),0,0);}else{d.setHours(0,0,0,0);} return d.getTime();}
 
 function renderSellers(){document.getElementById('seller-row').innerHTML=sellers.map(name=>`<button class="seller-btn ${name===seller?'active':''}" onclick="setSeller(this,'${escJs(name)}')">${escHtml(name)}</button>`).join('')+`<button class="seller-btn add-btn" onclick="showModal()">+</button>`;}
 function renderPayBtns(){document.getElementById('pay-grid').innerHTML=PAY_TYPES.map(type=>`<button class="pay-btn ${type===payType?'active':''}" onclick="setPay(this,'${escJs(type)}')">${escHtml(type)}</button>`).join('');}
@@ -145,7 +146,7 @@ function closeCheck(){var items=Object.entries(cart).filter(function(x){return x
     itemsData.forEach(function(x){if(!byFlavor[x.name])byFlavor[x.name]={name:x.name,qty:0,sum:0}; byFlavor[x.name].qty+=x.qty; byFlavor[x.name].sum+=x.price*x.qty;});
     var newCheck={num:num,date:date,time:time,point:'Аникина',seller:seller,pay:payType,selfPay:payType==='Себе оплачено'?selfPayType:'',edited:isEdit,items:Object.values(byFlavor),sum:checkSum,earn:checkEarn};
     allChecks.unshift(newCheck);
-    allChecks.sort(function(a,b){var ta=a.date+' '+a.time, tb=b.date+' '+b.time; return tb>ta?1:tb<ta?-1:0;});
+    allChecks.sort(function(a,b){return parseDateTime(b.date,b.time)-parseDateTime(a.date,a.time);});
     resetForm();
     renderJournal();
     loadStats();
@@ -289,7 +290,7 @@ function parseChecksFromRows(rows){
   // берём только последние 100 уникальных чеков
   var map=new Map();
   dataRows.forEach(function(r){if(!r||!r[0]) return; var num=String(r[0]).trim(); if(!map.has(num)){map.set(num,{num:num,date:normalizeDate(r[1]),time:normalizeTime(r[2]),point:String(r[3]||'').trim(),seller:String(r[4]||'').trim(),pay:String(r[5]||'').trim(),selfPay:String(r[6]||'').trim(),edited:String(r[13]||'').trim().toLowerCase()==='да',comment:String(r[14]||'').trim(),items:[]});} map.get(num).items.push({name:String(r[7]||'').trim(),qty:toNum(r[8]),price:toNum(r[9]),sum:toNum(r[10])});});
-  var all=Array.from(map.values()).map(function(x){var byFlavor={}; x.items.forEach(function(it){if(!byFlavor[it.name]) byFlavor[it.name]={name:it.name,qty:0,sum:0}; byFlavor[it.name].qty+=Number(it.qty||0); byFlavor[it.name].sum+=Number(it.sum||0);}); x.items=Object.values(byFlavor); x.sum=x.items.reduce(function(a,it){return a+it.sum;},0); return x;}).sort(function(a,b){var ta=a.date+' '+a.time, tb=b.date+' '+b.time; return tb>ta?1:tb<ta?-1:0;});
+  var all=Array.from(map.values()).map(function(x){var byFlavor={}; x.items.forEach(function(it){if(!byFlavor[it.name]) byFlavor[it.name]={name:it.name,qty:0,sum:0}; byFlavor[it.name].qty+=Number(it.qty||0); byFlavor[it.name].sum+=Number(it.sum||0);}); x.items=Object.values(byFlavor); x.sum=x.items.reduce(function(a,it){return a+it.sum;},0); return x;}).sort(function(a,b){return parseDateTime(b.date,b.time)-parseDateTime(a.date,a.time);});
   return all.slice(0,100);
 }
 
