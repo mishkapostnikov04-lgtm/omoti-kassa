@@ -57,6 +57,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 .period-dropdown-item:hover{background:var(--bg)}
 .period-dropdown-item.selected{font-weight:700;color:var(--accent)}
 .comment-input{width:100%;border:1px solid var(--border);background:#fff;border-radius:12px;padding:11px 13px;font-size:13px;font-family:inherit;color:var(--text);outline:none;resize:none;margin-top:0}.comment-input:focus{border-color:#aaa}
+.pin-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:60;align-items:center;justify-content:center}
+.pin-overlay.open{display:flex}
+.pin-box{background:#fff;border-radius:20px;padding:24px 20px 20px;width:min(88vw,320px);text-align:center}
+.pin-title{font-size:15px;font-weight:700;margin-bottom:4px}
+.pin-sub{font-size:12px;color:var(--muted);margin-bottom:16px}
+.pin-dots{display:flex;gap:12px;justify-content:center;margin-bottom:18px}
+.pin-dot{width:14px;height:14px;border-radius:999px;border:2px solid var(--border);background:#fff;transition:.15s}
+.pin-dot.filled{background:var(--accent);border-color:var(--accent)}
+.pin-dot.error{background:var(--danger);border-color:var(--danger)}
+.pin-numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pin-key{border:1px solid var(--border);background:#fff;border-radius:12px;padding:14px;font-size:18px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text)}
+.pin-key:active{background:var(--bg)}
+.pin-key.del{font-size:15px;color:var(--muted)}
+.pin-key.cancel{font-size:13px;color:var(--muted)}
 .ji-comment{font-size:12px;color:var(--muted);margin-top:5px;font-style:italic;line-height:1.4}
 </style>
 </head>
@@ -103,6 +117,34 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 <div class="modal" id="modal"><div class="modal-title">Добавить имя</div><input class="modal-input" id="modal-input" placeholder="Введите имя"><button class="modal-btn" onclick="modalConfirm()">Добавить</button></div>
 <div class="toast" id="toast"></div>
 
+<!-- PIN overlay -->
+<div class="pin-overlay" id="pin-overlay">
+  <div class="pin-box">
+    <div class="pin-title">Итоги</div>
+    <div class="pin-sub">Введите 4-значный пин-код</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pin-numpad">
+      <button class="pin-key" onclick="pinKey('1')">1</button>
+      <button class="pin-key" onclick="pinKey('2')">2</button>
+      <button class="pin-key" onclick="pinKey('3')">3</button>
+      <button class="pin-key" onclick="pinKey('4')">4</button>
+      <button class="pin-key" onclick="pinKey('5')">5</button>
+      <button class="pin-key" onclick="pinKey('6')">6</button>
+      <button class="pin-key" onclick="pinKey('7')">7</button>
+      <button class="pin-key" onclick="pinKey('8')">8</button>
+      <button class="pin-key" onclick="pinKey('9')">9</button>
+      <button class="pin-key cancel" onclick="pinCancel()">Отмена</button>
+      <button class="pin-key" onclick="pinKey('0')">0</button>
+      <button class="pin-key del" onclick="pinDel()">⌫</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbyT9qeLuDVhEsM_keCToMuzjVoG6K0Mrq-7Fw-KafWk6NyKrNQ9eH_GJimizoXjF-Rk/exec';
 const FLAVORS = ['Арбуз-Дыня','Бабл Гам','Банан-Нутелла','Вишня-Тонка','Дубайский шоколад','Киви-Алоэ','Клубника','Кокос-Маракуйя','Кокосовый пломбир','Кофе-Карамель','Криспи','Малина-Ваниль','Матча-Манго','Мохито','Печенье','Сливочный лимон','Смородина','Сникерс','Трюфель','Твикс','Шоколад'].sort((a,b)=>a.localeCompare(b,'ru')).concat(['Мункейки (набор)']);
@@ -126,7 +168,62 @@ function setSeller(el,name){seller=name; document.querySelectorAll('.seller-btn'
 function setPay(el,type){payType=type; document.querySelectorAll('.pay-btn').forEach(b=>b.classList.remove('active')); el.classList.add('active'); document.getElementById('self-clarify').className='self-clarify'+(type==='Себе оплачено'?' visible':''); updateCart();}
 function setSelfPay(el,type){selfPayType=type; document.querySelectorAll('.self-sub-btn').forEach(b=>b.classList.remove('active')); el.classList.add('active'); updateCart();}
 let dataLoaded = false;
-function switchTab(tab){document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['kassa','journal','stats'][i]===tab)); document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('screen-'+tab).classList.add('active'); if(tab==='journal'||tab==='stats'){if(!dataLoaded){dataLoaded=true; loadRemoteData().then(function(){if(tab==='stats') loadStats();});}else{if(tab==='journal') renderJournal(); if(tab==='stats') loadStats();}}}
+const PIN_CODE = '3103';
+let pinBuffer = '', pinPendingTab = null, pinUnlocked = false;
+
+function pinKey(d){
+  if(pinBuffer.length>=4) return;
+  pinBuffer+=d;
+  updatePinDots();
+  if(pinBuffer.length===4){
+    if(pinBuffer===PIN_CODE){
+      pinUnlocked=true;
+      document.getElementById('pin-overlay').classList.remove('open');
+      openTab(pinPendingTab);
+    } else {
+      document.querySelectorAll('.pin-dot').forEach(el=>{el.classList.remove('filled');el.classList.add('error');});
+      setTimeout(()=>{pinBuffer=''; document.querySelectorAll('.pin-dot').forEach(el=>{el.classList.remove('filled','error');});},600);
+    }
+  }
+}
+function pinDel(){if(!pinBuffer.length) return; pinBuffer=pinBuffer.slice(0,-1); updatePinDots();}
+function pinCancel(){
+  pinBuffer='';
+  document.getElementById('pin-overlay').classList.remove('open');
+  // вернуть активную кнопку таба обратно на текущий экран
+  const active=document.querySelector('.screen.active');
+  const tabs=['kassa','journal','stats'];
+  const cur=active?active.id.replace('screen-',''):'kassa';
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',tabs[i]===cur));
+}
+function updatePinDots(){
+  for(let i=0;i<4;i++){
+    const el=document.getElementById('pd'+i);
+    el.classList.toggle('filled',i<pinBuffer.length);
+    el.classList.remove('error');
+  }
+}
+function showPinFor(tab){
+  pinBuffer=''; pinPendingTab=tab;
+  updatePinDots();
+  document.getElementById('pin-overlay').classList.add('open');
+}
+
+function openTab(tab){
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['kassa','journal','stats'][i]===tab));
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+tab).classList.add('active');
+  if(tab==='journal'||tab==='stats'){
+    if(!dataLoaded){dataLoaded=true; loadRemoteData().then(function(){if(tab==='stats') loadStats();});}
+    else{if(tab==='journal') renderJournal(); if(tab==='stats') loadStats();}
+  }
+}
+
+function switchTab(tab){
+  if(tab==='stats'&&!pinUnlocked){showPinFor(tab); return;}
+  if(tab!=='stats') pinUnlocked=false; // сбрасываем при уходе с итогов
+  openTab(tab);
+}
 function nextCheckNum(){return Date.now();}
 function nowDate(){const n=new Date(); return String(n.getDate()).padStart(2,'0')+'.'+String(n.getMonth()+1).padStart(2,'0')+'.'+n.getFullYear();}
 function nowTime(){const n=new Date(); return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
