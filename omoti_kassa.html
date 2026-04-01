@@ -105,14 +105,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbyxuRjHj6VoPcXk95pARvGpM8FyiE277zah2W3XQDqM4V53wjjcJWyNv2FFwHyVm5GPLw/exec';
-const FLAVORS = ['Арбуз-Дыня','Бабл Гам','Банан-Нутелла','Вишня-Тонка','Дубайский шоколад','Киви-Алоэ','Клубника','Кокос-Маракуйя','Кокосовый пломбир','Кофе-Карамель','Криспи','Малина-Ваниль','Матча-Манго','Мохито','Печенье','Сливочный лимон','Смородина','Сникерс','Трюфель','Твикс','Шоколад'].sort((a,b)=>a.localeCompare(b,'ru')).concat(['Мункейки (набор)']);
+const FLAVORS = ['Арбуз - Дыня','Бабл Гам','Банан- Нутелла','Вишня-Тонка','Дубайский шоколад','Киви-Алоэ','Клубника','Кокос-Маракуйя','Кокосовый пломбир','Кофе-Карамель','Криспи','Малина-Ваниль','Матча-Манго','Мохито','Печенье с топлёным молоком','Сливочный лимон','Смородина','Сникерс','Трюфель','Твикс','Шоколад'].sort((a,b)=>a.localeCompare(b,'ru')).concat(['Мункейки']);
 const PREMIUM = new Set(['Дубайский шоколад','Криспи']);
 const PAY_TYPES = ['Безналичный','Наличный','Перевод','Яндекс','Себе оплачено','Себе без оплаты'];
 let sellers = loadSellers(), cart = {}, seller = '', payType = '', selfPayType = 'Наличные', allChecks = [], editNum = null, editDate = '', editTime = '', comment = '';
 
 function loadSellers(){try{const x=JSON.parse(localStorage.getItem('omoti_sellers')||'null'); return Array.isArray(x)&&x.length?x:['Алексей','Галина','Кирилл'];}catch(e){return ['Алексей','Галина','Кирилл'];}}
 function saveSellers(){localStorage.setItem('omoti_sellers', JSON.stringify(sellers));}
-function getPrice(name,pay){if(name==='Мункейки (набор)'){if(pay==='Яндекс') return 750; if(pay==='Себе оплачено'||pay==='Себе без оплаты') return 360; return 600;} const p=PREMIUM.has(name); if(pay==='Яндекс') return p?250:200; if(pay==='Себе оплачено'||pay==='Себе без оплаты') return p?110:100; return p?200:180;}
+function getPrice(name,pay){if(name==='Мункейки'){if(pay==='Яндекс') return 750; if(pay==='Себе оплачено'||pay==='Себе без оплаты') return 360; return 600;} const p=PREMIUM.has(name); if(pay==='Яндекс') return p?250:200; if(pay==='Себе оплачено'||pay==='Себе без оплаты') return p?110:100; return p?200:180;}
 function escHtml(s){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;");}
 function escJs(s){return String(s).replaceAll('\\','\\\\').replaceAll("'","\\'");}
 function money(n){return Number(n||0).toLocaleString('ru-RU')+' ₽';}
@@ -135,7 +135,7 @@ function closeCheck(){var items=Object.entries(cart).filter(function(x){return x
   var btn=document.getElementById('close-btn'); btn.textContent='Сохраняю...'; btn.classList.add('loading'); btn.disabled=true;
   var isSelf=payType==='Себе оплачено'||payType==='Себе без оплаты';
   var checkSum=itemsData.reduce(function(a,x){return a+x.price*x.qty;},0);
-  var checkEarn=isSelf?0:itemsData.reduce(function(a,x){return a+(x.name==='Мункейки (набор)'?x.qty*90:x.qty*30);},0);
+  var checkEarn=isSelf?0:itemsData.reduce(function(a,x){return a+(x.name==='Мункейки'?x.qty*90:x.qty*30);},0);
   fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)}).then(function(res){return res.json();}).then(function(json){
     if(!json.ok) throw new Error(json.error||'Ошибка сохранения');
     // Обновляем allChecks локально — не ждём перезагрузки с сервера
@@ -271,7 +271,7 @@ function loadStats(){
   const cash=inRange.filter(j=>j.pay==='Наличный');
   const ya=sold.filter(j=>j.pay==='Яндекс');
   const soldQty=sold.reduce((a,j)=>a+j.items.reduce((s,x)=>s+x.qty,0),0);
-  const earn=sold.reduce(function(a,j){return a+j.items.reduce(function(b,x){return b+(x.name==='Мункейки (набор)'?x.qty*90:x.qty*30);},0);},0);
+  const earn=sold.reduce(function(a,j){return a+j.items.reduce(function(b,x){return b+(x.name==='Мункейки'?x.qty*90:x.qty*30);},0);},0);
   const cashSum=cash.reduce((a,j)=>a+j.sum,0);
   const selfPaidCashSum=selfPaidCash.reduce((a,j)=>a+j.sum,0);
   const yaQty=ya.reduce((a,j)=>a+j.items.reduce((s,x)=>s+x.qty,0),0);
@@ -300,7 +300,7 @@ function loadStats(){
     if(!isSelf){
       j.items.forEach(function(x){
         staffMap[s].qty+=x.qty;
-        staffMap[s].earn+=(x.name==='Мункейки (набор)'?x.qty*90:x.qty*30);
+        staffMap[s].earn+=(x.name==='Мункейки'?x.qty*90:x.qty*30);
       });
     } else staffMap[s].selfDeductSum+=j.sum; // оптовая цена уже в j.sum
   });
