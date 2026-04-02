@@ -296,6 +296,10 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
   </div>
   <div class="spinner" id="stats-spinner" style="display:none">Загружаю...</div>
   <div id="stats-content">
+    <div id="tempo-card" style="display:none;margin:10px 14px 0;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:13px 14px">
+      <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">Темп недели</div>
+      <div id="tempo-list"></div>
+    </div>
     <div class="metrics-grid">
       <div class="metric-card"><div class="m-label">Всего штук</div><div class="m-val green" id="s-total">—</div><div class="m-sub" id="s-period-sub"></div></div>
       <div class="metric-card"><div class="m-label">Смен</div><div class="m-val" id="s-shifts">—</div><div class="m-sub" id="s-avgday">— шт/смену</div></div>
@@ -552,6 +556,50 @@ function loadStats(){
   document.getElementById('s-lepka').textContent=inRange.filter(r=>r.workType==='Лепка').reduce((a,r)=>a+r.total,0);
   document.getElementById('s-nachinka').textContent=inRange.filter(r=>r.workType==='Начинки').reduce((a,r)=>a+r.total,0);
   document.getElementById('s-period-sub').textContent=range.label||'Всё время';
+
+  // ── Темп недели (только для выбранной недели) ──
+  const tempoCard=document.getElementById('tempo-card');
+  if(activePeriodType==='week' && range.from){
+    const today=new Date(); today.setHours(0,0,0,0);
+    const weekStart=new Date(range.from);
+    const isCurrentWeek=today>=weekStart&&today<=new Date(range.to);
+    if(isCurrentWeek){
+      // Сколько дней прошло с начала недели (пн=1)
+      const daysPassed=Math.max(1,Math.floor((today-weekStart)/(1000*60*60*24))+1);
+      // По каждому кондитеру
+      const tm={};
+      inRange.forEach(r=>{
+        if(!tm[r.person])tm[r.person]={qty:0,shifts:0};
+        tm[r.person].qty+=r.total;
+        tm[r.person].shifts++;
+      });
+      const tempoRows=Object.entries(tm).sort((a,b)=>b[1].qty-a[1].qty).map(([name,s])=>{
+        const normSoFar=NORM*s.shifts; // норма за фактические смены
+        const ratio=normSoFar>0?s.qty/normSoFar:0;
+        let emoji,phrase;
+        if(ratio>=1.2){emoji='🚀';phrase='Огонь, так держать!';}
+        else if(ratio>=1.0){emoji='🔥';phrase='Выше нормы!';}
+        else if(ratio>=0.8){emoji='👌';phrase='Идём в графике';}
+        else{emoji='💪';phrase='Разгоняемся';}
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text)">${escHtml(name)}</div>
+            <div style="font-size:11px;color:var(--muted)">${s.qty} шт · ${s.shifts} смен</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:18px;line-height:1">${emoji}</div>
+            <div style="font-size:11px;font-weight:600;color:var(--green);margin-top:2px">${phrase}</div>
+          </div>
+        </div>`;
+      }).join('');
+      document.getElementById('tempo-list').innerHTML=tempoRows||'<div class="empty-msg">Нет смен</div>';
+      tempoCard.style.display='block';
+    } else {
+      tempoCard.style.display='none';
+    }
+  } else {
+    tempoCard.style.display='none';
+  }
   // По кондитеру
   const pm={};inRange.forEach(r=>{if(!pm[r.person])pm[r.person]={qty:0,shifts:0};pm[r.person].qty+=r.total;pm[r.person].shifts++;});
   document.getElementById('person-stat-list').innerHTML=Object.entries(pm).sort((a,b)=>b[1].qty-a[1].qty)
