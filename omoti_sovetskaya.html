@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>OMOTI · Советская</title>
-<style>
+<script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=6WvtdRMRDqlJHpbwOZW1hoqv-Fwjrj4YUOO58gee_bX3ewzZXyAV-bjW1pUhTsa8U2PjfoOnzeUeJMSbEv-lIZOzwGf5mzj-j9mEnP8vfRqne5nvEdcjUtiuOFgHLJW_QCNyXR3udCqz7LSiiSbfL5yGaxOz4jytx2qsTSP5FFr96f2OLfQQyvYoPy5aqFJC09z99G0-P_MXT_xHVG1VJLV5uBuQ84dJ76LL8oNNUqBbFt5tItTDNVw5x6J0Dnb4BabVNS-reZWUtGCc9OfLDg" charset="UTF-8"></script><style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{--bg:#f7f6f2;--card:#fff;--text:#1a1a1a;--muted:#888;--border:#e0ddd6;--accent:#1a1a1a;--accent-fg:#fff;--gold:#d3aa4f;--radius:16px;--success-bg:#edf8ef;--success-border:#cfe5d3;--success-text:#234b2b;--danger:#d95555}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
@@ -243,7 +243,7 @@ function closeCheck(){var items=Object.entries(cart).filter(function(x){return x
     itemsData.forEach(function(x){if(!byFlavor[x.name])byFlavor[x.name]={name:x.name,qty:0,sum:0}; byFlavor[x.name].qty+=x.qty; byFlavor[x.name].sum+=x.price*x.qty;});
     var newCheck={num:num,date:date,time:time,point:'Советская',seller:seller,pay:payType,selfPay:payType==='Себе оплачено'?selfPayType:'',edited:isEdit,items:Object.values(byFlavor),sum:checkSum,earn:checkEarn};
     allChecks.unshift(newCheck);
-    allChecks.sort(function(a,b){var ta=a.date+' '+a.time, tb=b.date+' '+b.time; return tb>ta?1:tb<ta?-1:0;});
+    allChecks.sort(function(a,b){return parseDateTime(b.date,b.time)-parseDateTime(a.date,a.time);});
     resetForm();
     renderJournal();
     loadStats();
@@ -261,6 +261,21 @@ let activePeriodType = 'week';
 function getWeekStart(d){const x=new Date(d); const day=x.getDay()||7; x.setHours(0,0,0,0); x.setDate(x.getDate()-day+1); return x;}
 function parseDate(s){const p=String(s).split('.'); if(p.length!==3) return null; return new Date(Number(p[2]),Number(p[1])-1,Number(p[0]),0,0,0,0);}
 function formatDate(d){return String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+d.getFullYear();}
+function parseDateTime(dateStr,timeStr){
+  const ds=String(dateStr||'').trim();
+  const ts=String(timeStr||'').trim();
+  const p=ds.split('.');
+  if(p.length!==3) return 0;
+  const day=Number(p[0]), month=Number(p[1])-1, year=Number(p[2]);
+  let hour=0, minute=0;
+  if(/^\d{2}:\d{2}$/.test(ts)){
+    const tp=ts.split(':');
+    hour=Number(tp[0])||0;
+    minute=Number(tp[1])||0;
+  }
+  const d=new Date(year,month,day,hour,minute,0,0);
+  return isNaN(d)?0:d.getTime();
+}
 
 function getPastWeeks(n){
   const result=[];
@@ -406,7 +421,7 @@ function parseChecksFromRows(rows){
   // берём только последние 100 уникальных чеков
   var map=new Map();
   dataRows.forEach(function(r){if(!r||!r[0]) return; var num=String(r[0]).trim(); if(!map.has(num)){map.set(num,{num:num,date:normalizeDate(r[1]),time:normalizeTime(r[2]),point:String(r[3]||'').trim(),seller:String(r[4]||'').trim(),pay:String(r[5]||'').trim(),selfPay:String(r[6]||'').trim(),edited:String(r[13]||'').trim().toLowerCase()==='да',comment:String(r[14]||'').trim(),items:[]});} map.get(num).items.push({name:String(r[7]||'').trim(),qty:toNum(r[8]),price:toNum(r[9]),sum:toNum(r[10])});});
-  var all=Array.from(map.values()).map(function(x){var byFlavor={}; x.items.forEach(function(it){if(!byFlavor[it.name]) byFlavor[it.name]={name:it.name,qty:0,sum:0}; byFlavor[it.name].qty+=Number(it.qty||0); byFlavor[it.name].sum+=Number(it.sum||0);}); x.items=Object.values(byFlavor); x.sum=x.items.reduce(function(a,it){return a+it.sum;},0); return x;}).sort(function(a,b){var ta=a.date+' '+a.time, tb=b.date+' '+b.time; return tb>ta?1:tb<ta?-1:0;});
+  var all=Array.from(map.values()).map(function(x){var byFlavor={}; x.items.forEach(function(it){if(!byFlavor[it.name]) byFlavor[it.name]={name:it.name,qty:0,sum:0}; byFlavor[it.name].qty+=Number(it.qty||0); byFlavor[it.name].sum+=Number(it.sum||0);}); x.items=Object.values(byFlavor); x.sum=x.items.reduce(function(a,it){return a+it.sum;},0); return x;}).sort(function(a,b){return parseDateTime(b.date,b.time)-parseDateTime(a.date,a.time);});
   return all.slice(0,100);
 }
 
