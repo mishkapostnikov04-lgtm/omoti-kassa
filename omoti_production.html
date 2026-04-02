@@ -56,7 +56,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .type-chip.active.lepka{background:var(--teal);border-color:var(--teal);color:#fff}
 .type-chip.active.nachinka{background:var(--amber);border-color:var(--amber);color:#fff}
 
-.date-inp{width:100%;border:2px solid var(--border);background:#fff;border-radius:12px;padding:12px 14px;font-size:15px;font-weight:700;font-family:inherit;color:var(--text);outline:none}
+.date-inp{width:100%;max-width:100%;box-sizing:border-box;border:2px solid var(--border);background:#fff;border-radius:12px;padding:12px 10px;font-size:15px;font-weight:600;font-family:inherit;color:var(--text);outline:none;-webkit-appearance:none;appearance:none}
 .date-inp:focus{border-color:var(--green)}
 
 .progress-wrap{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);margin:12px 14px 0;padding:14px 16px}
@@ -273,7 +273,11 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 
 <!-- HISTORY -->
 <div class="screen" id="screen-history">
-  <div class="spinner" id="history-spinner">Загружаю...</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px 0">
+    <span style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">История смен</span>
+    <button onclick="refreshHistory()" style="font-size:12px;color:var(--green);background:none;border:none;cursor:pointer;font-family:inherit;font-weight:600;padding:4px 0">↻ Обновить</button>
+  </div>
+  <div class="spinner" id="history-spinner" style="display:none">Загружаю...</div>
   <div class="journal-list" id="journal-list"></div>
 </div>
 
@@ -370,8 +374,17 @@ function switchTab(tab){
   document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['form','history','stats'][i]===tab));
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+tab).classList.add('active');
-  if((tab==='history'||tab==='stats')&&!dataLoaded){dataLoaded=true;loadRemoteData();}
-  else{if(tab==='history')renderJournal();if(tab==='stats')loadStats();}
+  if(tab==='history'||tab==='stats'){
+    if(!dataLoaded){dataLoaded=true;loadRemoteData();}
+    else{if(tab==='history')renderJournal();if(tab==='stats')loadStats();}
+  }
+}
+
+function refreshHistory(){
+  dataLoaded=true;
+  document.getElementById('history-spinner').style.display='block';
+  document.getElementById('journal-list').innerHTML='';
+  loadRemoteData();
 }
 
 function setPerson(el,name){
@@ -598,8 +611,19 @@ function loadRemoteData(){
   document.getElementById('history-spinner').style.display='block';
   return fetch(API+'?action=get_production&limit=200',{cache:'no-store'})
     .then(r=>r.json())
-    .then(json=>{allRecords=parseRecords(json.rows||[]);saveCache();renderJournal();loadStats();document.getElementById('history-spinner').style.display='none';})
-    .catch(()=>{const c=loadCache();if(c){allRecords=c;renderJournal();loadStats();}document.getElementById('history-spinner').style.display='none';showToast('Нет связи — кэшированные данные',false);});
+    .then(json=>{
+      allRecords=parseRecords(json.rows||[]);
+      saveCache();
+      renderJournal();
+      loadStats();
+      document.getElementById('history-spinner').style.display='none';
+    })
+    .catch(()=>{
+      const c=loadCache();
+      if(c){allRecords=c;renderJournal();loadStats();}
+      document.getElementById('history-spinner').style.display='none';
+      showToast('Нет связи — кэшированные данные',false);
+    });
 }
 function parseRecords(rows){
   return rows.filter(r=>r&&r[0]).map(r=>({id:String(r[0]),person:String(r[1]||''),workType:String(r[2]||''),date:String(r[3]||''),flavors:safeJson(r[4]),newFlavors:safeJson(r[5])||[],comment:String(r[6]||''),total:Number(r[7]||0),edited:String(r[8]||'').toLowerCase()==='да'})).sort((a,b)=>parseDate(b.date)-parseDate(a.date));
