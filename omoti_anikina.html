@@ -70,7 +70,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 <div class="sec-label" style="margin-top:16px">Оплата</div><div class="pay-grid" id="pay-grid"></div>
 <div class="self-clarify" id="self-clarify"><span style="font-size:11px;color:var(--muted);white-space:nowrap">Как оплатили:</span><button class="self-sub-btn active" onclick="setSelfPay(this,'Наличные')">Наличные</button><button class="self-sub-btn" onclick="setSelfPay(this,'Перевод')">Перевод</button></div>
 <div class="sec-label" style="margin-top:16px">Чек</div>
-<div class="cart-box"><div class="cart-empty" id="cart-empty">Выбери вкусы</div><div id="cart-items"></div><div class="cart-total" id="cart-total" style="display:none"><span>Итого</span><span id="total-sum"></span></div></div>
+<div class="cart-box"><div class="cart-empty" id="cart-empty">Выбери вкусы</div><div id="cart-items"></div><div class="cart-total" id="cart-total" style="display:none"><span>Итого <span id="total-qty" style="font-weight:700;font-size:15px;margin-left:6px"></span></span><span id="total-sum"></span></div></div>
 <div class="sec-label" style="margin-top:12px">Комментарий <span style="font-weight:400;color:var(--muted)">(необязательно)</span></div>
 <textarea class="comment-input" id="comment-input" rows="2" placeholder="Например: 500 ₽ наличными + 300 ₽ переводом"></textarea>
 <button class="close-btn" id="close-btn" onclick="closeCheck()" disabled style="margin-top:14px">Закрыть чек</button>
@@ -94,6 +94,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 <div id="stats-content" style="display:none">
 <div class="metrics-grid"><div class="metric-card"><div class="m-label">Продано, шт</div><div class="m-val" id="s-qty">—</div><div class="m-sub" id="s-sub"></div></div><div class="metric-card"><div class="m-label">Выручка</div><div class="m-val" id="s-earn">—</div><div class="m-sub">все продажи</div></div><div class="metric-card"><div class="m-label">Наличные в кассе</div><div class="m-val" id="s-cash">—</div><div class="m-sub">за период</div></div><div class="metric-card"><div class="m-label">Яндекс, шт</div><div class="m-val" id="s-ya">—</div><div class="m-sub">засчитаны</div></div></div>
 <div class="sec-label" style="margin-top:14px">По сотрудникам</div><div id="staff-stat-list"></div>
+<div id="debt-section" style="display:none"><div class="sec-label" style="margin-top:14px">Взяли без оплаты <span style="font-weight:400;color:var(--danger);text-transform:none;font-size:11px">(долг)</span></div><div id="debt-stat-list"></div></div>
 <div class="sec-label" style="margin-top:14px">Топ вкусов</div><div id="flavor-stat-list"></div>
 </div></div>
 </div>
@@ -121,7 +122,7 @@ function renderSellers(){document.getElementById('seller-row').innerHTML=sellers
 function renderPayBtns(){document.getElementById('pay-grid').innerHTML=PAY_TYPES.map(type=>`<button class="pay-btn ${type===payType?'active':''}" onclick="setPay(this,'${escJs(type)}')">${escHtml(type)}</button>`).join('');}
 function renderFlavors(){var isEdit=!!editNum; document.getElementById('flavors-grid').innerHTML=FLAVORS.map(f=>{const q=cart[f]||0; var disabled=isEdit?'disabled style="opacity:0.5;cursor:not-allowed"':''; return `<button class="flavor-btn ${PREMIUM.has(f)?'gold':''} ${q>0?'active':''}" onclick="if(!editNum)changeQty('${escJs(f)}',1)" ${disabled}>${escHtml(f)}${q?`<span class="qty-badge">${q}</span>`:''}</button>`;}).join(''); if(isEdit){var hint=document.getElementById('flavor-edit-hint'); if(!hint){hint=document.createElement('div'); hint.id='flavor-edit-hint'; hint.style='font-size:11px;color:var(--muted);margin-bottom:8px'; hint.textContent='При редактировании используй + / − в чеке'; document.getElementById('flavors-grid').before(hint);}}else{var h=document.getElementById('flavor-edit-hint'); if(h)h.remove();}}
 function changeQty(name,delta){cart[name]=(cart[name]||0)+delta; if(cart[name]<=0) delete cart[name]; updateCart();}
-function updateCart(){const items=Object.entries(cart).filter(([k,v])=>v>0), empty=document.getElementById('cart-empty'), itemsEl=document.getElementById('cart-items'), totalEl=document.getElementById('cart-total'), btn=document.getElementById('close-btn'); renderFlavors(); if(!items.length){empty.style.display='block';itemsEl.innerHTML='';totalEl.style.display='none';btn.disabled=true;return;} empty.style.display='none'; btn.disabled=!(seller&&payType&&(payType!=='Себе оплачено'||selfPayType)); let total=0; itemsEl.innerHTML=items.map(([n,q])=>{const p=getPrice(n,payType); total+=p*q; return `<div class="cart-item"><span class="ci-name">${escHtml(n)}</span><div class="ci-ctrl"><button class="c-btn" onclick="changeQty('${escJs(n)}',-1)">−</button><span class="ci-qty">${q}</span><button class="c-btn" onclick="changeQty('${escJs(n)}',1)">+</button><span class="ci-price">${money(p*q)}</span></div></div>`;}).join(''); totalEl.style.display='flex'; document.getElementById('total-sum').textContent=money(total);}
+function updateCart(){const items=Object.entries(cart).filter(([k,v])=>v>0), empty=document.getElementById('cart-empty'), itemsEl=document.getElementById('cart-items'), totalEl=document.getElementById('cart-total'), btn=document.getElementById('close-btn'); renderFlavors(); if(!items.length){empty.style.display='block';itemsEl.innerHTML='';totalEl.style.display='none';btn.disabled=true;return;} empty.style.display='none'; btn.disabled=!(seller&&payType&&(payType!=='Себе оплачено'||selfPayType)); let total=0; itemsEl.innerHTML=items.map(([n,q])=>{const p=getPrice(n,payType); total+=p*q; return `<div class="cart-item"><span class="ci-name">${escHtml(n)}</span><div class="ci-ctrl"><button class="c-btn" onclick="changeQty('${escJs(n)}',-1)">−</button><span class="ci-qty">${q}</span><button class="c-btn" onclick="changeQty('${escJs(n)}',1)">+</button><span class="ci-price">${money(p*q)}</span></div></div>`;}).join(''); const totalQty=items.reduce((a,[,q])=>a+q,0); totalEl.style.display='flex'; document.getElementById('total-qty').textContent=totalQty+' шт'; document.getElementById('total-sum').textContent=money(total);}
 function setSeller(el,name){seller=name; document.querySelectorAll('.seller-btn').forEach(b=>b.classList.remove('active')); el.classList.add('active'); updateCart();}
 function setPay(el,type){payType=type; document.querySelectorAll('.pay-btn').forEach(b=>b.classList.remove('active')); el.classList.add('active'); document.getElementById('self-clarify').className='self-clarify'+(type==='Себе оплачено'?' visible':''); updateCart();}
 function setSelfPay(el,type){selfPayType=type; document.querySelectorAll('.self-sub-btn').forEach(b=>b.classList.remove('active')); el.classList.add('active'); updateCart();}
@@ -281,6 +282,26 @@ function loadStats(){
     `<div class="staff-stat-row" style="border-bottom:2px solid var(--border)"><span class="ss-name" style="color:var(--muted);font-weight:400;font-size:11px">Имя</span><span class="ss-qty" style="color:var(--muted);font-weight:400;font-size:11px;text-align:right">Продано</span></div>`+
     staffRows.map(([name,s])=>`<div class="staff-stat-row"><span class="ss-name">${escHtml(name)}</span><span class="ss-qty">${s.qty} шт</span></div>`).join(''):
     `<div style="font-size:13px;color:var(--muted);text-align:center;padding:16px 0">Нет данных</div>`;
+  // Взяли без оплаты — только не-собственники (исключаем Анну и Евгения)
+  const OWNERS = new Set(['Анна','Евгений']);
+  const debtMap={};
+  inRange.forEach(function(j){
+    if(j.pay==='Себе без оплаты' && !OWNERS.has(j.seller)){
+      const s=j.seller||'—';
+      if(!debtMap[s]) debtMap[s]={qty:0,sum:0};
+      debtMap[s].qty+=j.items.reduce((a,x)=>a+x.qty,0);
+      debtMap[s].sum+=j.sum;
+    }
+  });
+  const debtRows=Object.entries(debtMap).sort((a,b)=>b[1].sum-a[1].sum);
+  const debtEl=document.getElementById('debt-stat-list');
+  if(debtRows.length){
+    debtEl.innerHTML=`<div class="staff-stat-row" style="border-bottom:2px solid var(--border)"><span class="ss-name" style="color:var(--muted);font-weight:400;font-size:11px">Имя</span><span class="ss-qty" style="color:var(--muted);font-weight:400;font-size:11px;text-align:right">Шт</span><span class="ss-payout" style="color:var(--muted);font-weight:400;font-size:11px;text-align:right">Сумма</span></div>`+
+      debtRows.map(([name,s])=>`<div class="staff-stat-row"><span class="ss-name">${escHtml(name)}</span><span class="ss-qty">${s.qty} шт</span><span class="ss-payout" style="color:var(--danger)">${money(s.sum)}</span></div>`).join('');
+    document.getElementById('debt-section').style.display='block';
+  } else {
+    document.getElementById('debt-section').style.display='none';
+  }
   document.getElementById('stats-spinner').style.display='none'; document.getElementById('stats-content').style.display='block';
 }
 function ensureHeader(){return fetch(API).then(function(r){return r.json();}).then(function(json){var rows=Array.isArray(json.rows)?json.rows:[]; if(!rows.length||String(rows[0][0]).trim()!=='№'){return fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'init_header'})});}}).catch(function(){});}
