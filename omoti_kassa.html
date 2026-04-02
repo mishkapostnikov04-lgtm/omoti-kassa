@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>OMOTI · Касса</title>
-<style>
+<script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=N-lr1ql9kSFyI7w0qBXBgRYtl6GoDV78SSvKfovlurz7gJTmkY_63JHM304GvVQUmLF81Q2vCax11yOJsKlIcFIrw30R1u-IckIQ_gnC_02XznfTFDPt48ixzG2YFt2B-BitALAzKVQ9OQ2-GGm18rfsqjGk5vkHeCTvXa2zPoNENbbRqvJV9N5i2l1lbvwrihc8tiTPStcrJPN-ZibsgnE1WK2BFfN2fK0diZLnguVkODNPJRQnP0WoM4N7_pNtril4Q9cFlfKXFssA3s5jAg" charset="UTF-8"></script><style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{--bg:#f7f6f2;--card:#fff;--text:#1a1a1a;--muted:#888;--border:#e0ddd6;--accent:#1a1a1a;--accent-fg:#fff;--gold:#d3aa4f;--radius:16px;--success-bg:#edf8ef;--success-border:#cfe5d3;--success-text:#234b2b;--danger:#d95555}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
@@ -117,6 +117,8 @@ function escHtml(s){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt
 function escJs(s){return String(s).replaceAll('\\','\\\\').replaceAll("'","\\'");}
 function money(n){return Number(n||0).toLocaleString('ru-RU')+' ₽';}
 
+function parseDateTime(dateStr,timeStr){const d=String(dateStr||'').split('.'); const t=String(timeStr||'').split(':'); if(d.length!==3) return 0; return new Date(Number(d[2]),Number(d[1])-1,Number(d[0]),Number(t[0]||0),Number(t[1]||0),0,0).getTime();}
+
 function renderSellers(){document.getElementById('seller-row').innerHTML=sellers.map(name=>`<button class="seller-btn ${name===seller?'active':''}" onclick="setSeller(this,'${escJs(name)}')">${escHtml(name)}</button>`).join('')+`<button class="seller-btn add-btn" onclick="showModal()">+</button>`;}
 function renderPayBtns(){document.getElementById('pay-grid').innerHTML=PAY_TYPES.map(type=>`<button class="pay-btn ${type===payType?'active':''}" onclick="setPay(this,'${escJs(type)}')">${escHtml(type)}</button>`).join('');}
 function renderFlavors(){var isEdit=!!editNum; document.getElementById('flavors-grid').innerHTML=FLAVORS.map(f=>{const q=cart[f]||0; var disabled=isEdit?'disabled style="opacity:0.5;cursor:not-allowed"':''; return `<button class="flavor-btn ${PREMIUM.has(f)?'gold':''} ${q>0?'active':''}" onclick="if(!editNum)changeQty('${escJs(f)}',1)" ${disabled}>${escHtml(f)}${q?`<span class="qty-badge">${q}</span>`:''}</button>`;}).join(''); if(isEdit){var hint=document.getElementById('flavor-edit-hint'); if(!hint){hint=document.createElement('div'); hint.id='flavor-edit-hint'; hint.style='font-size:11px;color:var(--muted);margin-bottom:8px'; hint.textContent='При редактировании используй + / − в чеке'; document.getElementById('flavors-grid').before(hint);}}else{var h=document.getElementById('flavor-edit-hint'); if(h)h.remove();}}
@@ -146,7 +148,7 @@ function closeCheck(){var items=Object.entries(cart).filter(function(x){return x
     itemsData.forEach(function(x){if(!byFlavor[x.name])byFlavor[x.name]={name:x.name,qty:0,sum:0}; byFlavor[x.name].qty+=x.qty; byFlavor[x.name].sum+=x.price*x.qty;});
     var newCheck={num:num,date:date,time:time,point:'Новогодняя',seller:seller,pay:payType,selfPay:payType==='Себе оплачено'?selfPayType:'',edited:isEdit,items:Object.values(byFlavor),sum:checkSum,earn:checkEarn};
     allChecks.unshift(newCheck);
-    allChecks.sort(function(a,b){var ta=a.date+' '+a.time, tb=b.date+' '+b.time; return tb>ta?1:tb<ta?-1:0;});
+    allChecks.sort(function(a,b){return parseDateTime(b.date,b.time)-parseDateTime(a.date,a.time);});
     resetForm();
     renderJournal();
     loadStats();
@@ -318,7 +320,7 @@ function parseChecksFromRows(rows){
   // берём только последние 100 уникальных чеков
   var map=new Map();
   dataRows.forEach(function(r){if(!r||!r[0]) return; var num=String(r[0]).trim(); if(!map.has(num)){map.set(num,{num:num,date:normalizeDate(r[1]),time:normalizeTime(r[2]),point:String(r[3]||'').trim(),seller:String(r[4]||'').trim(),pay:String(r[5]||'').trim(),selfPay:String(r[6]||'').trim(),edited:String(r[13]||'').trim().toLowerCase()==='да',comment:String(r[14]||'').trim(),items:[]});} map.get(num).items.push({name:String(r[7]||'').trim(),qty:toNum(r[8]),price:toNum(r[9]),sum:toNum(r[10])});});
-  var all=Array.from(map.values()).map(function(x){var byFlavor={}; x.items.forEach(function(it){if(!byFlavor[it.name]) byFlavor[it.name]={name:it.name,qty:0,sum:0}; byFlavor[it.name].qty+=Number(it.qty||0); byFlavor[it.name].sum+=Number(it.sum||0);}); x.items=Object.values(byFlavor); x.sum=x.items.reduce(function(a,it){return a+it.sum;},0); return x;}).sort(function(a,b){var ta=a.date+' '+a.time, tb=b.date+' '+b.time; return tb>ta?1:tb<ta?-1:0;});
+  var all=Array.from(map.values()).map(function(x){var byFlavor={}; x.items.forEach(function(it){if(!byFlavor[it.name]) byFlavor[it.name]={name:it.name,qty:0,sum:0}; byFlavor[it.name].qty+=Number(it.qty||0); byFlavor[it.name].sum+=Number(it.sum||0);}); x.items=Object.values(byFlavor); x.sum=x.items.reduce(function(a,it){return a+it.sum;},0); return x;}).sort(function(a,b){return parseDateTime(b.date,b.time)-parseDateTime(a.date,a.time);});
   return all.slice(0,100);
 }
 
