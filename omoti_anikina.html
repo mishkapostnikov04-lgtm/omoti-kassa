@@ -95,6 +95,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 <div class="metrics-grid"><div class="metric-card"><div class="m-label">Продано, шт</div><div class="m-val" id="s-qty">—</div><div class="m-sub" id="s-sub"></div></div><div class="metric-card"><div class="m-label">Выручка</div><div class="m-val" id="s-earn">—</div><div class="m-sub">все продажи</div></div><div class="metric-card"><div class="m-label">Наличные в кассе</div><div class="m-val" id="s-cash">—</div><div class="m-sub">за период</div></div><div class="metric-card"><div class="m-label">Яндекс, шт</div><div class="m-val" id="s-ya">—</div><div class="m-sub">засчитаны</div></div></div>
 <div class="sec-label" style="margin-top:14px">По сотрудникам</div><div id="staff-stat-list"></div>
 <div id="debt-section" style="display:none"><div class="sec-label" style="margin-top:14px">Взяли без оплаты <span style="font-weight:400;color:var(--danger);text-transform:none;font-size:11px">(долг)</span></div><div id="debt-stat-list"></div></div>
+<div id="brak-section" style="display:none"><div class="sec-label" style="margin-top:14px">Брак <span style="font-weight:400;color:var(--danger);text-transform:none;font-size:11px">(списано)</span></div><div id="brak-stat-list"></div></div>
 <div class="sec-label" style="margin-top:14px">Топ вкусов</div><div id="flavor-stat-list"></div>
 </div></div>
 </div>
@@ -107,19 +108,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 const API = 'https://script.google.com/macros/s/AKfycbwP7_mB2CklN-iNzv8lquiQYy-Kx2hYO6JVqjkuP1mcRqbHji7uXmG0y_HHQpHUNMVlUA/exec';
 const FLAVORS = ['Арбуз - Дыня','Бабл Гам','Банан- Нутелла','Вишня-Тонка','Дубайский шоколад','Киви-Алоэ','Клубника','Кокос-Маракуйя','Кокосовый пломбир','Кофе-Карамель','Криспи','Малина-Ваниль','Матча-Манго','Мохито','Печенье с топлёным молоком','Сливочный лимон','Смородина','Сникерс','Трюфель','Твикс','Шоколад'].sort((a,b)=>a.localeCompare(b,'ru')).concat(['Мункейки']);
 const PREMIUM = new Set(['Дубайский шоколад','Криспи']);
-const PAY_TYPES = ['Безналичный','Наличный','Перевод','Яндекс','Себе оплачено','Себе без оплаты'];
+const PAY_TYPES = ['Безналичный','Наличный','Перевод','Яндекс','Себе оплачено','Себе без оплаты','Брак'];
 let sellers = loadSellers(), cart = {}, seller = '', payType = '', selfPayType = 'Наличные', allChecks = [], editNum = null, editDate = '', editTime = '', comment = '';
 
 function loadSellers(){try{const x=JSON.parse(localStorage.getItem('omoti_sellers_anikina')||'null'); return Array.isArray(x)&&x.length?x:['Анна','Евгений','Людмила','Марина'];}catch(e){return ['Анна','Евгений','Людмила','Марина'];}}
 function saveSellers(){localStorage.setItem('omoti_sellers_anikina', JSON.stringify(sellers));}
-function getPrice(name,pay){if(name==='Мункейки'){if(pay==='Яндекс') return 750; if(pay==='Себе оплачено'||pay==='Себе без оплаты') return 360; return 600;} const p=PREMIUM.has(name); if(pay==='Яндекс') return p?250:200; if(pay==='Себе оплачено'||pay==='Себе без оплаты') return p?110:100; return p?200:180;}
+function getPrice(name,pay){if(pay==='Брак') return 0; if(name==='Мункейки'){if(pay==='Яндекс') return 750; if(pay==='Себе оплачено'||pay==='Себе без оплаты') return 360; return 600;} const p=PREMIUM.has(name); if(pay==='Яндекс') return p?250:200; if(pay==='Себе оплачено'||pay==='Себе без оплаты') return p?110:100; return p?200:180;}
 function escHtml(s){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;");}
 function escJs(s){return String(s).replaceAll('\\','\\\\').replaceAll("'","\\'");}
 function money(n){return Number(n||0).toLocaleString('ru-RU')+' ₽';}
 function parseDateTime(dateStr,timeStr){const d=parseDate(dateStr); if(!d) return 0; const m=String(timeStr||'').match(/^(\d{2}):(\d{2})$/); if(m){d.setHours(Number(m[1]),Number(m[2]),0,0);}else{d.setHours(0,0,0,0);} return d.getTime();}
 
 function renderSellers(){document.getElementById('seller-row').innerHTML=sellers.map(name=>`<button class="seller-btn ${name===seller?'active':''}" onclick="setSeller(this,'${escJs(name)}')">${escHtml(name)}</button>`).join('')+`<button class="seller-btn add-btn" onclick="showModal()">+</button>`;}
-function renderPayBtns(){document.getElementById('pay-grid').innerHTML=PAY_TYPES.map(type=>`<button class="pay-btn ${type===payType?'active':''}" onclick="setPay(this,'${escJs(type)}')">${escHtml(type)}</button>`).join('');}
+function renderPayBtns(){document.getElementById('pay-grid').innerHTML=PAY_TYPES.map(type=>{const isBrak=type==='Брак'; return `<button class="pay-btn ${type===payType?'active':''}" style="${isBrak&&type===payType?'background:var(--danger);border-color:var(--danger);':isBrak?'border-color:var(--danger);color:var(--danger);':''}" onclick="setPay(this,'${escJs(type)}')">${escHtml(type)}</button>`;}).join('');}
 function renderFlavors(){var isEdit=!!editNum; document.getElementById('flavors-grid').innerHTML=FLAVORS.map(f=>{const q=cart[f]||0; var disabled=isEdit?'disabled style="opacity:0.5;cursor:not-allowed"':''; return `<button class="flavor-btn ${PREMIUM.has(f)?'gold':''} ${q>0?'active':''}" onclick="if(!editNum)changeQty('${escJs(f)}',1)" ${disabled}>${escHtml(f)}${q?`<span class="qty-badge">${q}</span>`:''}</button>`;}).join(''); if(isEdit){var hint=document.getElementById('flavor-edit-hint'); if(!hint){hint=document.createElement('div'); hint.id='flavor-edit-hint'; hint.style='font-size:11px;color:var(--muted);margin-bottom:8px'; hint.textContent='При редактировании используй + / − в чеке'; document.getElementById('flavors-grid').before(hint);}}else{var h=document.getElementById('flavor-edit-hint'); if(h)h.remove();}}
 function changeQty(name,delta){cart[name]=(cart[name]||0)+delta; if(cart[name]<=0) delete cart[name]; updateCart();}
 function updateCart(){const items=Object.entries(cart).filter(([k,v])=>v>0), empty=document.getElementById('cart-empty'), itemsEl=document.getElementById('cart-items'), totalEl=document.getElementById('cart-total'), btn=document.getElementById('close-btn'); renderFlavors(); if(!items.length){empty.style.display='block';itemsEl.innerHTML='';totalEl.style.display='none';btn.disabled=true;return;} empty.style.display='none'; btn.disabled=!(seller&&payType&&(payType!=='Себе оплачено'||selfPayType)); let total=0; itemsEl.innerHTML=items.map(([n,q])=>{const p=getPrice(n,payType); total+=p*q; return `<div class="cart-item"><span class="ci-name">${escHtml(n)}</span><div class="ci-ctrl"><button class="c-btn" onclick="changeQty('${escJs(n)}',-1)">−</button><span class="ci-qty">${q}</span><button class="c-btn" onclick="changeQty('${escJs(n)}',1)">+</button><span class="ci-price">${money(p*q)}</span></div></div>`;}).join(''); const totalQty=items.reduce((a,[,q])=>a+q,0); totalEl.style.display='flex'; document.getElementById('total-qty').textContent=totalQty+' шт'; document.getElementById('total-sum').textContent=money(total);}
@@ -135,8 +136,9 @@ function nowTime(){const n=new Date(); return String(n.getHours()).padStart(2,'0
 function closeCheck(){var items=Object.entries(cart).filter(function(x){return x[1]>0;}); if(!items.length) return; var isEdit=!!editNum, num=isEdit?editNum:nextCheckNum(), date=isEdit?editDate:nowDate(), time=isEdit?editTime:nowTime(); var itemsData=items.map(function(x){return {name:x[0],qty:x[1],price:getPrice(x[0],payType)};}); var payload={action:'save_check',num:num,date:date,time:time,point:'Аникина',seller:seller,pay:payType,selfPay:payType==='Себе оплачено'?selfPayType:'',edited:isEdit,items:itemsData};
   var btn=document.getElementById('close-btn'); btn.textContent='Сохраняю...'; btn.classList.add('loading'); btn.disabled=true;
   var isSelf=payType==='Себе оплачено'||payType==='Себе без оплаты';
+  var isBrak=payType==='Брак';
   var checkSum=itemsData.reduce(function(a,x){return a+x.price*x.qty;},0);
-  var checkEarn=isSelf?0:itemsData.reduce(function(a,x){return a+x.qty*30;},0);
+  var checkEarn=(isSelf||isBrak)?0:itemsData.reduce(function(a,x){return a+x.qty*30;},0);
   fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)}).then(function(res){return res.json();}).then(function(json){
     if(!json.ok) throw new Error(json.error||'Ошибка сохранения');
     // Обновляем allChecks локально — не ждём перезагрузки с сервера
@@ -255,7 +257,7 @@ function loadStats(){
   const range=currentPeriodRange||{from:null,to:null,label:'Всё время'};
   const from=range.from, to=range.to;
   const inRange=allChecks.filter(j=>{const d=parseDate(j.date); if(!d) return false; if(!from&&!to) return true; return d>=from&&d<=to;});
-  const sold=inRange.filter(j=>j.pay!=='Себе оплачено'&&j.pay!=='Себе без оплаты');
+  const sold=inRange.filter(j=>j.pay!=='Себе оплачено'&&j.pay!=='Себе без оплаты'&&j.pay!=='Брак');
   const cash=inRange.filter(j=>j.pay==='Наличный');
   const ya=sold.filter(j=>j.pay==='Яндекс');
   const soldQty=sold.reduce((a,j)=>a+j.items.reduce((s,x)=>s+x.qty,0),0);
@@ -303,6 +305,21 @@ function loadStats(){
     document.getElementById('debt-section').style.display='none';
   }
   document.getElementById('stats-spinner').style.display='none'; document.getElementById('stats-content').style.display='block';
+  // Брак
+  const brakChecks=inRange.filter(j=>j.pay==='Брак');
+  const brakMap={};
+  brakChecks.forEach(function(j){j.items.forEach(function(x){brakMap[x.name]=(brakMap[x.name]||0)+x.qty;});});
+  const brakRows=Object.entries(brakMap).sort((a,b)=>b[1]-a[1]);
+  const brakQtyTotal=brakRows.reduce((a,[,q])=>a+q,0);
+  const brakEl=document.getElementById('brak-stat-list');
+  if(brakRows.length){
+    brakEl.innerHTML=`<div class="staff-stat-row" style="border-bottom:2px solid var(--border)"><span class="ss-name" style="color:var(--muted);font-weight:400;font-size:11px">Вкус</span><span class="ss-qty" style="color:var(--muted);font-weight:400;font-size:11px;text-align:right">Шт</span></div>`+
+      brakRows.map(([name,qty])=>`<div class="staff-stat-row"><span class="ss-name">${escHtml(name)}</span><span class="ss-qty" style="color:var(--danger);font-weight:700">${qty} шт</span></div>`).join('')+
+      `<div class="staff-stat-row" style="border-top:2px solid var(--border)"><span class="ss-name" style="font-weight:700">Итого</span><span class="ss-qty" style="color:var(--danger);font-weight:700">${brakQtyTotal} шт</span></div>`;
+    document.getElementById('brak-section').style.display='block';
+  } else {
+    document.getElementById('brak-section').style.display='none';
+  }
 }
 function ensureHeader(){return fetch(API).then(function(r){return r.json();}).then(function(json){var rows=Array.isArray(json.rows)?json.rows:[]; if(!rows.length||String(rows[0][0]).trim()!=='№'){return fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'init_header'})});}}).catch(function(){});}
 
