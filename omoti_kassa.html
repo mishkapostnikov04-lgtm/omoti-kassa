@@ -133,7 +133,7 @@ function nextCheckNum(){return Date.now();}
 function nowDate(){const n=new Date(); return String(n.getDate()).padStart(2,'0')+'.'+String(n.getMonth()+1).padStart(2,'0')+'.'+n.getFullYear();}
 function nowTime(){const n=new Date(); return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
 
-function closeCheck(){var items=Object.entries(cart).filter(function(x){return x[1]>0;}); if(!items.length) return; var isEdit=!!editNum, num=isEdit?editNum:nextCheckNum(), date=isEdit?editDate:nowDate(), time=isEdit?editTime:nowTime(); var itemsData=items.map(function(x){return {name:x[0],qty:x[1],price:getPrice(x[0],payType)};}); var payload={action:'save_check',num:num,date:date,time:time,point:'Новогодняя',seller:seller,pay:payType,selfPay:payType==='Себе оплачено'?selfPayType:'',edited:isEdit,items:itemsData};
+function closeCheck(){var items=Object.entries(cart).filter(function(x){return x[1]>0;}); if(!items.length) return; var isEdit=!!editNum, num=isEdit?editNum:nextCheckNum(), date=isEdit?editDate:nowDate(), time=isEdit?editTime:nowTime(); var itemsData=items.map(function(x){return {name:x[0],qty:x[1],price:getPrice(x[0],payType)};}); var comment=document.getElementById('comment-input').value.trim(); var payload={action:'save_check',num:num,date:date,time:time,point:'Новогодняя',seller:seller,pay:payType,selfPay:payType==='Себе оплачено'?selfPayType:'',edited:isEdit,items:itemsData,comment:comment};
   var btn=document.getElementById('close-btn'); btn.textContent='Сохраняю...'; btn.classList.add('loading'); btn.disabled=true;
   var isSelf=payType==='Себе оплачено'||payType==='Себе без оплаты';
   var checkSum=itemsData.reduce(function(a,x){return a+x.price*x.qty;},0);
