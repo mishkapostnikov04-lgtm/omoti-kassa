@@ -277,7 +277,8 @@ function loadStats(){
     const s=j.seller||'—';
     if(!staffMap[s]) staffMap[s]={qty:0};
     const isSelf=j.pay==='Себе оплачено'||j.pay==='Себе без оплаты';
-    if(!isSelf) staffMap[s].qty+=j.items.reduce((a,x)=>a+x.qty,0);
+    const isBrak=j.pay==='Брак';
+    if(!isSelf&&!isBrak) staffMap[s].qty+=j.items.reduce((a,x)=>a+x.qty,0);
   });
   const staffRows=Object.entries(staffMap).sort((a,b)=>b[1].qty-a[1].qty);
   document.getElementById('staff-stat-list').innerHTML=staffRows.length?
