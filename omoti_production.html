@@ -200,6 +200,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
     <button class="tab-btn active" onclick="switchTab('form')">Заполнить</button>
     <button class="tab-btn" onclick="switchTab('history')">История</button>
     <button class="tab-btn" onclick="switchTab('stats')">Итоги</button>
+    <button class="tab-btn" onclick="switchTab('plan')">План</button>
   </div>
 </div>
 
@@ -328,6 +329,20 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
   <input class="modal-inp" id="modal-inp" placeholder="Имя">
   <button class="modal-btn" onclick="modalConfirm()">Добавить</button>
 </div>
+<!-- PLAN -->
+<div class="screen" id="screen-plan">
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px 0">
+    <span style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">План на неделю</span>
+    <button onclick="refreshPlan()" style="font-size:12px;color:var(--green);background:none;border:none;cursor:pointer;font-family:inherit;font-weight:600;padding:4px 0">↻ Обновить</button>
+  </div>
+  <div class="spinner" id="plan-spinner" style="display:none">Загружаю...</div>
+  <div id="plan-changes-banner" style="display:none;margin:10px 14px 0;background:#fff8e1;border:2px solid #f0c040;border-radius:12px;padding:12px 14px">
+    <div style="font-size:11px;font-weight:800;color:#b08000;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">⚡ Изменения в плане</div>
+    <div id="plan-changes-list" style="font-size:13px;color:#7a6000;line-height:1.7"></div>
+  </div>
+  <div id="plan-content"></div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -375,12 +390,15 @@ function hideModal(){document.getElementById('overlay').style.display='none';doc
 function modalConfirm(){const v=document.getElementById('modal-inp').value.trim();if(!v)return;if(!persons.includes(v)){persons.push(v);savePersons();}person=v;renderPersons();validateForm();hideModal();}
 
 function switchTab(tab){
-  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['form','history','stats'][i]===tab));
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['form','history','stats','plan'][i]===tab));
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+tab).classList.add('active');
   if(tab==='history'||tab==='stats'){
     if(!dataLoaded){dataLoaded=true;loadRemoteData();}
     else{if(tab==='history')renderJournal();if(tab==='stats')loadStats();}
+  }
+  if(tab==='plan'){
+    if(!planLoaded){planLoaded=true;loadPlan();}
   }
 }
 
@@ -704,6 +722,101 @@ function escJs(s){return String(s).replaceAll('\\','\\\\').replaceAll("'","\\'")
 function escHtml(s){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');}
 function safeJson(v){try{return typeof v==='object'&&v!==null?v:JSON.parse(v);}catch(e){return {};}}
 function showToast(text,isErr){const el=document.getElementById('toast');el.textContent=text;el.className='toast show'+(isErr?' err':'');clearTimeout(showToast._t);showToast._t=setTimeout(()=>el.classList.remove('show'),2200);}
+
+// ── ПЛАН ─────────────────────────────────────────────────────────────────────
+let planLoaded=false;
+
+const DAY_NAMES=['Понедельник','Вторник','Среда','Четверг','Пятница'];
+const EMPTY_PHRASES=[
+  '🛋️ Сегодня наши ручки отдыхают',
+  '☕ День без плана — день кофе',
+  '😴 Этот день свободен, выдыхаем',
+  '🌿 Плановый выходной от теста',
+  '🎉 Сегодня просто живём'
+];
+
+function refreshPlan(){planLoaded=false;loadPlan();}
+
+function loadPlan(){
+  document.getElementById('plan-spinner').style.display='block';
+  document.getElementById('plan-content').innerHTML='';
+  document.getElementById('plan-changes-banner').style.display='none';
+  fetch(API+'?action=get_plan',{cache:'no-store'})
+    .then(r=>r.json())
+    .then(json=>{
+      document.getElementById('plan-spinner').style.display='none';
+      if(!json.ok){showToast('Не удалось загрузить план',true);return;}
+      renderPlan(json.plan, json.base, json.weekDates);
+    })
+    .catch(()=>{
+      document.getElementById('plan-spinner').style.display='none';
+      showToast('Нет связи — план недоступен',true);
+    });
+}
+
+function renderPlan(plan, base, weekDates){
+  const today=new Date(); today.setHours(0,0,0,0);
+  const content=document.getElementById('plan-content');
+
+  // Показываем изменения если есть base
+  if(base && Object.keys(base).length){
+    const changes=[];
+    // Проходим по всем дням и вкусам
+    const allDays=Object.keys(plan);
+    allDays.forEach(dateStr=>{
+      const planDay=plan[dateStr]||{};
+      const baseDay=base[dateStr]||{};
+      const allFlavors=new Set([...Object.keys(planDay),...Object.keys(baseDay)]);
+      allFlavors.forEach(flavor=>{
+        const pQty=planDay[flavor]||0;
+        const bQty=baseDay[flavor]||0;
+        if(pQty===bQty) return;
+        const dayLabel=weekDates&&weekDates[dateStr]?weekDates[dateStr]:dateStr;
+        if(bQty===0) changes.push(`${dayLabel}: добавлен <b>${escHtml(flavor)}</b> — ${pQty} шт`);
+        else if(pQty===0) changes.push(`${dayLabel}: убран <b>${escHtml(flavor)}</b> (было ${bQty} шт)`);
+        else changes.push(`${dayLabel}: <b>${escHtml(flavor)}</b> ${bQty}→${pQty} шт`);
+      });
+    });
+    if(changes.length){
+      document.getElementById('plan-changes-list').innerHTML=changes.join('<br>');
+      document.getElementById('plan-changes-banner').style.display='block';
+    }
+  }
+
+  // Рендерим дни Пн–Пт
+  const days=weekDates?Object.entries(weekDates):[];
+  if(!days.length){content.innerHTML='<div style="padding:28px;text-align:center;color:var(--muted);font-size:14px">План не заполнен</div>';return;}
+
+  content.innerHTML=days.map(([dateStr,dayLabel],idx)=>{
+    const dayPlan=plan[dateStr]||{};
+    const items=Object.entries(dayPlan).filter(([,q])=>q>0).sort((a,b)=>b[1]-a[1]);
+    const dayTotal=items.reduce((a,[,q])=>a+q,0);
+
+    // Определяем сегодня ли
+    const parts=dateStr.split('.');
+    const dayDate=new Date(Number(parts[2]),Number(parts[1])-1,Number(parts[0]),0,0,0,0);
+    const isToday=dayDate.getTime()===today.getTime();
+    const isPast=dayDate<today;
+
+    const emptyPhrase=EMPTY_PHRASES[idx%EMPTY_PHRASES.length];
+
+    return `<div style="margin:10px 14px 0">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+        <span style="font-size:14px;font-weight:800;color:${isToday?'var(--green)':isPast?'var(--muted2)':'var(--text)'}">${escHtml(DAY_NAMES[idx])}${isToday?' <span style="font-size:11px;font-weight:600;background:var(--green);color:#fff;border-radius:999px;padding:2px 8px;vertical-align:middle">сегодня</span>':''}</span>
+        <span style="font-size:11px;color:var(--muted)">${escHtml(dateStr)}${dayTotal?' · '+dayTotal+' шт':''}</span>
+      </div>
+      <div style="background:${isToday?'var(--green-light)':'var(--card)'};border:1.5px solid ${isToday?'var(--green)':'var(--border)'};border-radius:var(--radius);padding:12px 14px;opacity:${isPast&&!isToday?'0.6':'1'}">
+        ${items.length
+          ? items.map(([name,qty])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid ${isToday?'rgba(45,122,58,.15)':'var(--border)'}">
+              <span style="font-size:14px;color:var(--text)">${escHtml(name)}</span>
+              <span style="font-size:14px;font-weight:700;color:${isToday?'var(--green)':'var(--text)'}">${qty} шт</span>
+            </div>`).join('')
+          : `<div style="font-size:13px;color:var(--muted);text-align:center;padding:6px 0">${emptyPhrase}</div>`
+        }
+      </div>
+    </div>`;
+  }).join('');
+}
 
 buildDropdowns();
 const cached=loadCache();if(cached)allRecords=cached;
