@@ -851,13 +851,20 @@ function renderPlan(plan, base, weekDates){
 
   // Факт текущей недели по выбранному типу
   const fact=getWeekFact(planWorkType);
-  const weekTotal=fact._weekTotal||{}; // суммарно за неделю по вкусу
+  const weekTotal=fact._weekTotal||{};
 
-  // Считаем сколько уже "израсходовано" фактом по плану предыдущих дней
-  // чтобы правильно показывать остаток для каждого дня
-  const usedByPlan={}; // сколько факта уже зачтено в предыдущие дни плана
+  // Суммарный план за всю неделю по вкусу
+  const weekPlan={};
+  Object.values(plan).forEach(dayPlan=>{
+    Object.entries(dayPlan).forEach(([name,qty])=>{
+      weekPlan[name]=(weekPlan[name]||0)+qty;
+    });
+  });
 
-  // Получаем все дни недели Пн–Вс (7 дней от начала текущей недели)
+  // usedByPlan — сколько факта уже зачтено предыдущим дням плана
+  const usedByPlan={};
+
+  // Получаем все дни недели Пн–Вс
   const wStart=getWeekStart(today);
   const days=[];
   for(let i=0;i<7;i++){
@@ -882,71 +889,82 @@ function renderPlan(plan, base, weekDates){
     const dayPlan=plan[dateStr]||{};
     const planItems=Object.entries(dayPlan).filter(([,q])=>q>0).sort((a,b)=>b[1]-a[1]);
     const dayPlanTotal=planItems.reduce((a,[,q])=>a+q,0);
-
     const emptyPhrase=EMPTY_PHRASES[idx%EMPTY_PHRASES.length];
     const borderColor=isToday?'var(--green)':'var(--border)';
     const bgColor=isToday?'var(--green-light)':'var(--card)';
     const opacity=isPast&&!isToday?'0.65':'1';
 
-    // Считаем факт для каждой позиции этого дня (с учётом предыдущих дней)
+    // Для каждой позиции считаем сколько факта доступно с учётом предыдущих дней
     let dayFactTotal=0;
-    const itemsWithFact=planItems.map(([name,planQty])=>{
+    const itemRows=planItems.map(([name,planQty])=>{
       const totalDone=weekTotal[name]||0;
       const alreadyUsed=usedByPlan[name]||0;
       const available=Math.max(0, totalDone-alreadyUsed);
       const effectiveFact=Math.min(available, planQty);
-      return {name, planQty, effectiveFact};
+
+      // Обновляем использованное для следующих дней
+      if(!isFuture) {
+        usedByPlan[name]=(usedByPlan[name]||0)+effectiveFact;
+        dayFactTotal+=effectiveFact;
+      }
+
+      const st=stockData[name]||null;
+      let statusHtml='', nameStyle='font-size:14px;color:var(--text)';
+      let qtyHtml=`<span style="font-size:14px;font-weight:700;color:${isToday?'var(--green)':'var(--text)'}">${planQty} шт</span>`;
+
+      if(!isFuture){
+        if(effectiveFact>=planQty){
+          nameStyle='font-size:14px;color:var(--muted)';
+          statusHtml='<span style="font-size:12px;color:var(--muted);margin-right:6px">✓</span>';
+          qtyHtml=`<span style="font-size:14px;font-weight:700;color:var(--muted)">${planQty} шт</span>`;
+        } else if(effectiveFact>0){
+          qtyHtml=`<span style="font-size:13px;color:var(--muted);font-style:italic;margin-right:4px">${effectiveFact}/</span><span style="font-size:14px;font-weight:700;color:${isToday?'var(--green)':'var(--text)'}">${planQty} шт</span>`;
+        }
+      }
+
+      let stockHtml='';
+      if(st){
+        const daysLeft=st.days;
+        let stockColor='var(--muted2)', urgentMark='';
+        if(daysLeft<=2){stockColor='#c0392b';urgentMark='❗';}
+        else if(daysLeft<=5){stockColor='var(--amber)';}
+        stockHtml=`<div style="font-size:11px;color:${stockColor};margin-top:1px;text-align:right">${urgentMark}${st.stock} шт · ${daysLeft} дн</div>`;
+      }
+
+      return `<div style="padding:6px 0;border-bottom:1px solid ${isToday?'rgba(45,122,58,.15)':'var(--border)'}">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="${nameStyle}">${statusHtml}${escHtml(name)}</span>
+          <span>${qtyHtml}</span>
+        </div>${stockHtml}
+      </div>`;
     });
 
-    // Обновляем usedByPlan для следующих дней (только прошедшие и сегодня)
+    // Внеплановые вкусы — те что в факте за эту неделю, но нет в плане этого дня
+    // Показываем только в последний день недели где они были сделаны (суббота/воскресенье)
+    // или если weekTotal[name] > weekPlan[name] — сделали больше чем план на всю неделю
+    const extraRows=[];
     if(!isFuture){
-      itemsWithFact.forEach(({name,effectiveFact})=>{
-        usedByPlan[name]=(usedByPlan[name]||0)+effectiveFact;
+      Object.entries(weekTotal).forEach(([name,totalDone])=>{
+        if(dayPlan[name]) return; // уже в плане этого дня
+        const planTotal=weekPlan[name]||0;
+        const used=usedByPlan[name]||0;
+        const surplus=Math.max(0, totalDone-Math.max(planTotal,used));
+        // Показываем только в сегодняшнем дне если есть реальный излишек
+        if(surplus>0 && isToday){
+          extraRows.push(`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(45,122,58,.15)">
+            <span style="font-size:13px;color:var(--muted2);font-style:italic">+ ${escHtml(name)}</span>
+            <span style="font-size:13px;color:var(--muted2);font-style:italic">${surplus} шт</span>
+          </div>`);
+        }
       });
-      dayFactTotal=itemsWithFact.reduce((a,{effectiveFact})=>a+effectiveFact,0);
     }
 
-    // Внеплановые вкусы за эту неделю не привязанные к этому дню — не показываем
-    const rowsHtml = planItems.length ? [
-      ...itemsWithFact.map(({name,planQty,effectiveFact})=>{
-        const st=stockData[name]||null;
-        let statusHtml='';
-        let nameStyle='font-size:14px;color:var(--text)';
-        let qtyHtml=`<span style="font-size:14px;font-weight:700;color:${isToday?'var(--green)':'var(--text)'}">${planQty} шт</span>`;
+    const allRows=[...itemRows,...extraRows].join('');
+    const rowsHtml=allRows||`<div style="font-size:13px;color:var(--muted);text-align:center;padding:6px 0">${emptyPhrase}</div>`;
 
-        if(!isFuture){
-          if(effectiveFact>=planQty){
-            nameStyle='font-size:14px;color:var(--muted)';
-            statusHtml='<span style="font-size:12px;color:var(--muted);margin-right:6px">✓</span>';
-            qtyHtml=`<span style="font-size:14px;font-weight:700;color:var(--muted)">${planQty} шт</span>`;
-          } else if(effectiveFact>0){
-            qtyHtml=`<span style="font-size:13px;color:var(--muted);font-style:italic;margin-right:4px">${effectiveFact}/</span><span style="font-size:14px;font-weight:700;color:${isToday?'var(--green)':'var(--text)'}">${planQty} шт</span>`;
-          }
-        }
-
-        let stockHtml='';
-        if(st){
-          const daysLeft=st.days;
-          let stockColor='var(--muted2)';
-          let urgentMark='';
-          if(daysLeft<=2){stockColor='#c0392b';urgentMark='❗';}
-          else if(daysLeft<=5){stockColor='var(--amber)';}
-          stockHtml=`<div style="font-size:11px;color:${stockColor};margin-top:1px;text-align:right">${urgentMark}${st.stock} шт · ${daysLeft} дн</div>`;
-        }
-
-        return `<div style="padding:6px 0;border-bottom:1px solid ${isToday?'rgba(45,122,58,.15)':'var(--border)'}">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <span style="${nameStyle}">${statusHtml}${escHtml(name)}</span>
-            <span>${qtyHtml}</span>
-          </div>${stockHtml}
-        </div>`;
-      })
-    ].join('') : `<div style="font-size:13px;color:var(--muted);text-align:center;padding:6px 0">${emptyPhrase}</div>`;
-
-    // Заголовок дня: план и факт
-    const dayTotalLabel = (!isFuture && dayFactTotal>0)
-      ? ` · ${dayFactTotal}/${dayPlanTotal} шт`
-      : (dayPlanTotal ? ` · ${dayPlanTotal} шт` : '');
+    const dayTotalLabel=(!isFuture&&dayFactTotal>0)
+      ?` · ${dayFactTotal}/${dayPlanTotal} шт`
+      :(dayPlanTotal?` · ${dayPlanTotal} шт`:'');
 
     return `<div style="margin:10px 14px 0">
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
