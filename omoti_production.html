@@ -788,19 +788,13 @@ function loadPlan(){
     });
 }
 
-// Возвращает факт по вкусам за текущую неделю (Пн–Вс) для выбранного типа работы
-function getWeekFact(workType){
-  const today=new Date(); today.setHours(0,0,0,0);
-  // Начало текущей недели (пн)
-  const wStart=getWeekStart(today);
-  const wEnd=new Date(wStart); wEnd.setDate(wEnd.getDate()+6); wEnd.setHours(23,59,59,999);
-
-  // Суммируем по датам и вкусам
-  const fact={}; // { "06.04.2026": { "Банан- Нутелла": 120, ... } }
+// Возвращает факт по вкусам за указанный диапазон недели для выбранного типа работы
+function getWeekFact(workType, weekStart, weekEnd){
+  const fact={};
   allRecords.forEach(r=>{
     if(r.workType!==workType) return;
     const d=parseDate(r.date);
-    if(!d||d<wStart||d>wEnd) return;
+    if(!d||d<weekStart||d>weekEnd) return;
     const dateStr=formatDate(d);
     if(!fact[dateStr]) fact[dateStr]={};
     Object.entries(r.flavors).forEach(([name,qty])=>{
@@ -810,16 +804,13 @@ function getWeekFact(workType){
       fact[dateStr][nf.name]=(fact[dateStr][nf.name]||0)+Number(nf.qty||0);
     });
   });
-
-  // Считаем суммарный факт за всю неделю по каждому вкусу
   fact._weekTotal={};
   Object.values(fact).forEach(dayFact=>{
-    if(typeof dayFact !== 'object') return;
+    if(typeof dayFact!=='object') return;
     Object.entries(dayFact).forEach(([name,qty])=>{
       fact._weekTotal[name]=(fact._weekTotal[name]||0)+qty;
     });
   });
-
   return fact;
 }
 
@@ -849,8 +840,16 @@ function renderPlan(plan, base, weekDates){
     }
   }
 
-  // Факт текущей недели по выбранному типу
-  const fact=getWeekFact(planWorkType);
+  // Получаем дни из плана (Пн–Пт) + достраиваем до Вс
+  const planDays=Object.keys(plan).sort((a,b)=>parseDate(a)-parseDate(b));
+  if(!planDays.length){content.innerHTML='<div style="padding:28px;text-align:center;color:var(--muted);font-size:14px">План не заполнен</div>';return;}
+
+  // Диапазон недели: от первого дня плана до воскресенья той же недели
+  const weekStart=parseDate(planDays[0]); weekStart.setHours(0,0,0,0);
+  const weekEnd=new Date(weekStart); weekEnd.setDate(weekEnd.getDate()+6); weekEnd.setHours(23,59,59,999);
+
+  // Факт за неделю плана
+  const fact=getWeekFact(planWorkType, weekStart, weekEnd);
   const weekTotal=fact._weekTotal||{};
 
   // Суммарный план за всю неделю по вкусу
@@ -861,14 +860,12 @@ function renderPlan(plan, base, weekDates){
     });
   });
 
-  // usedByPlan — сколько факта уже зачтено предыдущим дням плана
   const usedByPlan={};
 
-  // Получаем все дни недели Пн–Вс
-  const wStart=getWeekStart(today);
+  // Строим 7 дней Пн–Вс от начала недели плана
   const days=[];
   for(let i=0;i<7;i++){
-    const d=new Date(wStart); d.setDate(d.getDate()+i);
+    const d=new Date(weekStart); d.setDate(d.getDate()+i);
     days.push(formatDate(d));
   }
 
@@ -907,7 +904,7 @@ function renderPlan(plan, base, weekDates){
     // Обновляем usedByPlan только по плановым вкусам этого дня
     itemsCalc.forEach(({name,effectiveFact})=>{
       usedByPlan[name]=(usedByPlan[name]||0)+effectiveFact;
-      if(!isFuture) dayFactTotal+=effectiveFact;
+      dayFactTotal+=effectiveFact;
     });
     const itemRows=itemsCalc.map(({name,planQty,effectiveFact})=>{
 
