@@ -730,7 +730,9 @@ function showToast(text,isErr){const el=document.getElementById('toast');el.text
 // ── ПЛАН ─────────────────────────────────────────────────────────────────────
 let planLoaded=false;
 let planData=null, planBase=null, planWeekDates=null;
-let planWorkType='Лепка'; // текущий тип: Лепка | Начинки
+let planWorkType='Лепка';
+let stockData={}; // { "Банан- Нутелла": { stock: 120, perDay: 15, days: 8 }, ... }
+let stockUpdatedAt='';
 
 const DAY_NAMES=['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'];
 const EMPTY_PHRASES=[
@@ -757,18 +759,23 @@ function loadPlan(){
   document.getElementById('plan-content').innerHTML='';
   document.getElementById('plan-changes-banner').style.display='none';
 
-  // Грузим план и историю параллельно
   const planFetch=fetch(API+'?action=get_plan',{cache:'no-store'}).then(r=>r.json());
+  const stockFetch=fetch(API+'?action=get_stock',{cache:'no-store'}).then(r=>r.json());
   const histFetch=dataLoaded
     ? Promise.resolve(null)
     : fetch(API+'?action=get_production&limit=200',{cache:'no-store'}).then(r=>r.json());
 
-  Promise.all([planFetch, histFetch])
-    .then(([planJson, histJson])=>{
+  Promise.all([planFetch, stockFetch, histFetch])
+    .then(([planJson, stockJson, histJson])=>{
       if(histJson&&histJson.ok){
         allRecords=parseRecords(histJson.rows||[]);
         saveCache();
         dataLoaded=true;
+      }
+      if(stockJson&&stockJson.ok){
+        stockData={};
+        (stockJson.items||[]).forEach(it=>{ stockData[it.name]=it; });
+        stockUpdatedAt=stockJson.updatedAt||'';
       }
       document.getElementById('plan-spinner').style.display='none';
       if(!planJson.ok){showToast('Не удалось загрузить план',true);return;}
@@ -846,7 +853,12 @@ function renderPlan(plan, base, weekDates){
 
   if(!days.length){content.innerHTML='<div style="padding:28px;text-align:center;color:var(--muted);font-size:14px">План не заполнен</div>';return;}
 
-  content.innerHTML=days.map((dateStr,idx)=>{
+  // Строка с временем обновления остатков
+  let stockBadge='';
+  if(stockUpdatedAt){
+    stockBadge=`<div style="margin:6px 14px 0;font-size:11px;color:var(--muted)">📦 Остатки обновлены: ${escHtml(stockUpdatedAt)} · <span style="color:#c0392b">❗≤2 дн</span> · <span style="color:var(--amber)">≤5 дн</span></div>`;
+  }
+  content.innerHTML=stockBadge+days.map((dateStr,idx)=>{
     const parts=dateStr.split('.');
     const dayDate=new Date(Number(parts[2]),Number(parts[1])-1,Number(parts[0]),0,0,0,0);
     const isToday=dayDate.getTime()===today.getTime();
@@ -870,26 +882,38 @@ function renderPlan(plan, base, weekDates){
     const rowsHtml = planItems.length || extraItems.length ? [
       ...planItems.map(([name,planQty])=>{
         const factQty=dayFact[name]||0;
+        const st=stockData[name]||null;
         let statusHtml='';
         let nameStyle='font-size:14px;color:var(--text)';
         let qtyHtml=`<span style="font-size:14px;font-weight:700;color:${isToday?'var(--green)':'var(--text)'}">${planQty} шт</span>`;
 
         if(!isFuture){
           if(factQty>=planQty){
-            // Выполнено
             nameStyle='font-size:14px;color:var(--muted)';
             statusHtml='<span style="font-size:12px;color:var(--muted);margin-right:6px">✓</span>';
             qtyHtml=`<span style="font-size:14px;font-weight:700;color:var(--muted)">${planQty} шт</span>`;
           } else if(factQty>0){
-            // Частично
             qtyHtml=`<span style="font-size:13px;color:var(--muted);font-style:italic;margin-right:4px">${factQty}/</span><span style="font-size:14px;font-weight:700;color:${isToday?'var(--green)':'var(--text)'}">${planQty} шт</span>`;
           }
-          // factQty===0 и день прошёл или сегодня — без выделения, обычный вид
         }
 
-        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid ${isToday?'rgba(45,122,58,.15)':'var(--border)'}">
-          <span style="${nameStyle}">${statusHtml}${escHtml(name)}</span>
-          <span>${qtyHtml}</span>
+        // Остаток — показываем всегда если есть данные
+        let stockHtml='';
+        if(st){
+          const days=st.days;
+          let stockColor='var(--muted2)';
+          let urgentMark='';
+          if(days<=2){stockColor='#c0392b';urgentMark='❗';}
+          else if(days<=5){stockColor='var(--amber)';}
+          stockHtml=`<div style="font-size:11px;color:${stockColor};margin-top:1px;text-align:right">${urgentMark}${st.stock} шт · ${days} дн</div>`;
+        }
+
+        return `<div style="padding:6px 0;border-bottom:1px solid ${isToday?'rgba(45,122,58,.15)':'var(--border)'}">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="${nameStyle}">${statusHtml}${escHtml(name)}</span>
+            <span>${qtyHtml}</span>
+          </div>
+          ${stockHtml}
         </div>`;
       }),
       ...extraItems.map(([name,factQty])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid ${isToday?'rgba(45,122,58,.15)':'var(--border)'}">
