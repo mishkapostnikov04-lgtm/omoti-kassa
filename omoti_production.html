@@ -806,11 +806,20 @@ function getWeekFact(workType){
     Object.entries(r.flavors).forEach(([name,qty])=>{
       fact[dateStr][name]=(fact[dateStr][name]||0)+Number(qty||0);
     });
-    // Новые вкусы
     (r.newFlavors||[]).forEach(nf=>{
       fact[dateStr][nf.name]=(fact[dateStr][nf.name]||0)+Number(nf.qty||0);
     });
   });
+
+  // Считаем суммарный факт за всю неделю по каждому вкусу
+  fact._weekTotal={};
+  Object.values(fact).forEach(dayFact=>{
+    if(typeof dayFact !== 'object') return;
+    Object.entries(dayFact).forEach(([name,qty])=>{
+      fact._weekTotal[name]=(fact._weekTotal[name]||0)+qty;
+    });
+  });
+
   return fact;
 }
 
@@ -842,6 +851,11 @@ function renderPlan(plan, base, weekDates){
 
   // Факт текущей недели по выбранному типу
   const fact=getWeekFact(planWorkType);
+  const weekTotal=fact._weekTotal||{}; // суммарно за неделю по вкусу
+
+  // Считаем сколько уже "израсходовано" фактом по плану предыдущих дней
+  // чтобы правильно показывать остаток для каждого дня
+  const usedByPlan={}; // сколько факта уже зачтено в предыдущие дни плана
 
   // Получаем все дни недели Пн–Вс (7 дней от начала текущей недели)
   const wStart=getWeekStart(today);
@@ -866,66 +880,78 @@ function renderPlan(plan, base, weekDates){
     const isFuture=dayDate>today;
 
     const dayPlan=plan[dateStr]||{};
-    const dayFact=fact[dateStr]||{};
     const planItems=Object.entries(dayPlan).filter(([,q])=>q>0).sort((a,b)=>b[1]-a[1]);
     const dayPlanTotal=planItems.reduce((a,[,q])=>a+q,0);
 
-    // Внеплановые вкусы (есть в факте, нет в плане)
-    const extraItems=Object.entries(dayFact).filter(([name,q])=>q>0&&!dayPlan[name]);
-
     const emptyPhrase=EMPTY_PHRASES[idx%EMPTY_PHRASES.length];
-
     const borderColor=isToday?'var(--green)':'var(--border)';
     const bgColor=isToday?'var(--green-light)':'var(--card)';
     const opacity=isPast&&!isToday?'0.65':'1';
 
-    const rowsHtml = planItems.length || extraItems.length ? [
-      ...planItems.map(([name,planQty])=>{
-        const factQty=dayFact[name]||0;
+    // Считаем факт для каждой позиции этого дня (с учётом предыдущих дней)
+    let dayFactTotal=0;
+    const itemsWithFact=planItems.map(([name,planQty])=>{
+      const totalDone=weekTotal[name]||0;
+      const alreadyUsed=usedByPlan[name]||0;
+      const available=Math.max(0, totalDone-alreadyUsed);
+      const effectiveFact=Math.min(available, planQty);
+      return {name, planQty, effectiveFact};
+    });
+
+    // Обновляем usedByPlan для следующих дней (только прошедшие и сегодня)
+    if(!isFuture){
+      itemsWithFact.forEach(({name,effectiveFact})=>{
+        usedByPlan[name]=(usedByPlan[name]||0)+effectiveFact;
+      });
+      dayFactTotal=itemsWithFact.reduce((a,{effectiveFact})=>a+effectiveFact,0);
+    }
+
+    // Внеплановые вкусы за эту неделю не привязанные к этому дню — не показываем
+    const rowsHtml = planItems.length ? [
+      ...itemsWithFact.map(({name,planQty,effectiveFact})=>{
         const st=stockData[name]||null;
         let statusHtml='';
         let nameStyle='font-size:14px;color:var(--text)';
         let qtyHtml=`<span style="font-size:14px;font-weight:700;color:${isToday?'var(--green)':'var(--text)'}">${planQty} шт</span>`;
 
         if(!isFuture){
-          if(factQty>=planQty){
+          if(effectiveFact>=planQty){
             nameStyle='font-size:14px;color:var(--muted)';
             statusHtml='<span style="font-size:12px;color:var(--muted);margin-right:6px">✓</span>';
             qtyHtml=`<span style="font-size:14px;font-weight:700;color:var(--muted)">${planQty} шт</span>`;
-          } else if(factQty>0){
-            qtyHtml=`<span style="font-size:13px;color:var(--muted);font-style:italic;margin-right:4px">${factQty}/</span><span style="font-size:14px;font-weight:700;color:${isToday?'var(--green)':'var(--text)'}">${planQty} шт</span>`;
+          } else if(effectiveFact>0){
+            qtyHtml=`<span style="font-size:13px;color:var(--muted);font-style:italic;margin-right:4px">${effectiveFact}/</span><span style="font-size:14px;font-weight:700;color:${isToday?'var(--green)':'var(--text)'}">${planQty} шт</span>`;
           }
         }
 
-        // Остаток — показываем всегда если есть данные
         let stockHtml='';
         if(st){
-          const days=st.days;
+          const daysLeft=st.days;
           let stockColor='var(--muted2)';
           let urgentMark='';
-          if(days<=2){stockColor='#c0392b';urgentMark='❗';}
-          else if(days<=5){stockColor='var(--amber)';}
-          stockHtml=`<div style="font-size:11px;color:${stockColor};margin-top:1px;text-align:right">${urgentMark}${st.stock} шт · ${days} дн</div>`;
+          if(daysLeft<=2){stockColor='#c0392b';urgentMark='❗';}
+          else if(daysLeft<=5){stockColor='var(--amber)';}
+          stockHtml=`<div style="font-size:11px;color:${stockColor};margin-top:1px;text-align:right">${urgentMark}${st.stock} шт · ${daysLeft} дн</div>`;
         }
 
         return `<div style="padding:6px 0;border-bottom:1px solid ${isToday?'rgba(45,122,58,.15)':'var(--border)'}">
           <div style="display:flex;justify-content:space-between;align-items:center">
             <span style="${nameStyle}">${statusHtml}${escHtml(name)}</span>
             <span>${qtyHtml}</span>
-          </div>
-          ${stockHtml}
+          </div>${stockHtml}
         </div>`;
-      }),
-      ...extraItems.map(([name,factQty])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid ${isToday?'rgba(45,122,58,.15)':'var(--border)'}">
-        <span style="font-size:13px;color:var(--muted2);font-style:italic">+ ${escHtml(name)}</span>
-        <span style="font-size:13px;color:var(--muted2);font-style:italic">${factQty} шт</span>
-      </div>`)
+      })
     ].join('') : `<div style="font-size:13px;color:var(--muted);text-align:center;padding:6px 0">${emptyPhrase}</div>`;
+
+    // Заголовок дня: план и факт
+    const dayTotalLabel = (!isFuture && dayFactTotal>0)
+      ? ` · ${dayFactTotal}/${dayPlanTotal} шт`
+      : (dayPlanTotal ? ` · ${dayPlanTotal} шт` : '');
 
     return `<div style="margin:10px 14px 0">
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
         <span style="font-size:14px;font-weight:800;color:${isToday?'var(--green)':isPast?'var(--muted2)':'var(--text)'}">${DAY_NAMES[idx]}${isToday?' <span style="font-size:11px;font-weight:600;background:var(--green);color:#fff;border-radius:999px;padding:2px 8px;vertical-align:middle">сегодня</span>':''}</span>
-        <span style="font-size:11px;color:var(--muted)">${dateStr}${dayPlanTotal?' · '+dayPlanTotal+' шт':''}</span>
+        <span style="font-size:11px;color:var(--muted)">${dateStr}${dayTotalLabel}</span>
       </div>
       <div style="background:${bgColor};border:1.5px solid ${borderColor};border-radius:var(--radius);padding:12px 14px;opacity:${opacity}">
         ${rowsHtml}
