@@ -896,17 +896,22 @@ function renderPlan(plan, base, weekDates){
 
     // Для каждой позиции считаем сколько факта доступно с учётом предыдущих дней
     let dayFactTotal=0;
-    const itemRows=planItems.map(([name,planQty])=>{
+    // Сначала считаем effectiveFact для всех позиций дня
+    const itemsCalc=planItems.map(([name,planQty])=>{
       const totalDone=weekTotal[name]||0;
       const alreadyUsed=usedByPlan[name]||0;
       const available=Math.max(0, totalDone-alreadyUsed);
       const effectiveFact=Math.min(available, planQty);
-
-      // Обновляем использованное для следующих дней
-      if(!isFuture) {
+      return {name, planQty, effectiveFact};
+    });
+    // Потом обновляем usedByPlan для следующих дней
+    if(!isFuture){
+      itemsCalc.forEach(({name,effectiveFact})=>{
         usedByPlan[name]=(usedByPlan[name]||0)+effectiveFact;
         dayFactTotal+=effectiveFact;
-      }
+      });
+    }
+    const itemRows=itemsCalc.map(({name,planQty,effectiveFact})=>{
 
       const st=stockData[name]||null;
       let statusHtml='', nameStyle='font-size:14px;color:var(--text)';
