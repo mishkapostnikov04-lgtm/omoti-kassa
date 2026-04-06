@@ -330,7 +330,7 @@ function parseChecksFromRows(rows){
   var map=new Map();
   dataRows.forEach(function(r){if(!r||!r[0]) return; var num=String(r[0]).trim(); if(!map.has(num)){map.set(num,{num:num,date:normalizeDate(r[1]),time:normalizeTime(r[2]),point:String(r[3]||'').trim(),seller:String(r[4]||'').trim(),pay:String(r[5]||'').trim(),selfPay:String(r[6]||'').trim(),edited:String(r[13]||'').trim().toLowerCase()==='да',comment:String(r[14]||'').trim(),items:[]});} map.get(num).items.push({name:String(r[7]||'').trim(),qty:toNum(r[8]),price:toNum(r[9]),sum:toNum(r[10])});});
   var all=Array.from(map.values()).map(function(x){var byFlavor={}; x.items.forEach(function(it){if(!byFlavor[it.name]) byFlavor[it.name]={name:it.name,qty:0,sum:0}; byFlavor[it.name].qty+=Number(it.qty||0); byFlavor[it.name].sum+=Number(it.sum||0);}); x.items=Object.values(byFlavor); x.sum=x.items.reduce(function(a,it){return a+it.sum;},0); return x;}).sort(function(a,b){return parseDateTime(b.date,b.time)-parseDateTime(a.date,a.time);});
-  return all.slice(0,100);
+  return all.slice(0,500);
 }
 
 function saveCacheChecks(checks){try{localStorage.setItem('omoti_checks_cache_anikina',JSON.stringify(checks)); localStorage.setItem('omoti_checks_ts_anikina',Date.now());}catch(e){}}
@@ -350,7 +350,7 @@ function loadRemoteData(silent){
   var cached=loadCacheChecks();
   if(cached&&cached.length){allChecks=cached; renderJournal(); loadStats(); document.getElementById('journal-spinner').style.display='none';}
   // Грузим свежие данные с таймаутом 10 сек
-  return fetchWithTimeout(API+'?limit=100',{cache:'no-store'},10000)
+  return fetchWithTimeout(API+'?limit=500',{cache:'no-store'},10000)
     .then(function(res){return res.json();})
     .then(function(json){
       var rows=Array.isArray(json.rows)?json.rows:[];
