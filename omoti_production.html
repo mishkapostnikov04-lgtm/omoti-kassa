@@ -960,7 +960,7 @@ function renderPlan(plan, base, weekDates){
     const allRows=[...itemRows,...extraRows].join('');
     const rowsHtml=allRows||`<div style="font-size:13px;color:var(--muted);text-align:center;padding:6px 0">${emptyPhrase}</div>`;
 
-    const dayTotalLabel=(!isFuture&&dayFactTotal>0)
+    const dayTotalLabel=(dayFactTotal>0)
       ?` · ${dayFactTotal}/${dayPlanTotal} шт`
       :(dayPlanTotal?` · ${dayPlanTotal} шт`:'');
 
