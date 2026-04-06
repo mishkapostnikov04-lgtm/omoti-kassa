@@ -910,6 +910,17 @@ function renderPlan(plan, base, weekDates){
         usedByPlan[name]=(usedByPlan[name]||0)+effectiveFact;
         dayFactTotal+=effectiveFact;
       });
+      // Также засчитываем внеплановые вкусы этого дня (сделанные не по плану)
+      // чтобы они не дублировались в следующих днях
+      Object.keys(weekTotal).forEach(name=>{
+        if(dayPlan[name]) return; // уже в плане, обработано выше
+        const totalDone=weekTotal[name]||0;
+        const alreadyUsed=usedByPlan[name]||0;
+        const planTotal=weekPlan[name]||0;
+        // Засчитываем минимум: либо сколько нужно по плану, либо сколько сделано сверх
+        const toCredit=Math.min(Math.max(0,totalDone-alreadyUsed), Math.max(0,planTotal-alreadyUsed));
+        if(toCredit>0) usedByPlan[name]=(usedByPlan[name]||0)+toCredit;
+      });
     }
     const itemRows=itemsCalc.map(({name,planQty,effectiveFact})=>{
 
