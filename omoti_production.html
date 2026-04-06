@@ -904,38 +904,23 @@ function renderPlan(plan, base, weekDates){
       const effectiveFact=Math.min(available, planQty);
       return {name, planQty, effectiveFact};
     });
-    // Потом обновляем usedByPlan для следующих дней
-    if(!isFuture){
-      itemsCalc.forEach(({name,effectiveFact})=>{
-        usedByPlan[name]=(usedByPlan[name]||0)+effectiveFact;
-        dayFactTotal+=effectiveFact;
-      });
-      // Также засчитываем внеплановые вкусы этого дня (сделанные не по плану)
-      // чтобы они не дублировались в следующих днях
-      Object.keys(weekTotal).forEach(name=>{
-        if(dayPlan[name]) return; // уже в плане, обработано выше
-        const totalDone=weekTotal[name]||0;
-        const alreadyUsed=usedByPlan[name]||0;
-        const planTotal=weekPlan[name]||0;
-        // Засчитываем минимум: либо сколько нужно по плану, либо сколько сделано сверх
-        const toCredit=Math.min(Math.max(0,totalDone-alreadyUsed), Math.max(0,planTotal-alreadyUsed));
-        if(toCredit>0) usedByPlan[name]=(usedByPlan[name]||0)+toCredit;
-      });
-    }
+    // Обновляем usedByPlan только по плановым вкусам этого дня
+    itemsCalc.forEach(({name,effectiveFact})=>{
+      usedByPlan[name]=(usedByPlan[name]||0)+effectiveFact;
+      if(!isFuture) dayFactTotal+=effectiveFact;
+    });
     const itemRows=itemsCalc.map(({name,planQty,effectiveFact})=>{
 
       const st=stockData[name]||null;
       let statusHtml='', nameStyle='font-size:14px;color:var(--text)';
       let qtyHtml=`<span style="font-size:14px;font-weight:700;color:${isToday?'var(--green)':'var(--text)'}">${planQty} шт</span>`;
 
-      if(!isFuture){
-        if(effectiveFact>=planQty){
-          nameStyle='font-size:14px;color:var(--muted)';
-          statusHtml='<span style="font-size:12px;color:var(--muted);margin-right:6px">✓</span>';
-          qtyHtml=`<span style="font-size:14px;font-weight:700;color:var(--muted)">${planQty} шт</span>`;
-        } else if(effectiveFact>0){
-          qtyHtml=`<span style="font-size:13px;color:var(--muted);font-style:italic;margin-right:4px">${effectiveFact}/</span><span style="font-size:14px;font-weight:700;color:${isToday?'var(--green)':'var(--text)'}">${planQty} шт</span>`;
-        }
+      if(effectiveFact>=planQty){
+        nameStyle='font-size:14px;color:var(--muted)';
+        statusHtml='<span style="font-size:12px;color:var(--muted);margin-right:6px">✓</span>';
+        qtyHtml=`<span style="font-size:14px;font-weight:700;color:var(--muted)">${planQty} шт</span>`;
+      } else if(effectiveFact>0){
+        qtyHtml=`<span style="font-size:13px;color:var(--muted);font-style:italic;margin-right:4px">${effectiveFact}/</span><span style="font-size:14px;font-weight:700;color:${isToday?'var(--green)':'var(--text)'}">${planQty} шт</span>`;
       }
 
       let stockHtml='';
