@@ -937,28 +937,7 @@ function renderPlan(plan, base, weekDates){
       </div>`;
     });
 
-    // Внеплановые вкусы — те что в факте за эту неделю, но нет в плане этого дня
-    // Показываем только в последний день недели где они были сделаны (суббота/воскресенье)
-    // или если weekTotal[name] > weekPlan[name] — сделали больше чем план на всю неделю
-    const extraRows=[];
-    if(!isFuture){
-      Object.entries(weekTotal).forEach(([name,totalDone])=>{
-        if(dayPlan[name]) return; // уже в плане этого дня
-        const planTotal=weekPlan[name]||0;
-        const used=usedByPlan[name]||0;
-        const surplus=Math.max(0, totalDone-Math.max(planTotal,used));
-        // Показываем только в сегодняшнем дне если есть реальный излишек
-        if(surplus>0 && isToday){
-          extraRows.push(`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(45,122,58,.15)">
-            <span style="font-size:13px;color:var(--muted2);font-style:italic">+ ${escHtml(name)}</span>
-            <span style="font-size:13px;color:var(--muted2);font-style:italic">${surplus} шт</span>
-          </div>`);
-        }
-      });
-    }
-
-    const allRows=[...itemRows,...extraRows].join('');
-    const rowsHtml=allRows||`<div style="font-size:13px;color:var(--muted);text-align:center;padding:6px 0">${emptyPhrase}</div>`;
+    const rowsHtml=itemRows.join('')||`<div style="font-size:13px;color:var(--muted);text-align:center;padding:6px 0">${emptyPhrase}</div>`;
 
     const dayRemaining=dayPlanTotal-dayFactTotal;
     const dayTotalLabel=(dayFactTotal>0)
