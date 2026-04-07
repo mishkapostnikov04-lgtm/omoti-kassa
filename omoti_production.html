@@ -937,7 +937,17 @@ function renderPlan(plan, base, weekDates){
       </div>`;
     });
 
-    const rowsHtml=itemRows.join('')||`<div style="font-size:13px;color:var(--muted);text-align:center;padding:6px 0">${emptyPhrase}</div>`;
+    // Внеплановые вкусы — сделанные именно в этот день, но не входящие в план дня
+    const dayFact=fact[dateStr]||{};
+    const extraRows=(!isFuture)?Object.entries(dayFact)
+      .filter(([name,qty])=>qty>0&&!dayPlan[name])
+      .map(([name,qty])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:13px;color:var(--muted2);font-style:italic">+ ${escHtml(name)}</span>
+        <span style="font-size:13px;color:var(--muted2);font-style:italic">${qty} шт</span>
+      </div>`)
+    :[];
+
+    const rowsHtml=[...itemRows,...extraRows].join('')||`<div style="font-size:13px;color:var(--muted);text-align:center;padding:6px 0">${emptyPhrase}</div>`;
 
     const dayRemaining=dayPlanTotal-dayFactTotal;
     const dayTotalLabel=(dayFactTotal>0)
