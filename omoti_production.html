@@ -922,11 +922,13 @@ function renderPlan(plan, base, weekDates){
       const st=stockData[name]||null;
       let statusHtml='', nameStyle='font-size:14px;color:var(--text)';
       let qtyHtml=`<span style="font-size:14px;font-weight:700;color:${isToday?'var(--green)':'var(--text)'}">${planQty} шт</span>`;
+      let rowBg='transparent';
 
       if(effectiveFact>=planQty){
-        nameStyle='font-size:14px;color:var(--muted)';
-        statusHtml='<span style="font-size:12px;color:var(--muted);margin-right:6px">✓</span>';
+        nameStyle='font-size:14px;color:var(--muted);text-decoration:line-through';
+        statusHtml='<span style="font-size:12px;color:var(--green);margin-right:6px">✓</span>';
         qtyHtml=`<span style="font-size:14px;font-weight:700;color:var(--muted)">${planQty} шт</span>`;
+        rowBg='rgba(45,122,58,0.07)';
       } else if(effectiveFact>0){
         qtyHtml=`<span style="font-size:13px;color:var(--muted);font-style:italic;margin-right:4px">${effectiveFact}/</span><span style="font-size:14px;font-weight:700;color:${isToday?'var(--green)':'var(--text)'}">${planQty} шт</span>`;
       }
@@ -942,7 +944,7 @@ function renderPlan(plan, base, weekDates){
         stockHtml=`<div style="font-size:11px;color:${stockColor};font-weight:${fontWeight};margin-top:2px">📦 ${st.stock} шт · ${daysLeft} дн</div>`;
       }
 
-      return `<div style="padding:6px 0;border-bottom:1px solid ${isToday?'rgba(45,122,58,.15)':'var(--border)'}">
+      return `<div style="padding:6px 8px;margin:0 -8px;border-bottom:1px solid ${isToday?'rgba(45,122,58,.15)':'var(--border)'};background:${rowBg};border-radius:6px">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <div>
             <span style="${nameStyle}">${statusHtml}${escHtml(name)}</span>
