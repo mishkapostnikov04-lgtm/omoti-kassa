@@ -874,7 +874,18 @@ function renderPlan(plan, base, weekDates){
   // Строка с временем обновления остатков
   let stockBadge='';
   if(stockUpdatedAt){
-    stockBadge=`<div style="margin:6px 14px 0;font-size:11px;color:var(--muted)">📦 Остатки обновлены: ${escHtml(stockUpdatedAt)} · <span style="color:#c0392b">❗≤2 дн</span> · <span style="color:var(--amber)">≤5 дн</span></div>`;
+    // Форматируем дату из строки типа "06.04.2026, 23:19:26"
+    const rawDate=stockUpdatedAt.replace(/\(.*\)/,'').trim();
+    const dateObj=new Date(rawDate);
+    let shortDate=stockUpdatedAt;
+    if(!isNaN(dateObj)){
+      shortDate=String(dateObj.getDate()).padStart(2,'0')+'.'+
+                String(dateObj.getMonth()+1).padStart(2,'0')+'.'+
+                dateObj.getFullYear()+' '+
+                String(dateObj.getHours()).padStart(2,'0')+':'+
+                String(dateObj.getMinutes()).padStart(2,'0');
+    }
+    stockBadge=`<div style="margin:6px 14px 0;font-size:11px;color:var(--muted)">📦 Обновлено: ${escHtml(shortDate)} · <span style="color:#c0392b">●</span> ≤2 дн · <span style="color:var(--amber)">●</span> ≤5 дн</div>`;
   }
   content.innerHTML=stockBadge+days.map((dateStr,idx)=>{
     const parts=dateStr.split('.');
@@ -923,17 +934,22 @@ function renderPlan(plan, base, weekDates){
       let stockHtml='';
       if(st){
         const daysLeft=st.days;
-        let stockColor='var(--muted2)', urgentMark='';
-        if(daysLeft<=2){stockColor='#c0392b';urgentMark='❗';}
+        let stockColor, fontWeight='400';
+        if(daysLeft<0){stockColor='#c0392b';fontWeight='700';}
+        else if(daysLeft<=2){stockColor='#c0392b';}
         else if(daysLeft<=5){stockColor='var(--amber)';}
-        stockHtml=`<div style="font-size:11px;color:${stockColor};margin-top:1px;text-align:right">${urgentMark}${st.stock} шт · ${daysLeft} дн</div>`;
+        else{stockColor='var(--muted2)';}
+        stockHtml=`<div style="font-size:11px;color:${stockColor};font-weight:${fontWeight};margin-top:2px">📦 ${st.stock} шт · ${daysLeft} дн</div>`;
       }
 
       return `<div style="padding:6px 0;border-bottom:1px solid ${isToday?'rgba(45,122,58,.15)':'var(--border)'}">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <span style="${nameStyle}">${statusHtml}${escHtml(name)}</span>
-          <span>${qtyHtml}</span>
-        </div>${stockHtml}
+          <div>
+            <span style="${nameStyle}">${statusHtml}${escHtml(name)}</span>
+            ${stockHtml}
+          </div>
+          <span style="flex-shrink:0;margin-left:12px">${qtyHtml}</span>
+        </div>
       </div>`;
     });
 
