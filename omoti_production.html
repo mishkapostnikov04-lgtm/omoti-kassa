@@ -304,8 +304,8 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
     <div class="metrics-grid">
       <div class="metric-card"><div class="m-label">Всего штук</div><div class="m-val green" id="s-total">—</div><div class="m-sub" id="s-period-sub"></div></div>
       <div class="metric-card"><div class="m-label">Смен</div><div class="m-val" id="s-shifts">—</div><div class="m-sub" id="s-avgday">— шт/смену</div></div>
-      <div class="metric-card"><div class="m-label">Лепка</div><div class="m-val" id="s-lepka">—</div><div class="m-sub">штук</div></div>
-      <div class="metric-card"><div class="m-label">Начинки</div><div class="m-val" id="s-nachinka">—</div><div class="m-sub">штук</div></div>
+      <div class="metric-card"><div class="m-label">Лепка</div><div class="m-val" id="s-lepka">—</div><div class="m-sub">штук</div><div class="m-sub" id="s-lepka-remain" style="display:none;margin-top:5px"></div></div>
+      <div class="metric-card"><div class="m-label">Начинки</div><div class="m-val" id="s-nachinka">—</div><div class="m-sub">штук</div><div class="m-sub" id="s-nachinka-remain" style="display:none;margin-top:5px"></div></div>
     </div>
     <div class="stat-section">
       <div class="sec-label">По кондитеру</div>
@@ -575,8 +575,31 @@ function loadStats(){
   document.getElementById('s-total').textContent=total;
   document.getElementById('s-shifts').textContent=shifts;
   document.getElementById('s-avgday').textContent=avg+' шт/смену';
-  document.getElementById('s-lepka').textContent=inRange.filter(r=>r.workType==='Лепка').reduce((a,r)=>a+r.total,0);
-  document.getElementById('s-nachinka').textContent=inRange.filter(r=>r.workType==='Начинки').reduce((a,r)=>a+r.total,0);
+  const factLepka=inRange.filter(r=>r.workType==='Лепка').reduce((a,r)=>a+r.total,0);
+  const factNachinka=inRange.filter(r=>r.workType==='Начинки').reduce((a,r)=>a+r.total,0);
+  document.getElementById('s-lepka').textContent=factLepka;
+  document.getElementById('s-nachinka').textContent=factNachinka;
+
+  // Остаток по плану — только текущая неделя + если план загружен
+  const remainLepkaEl=document.getElementById('s-lepka-remain');
+  const remainNacEl=document.getElementById('s-nachinka-remain');
+  if(activePeriodType==='week' && planData){
+    const planTotal=Object.values(planData).reduce((a,day)=>a+Object.values(day).reduce((b,q)=>b+q,0),0);
+    const remainLepka=Math.max(0,planTotal-factLepka);
+    const remainNac=Math.max(0,planTotal-factNachinka);
+    const color=v=>v===0?'var(--green)':'var(--amber)';
+    remainLepkaEl.innerHTML=remainLepka===0
+      ?'<span style="color:var(--green)">✓ план выполнен</span>'
+      :`<span style="color:var(--amber)">осталось ${remainLepka} шт</span>`;
+    remainNacEl.innerHTML=remainNac===0
+      ?'<span style="color:var(--green)">✓ план выполнен</span>'
+      :`<span style="color:var(--amber)">осталось ${remainNac} шт</span>`;
+    remainLepkaEl.style.display='block';
+    remainNacEl.style.display='block';
+  } else {
+    remainLepkaEl.style.display='none';
+    remainNacEl.style.display='none';
+  }
   document.getElementById('s-period-sub').textContent=range.label||'Всё время';
 
   // ── Темп недели (только для выбранной недели) ──
