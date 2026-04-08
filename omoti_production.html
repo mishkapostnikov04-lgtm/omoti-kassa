@@ -932,16 +932,17 @@ function renderPlan(plan, base, weekDates){
       if(planWorkType==='Лепка'){
         // Двойной статус: начинки и лепка отдельно
         const weekNachinkaTotal=weekTotalNachinka[name]||0;
+        const weekLepkaTotal=weekTotal[name]||0;
         const weekPlanQty=weekPlan[name]||planQty;
         const nachinkaOk=weekNachinkaTotal>=weekPlanQty;
-        const lepkaOk=effectiveFact>=planQty;
+        const lepkaOk=weekLepkaTotal>=weekPlanQty;
 
         const nachinkaIcon=nachinkaOk
           ?'<span style="color:var(--green)">🥄✓</span>'
-          :`<span style="color:var(--muted2)">🥄${weekNachinkaTotal>0?weekNachinkaTotal+'шт':'—'}</span>`;
+          :`<span style="color:var(--muted2)">🥄${weekNachinkaTotal>0?weekNachinkaTotal+' шт':'—'}</span>`;
         const lepkaIcon=lepkaOk
           ?'<span style="color:var(--green)">🫱✓</span>'
-          :`<span style="color:var(--muted2)">🫱${effectiveFact>0?effectiveFact+'шт':'—'}</span>`;
+          :`<span style="color:var(--muted2)">🫱${weekLepkaTotal>0?weekLepkaTotal+' шт':'—'}</span>`;
 
         dualStatusHtml=`<div style="font-size:11px;margin-top:3px;display:flex;gap:10px">${nachinkaIcon}${lepkaIcon}</div>`;
 
@@ -949,12 +950,9 @@ function renderPlan(plan, base, weekDates){
           nameStyle='font-size:14px;color:var(--muted);text-decoration:line-through';
           qtyHtml=`<span style="font-size:14px;font-weight:700;color:var(--muted)">${planQty} шт</span>`;
           rowBg='rgba(45,122,58,0.07)';
-        } else if(nachinkaOk){
-          // начинки готовы — можно лепить
+        } else if(nachinkaOk&&!isPast){
+          // начинки готовы, можно лепить — только сегодня и будущее
           rowBg='rgba(255,193,7,0.07)';
-          if(effectiveFact>0) qtyHtml=`<span style="font-size:13px;color:var(--muted);font-style:italic;margin-right:4px">${effectiveFact}/</span><span style="font-size:14px;font-weight:700;color:${isToday?'var(--green)':'var(--text)'}">${planQty} шт</span>`;
-        } else {
-          if(effectiveFact>0) qtyHtml=`<span style="font-size:13px;color:var(--muted);font-style:italic;margin-right:4px">${effectiveFact}/</span><span style="font-size:14px;font-weight:700;color:${isToday?'var(--green)':'var(--text)'}">${planQty} шт</span>`;
         }
       } else {
         // Режим Начинки — обычная логика
