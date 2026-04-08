@@ -804,6 +804,7 @@ function loadPlan(){
       if(!planJson.ok){showToast('Не удалось загрузить план',true);return;}
       planData=planJson.plan; planBase=planJson.base; planWeekDates=planJson.weekDates;
       renderPlan(planData, planBase, planWeekDates);
+      loadStats(); // обновляем остаток по плану в Итогах
     })
     .catch(()=>{
       document.getElementById('plan-spinner').style.display='none';
@@ -1044,6 +1045,8 @@ function renderPlan(plan, base, weekDates){
 buildDropdowns();
 const cached=loadCache();if(cached)allRecords=cached;
 init();
+// Грузим план сразу — нужен для отображения остатка в Итогах
+if(!planLoaded){planLoaded=true;loadPlan();}
 </script>
 </body>
 </html>
