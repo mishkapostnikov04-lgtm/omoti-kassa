@@ -30,6 +30,12 @@ body{font-family:'Onest',system-ui,sans-serif;background:var(--bg);color:var(--t
 .period-row::-webkit-scrollbar{display:none}
 .period-btn{white-space:nowrap;border:1px solid var(--border);background:transparent;border-radius:20px;padding:7px 14px;font-size:12px;font-family:'Onest',sans-serif;color:var(--muted);cursor:pointer;transition:.15s}
 .period-btn.active{background:var(--accent);border-color:var(--accent);color:#000;font-weight:700}
+.period-dropdown{position:relative;flex-shrink:0}
+.period-dd-menu{display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:50;background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 4px 20px rgba(0,0,0,.4);min-width:200px;overflow:hidden;max-height:260px;overflow-y:auto}
+.period-dd-menu.open{display:block}
+.period-dd-item{display:block;width:100%;border:none;background:none;text-align:left;padding:10px 14px;font-size:13px;font-family:'Onest',sans-serif;color:var(--text);cursor:pointer;white-space:nowrap}
+.period-dd-item:hover{background:var(--card2)}
+.period-dd-item.selected{font-weight:700;color:var(--accent)}
 
 .refresh-row{display:flex;justify-content:flex-end;padding:10px 16px 0}
 .refresh-btn{border:none;background:none;font-size:12px;color:var(--muted);cursor:pointer;font-family:'Onest',sans-serif;display:flex;align-items:center;gap:4px;padding:4px 0}
@@ -113,12 +119,18 @@ body{font-family:'Onest',system-ui,sans-serif;background:var(--bg);color:var(--t
   <div class="topbar-sub"><span class="live-dot"></span><span id="last-update">Загрузка...</span></div>
 </div>
 
-<div class="period-row">
-  <button class="period-btn" onclick="setPeriod(this,'today')">Сегодня</button>
-  <button class="period-btn active" onclick="setPeriod(this,'week')">Эта неделя</button>
-  <button class="period-btn" onclick="setPeriod(this,'month')">Этот месяц</button>
-  <button class="period-btn" onclick="setPeriod(this,'prev_month')">Прошлый месяц</button>
-  <button class="period-btn" onclick="setPeriod(this,'all')">Всё время</button>
+<div class="period-row" id="period-row">
+  <div class="period-dropdown" id="dd-day">
+    <button class="period-btn" id="btn-day" onclick="toggleDD('day',event)">День ▾</button>
+    <div class="period-dd-menu" id="menu-day"></div>
+  </div>
+  <div class="period-dropdown" id="dd-week">
+    <button class="period-btn active" id="btn-week" onclick="toggleDD('week',event)">Эта неделя ▾</button>
+    <div class="period-dd-menu" id="menu-week"></div>
+  </div>
+  <button class="period-btn" id="btn-month" onclick="selectFixed(this,'month')">Этот месяц</button>
+  <button class="period-btn" id="btn-prev_month" onclick="selectFixed(this,'prev_month')">Прошлый месяц</button>
+  <button class="period-btn" id="btn-all" onclick="selectFixed(this,'all')">Всё время</button>
 </div>
 
 <div class="refresh-row">
@@ -253,10 +265,10 @@ function parseRows(rows){
 }
 
 function getPeriodRange(){
+  // Если period — объект с from/to (день или неделя из дропдауна)
+  if(period && typeof period === 'object') return period;
   const now   = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  if(period==='today')
-    return { from:today, to:new Date(today.getTime()+86399999) };
   if(period==='week'){
     const day = now.getDay()||7;
     const ws  = new Date(today); ws.setDate(ws.getDate()-day+1);
@@ -355,6 +367,107 @@ function setPeriod(el, p){
   el.classList.add('active');
   render();
 }
+
+// ─── PERIOD PICKER ────────────────────────────────────────────────────────────
+let activeDDType = null; // 'day' | 'week'
+
+function fmtDate(d){ return pad(d.getDate())+'.'+pad(d.getMonth()+1)+'.'+d.getFullYear(); }
+
+function getWeekStart(d){
+  const x=new Date(d); const day=x.getDay()||7;
+  x.setHours(0,0,0,0); x.setDate(x.getDate()-day+1); return x;
+}
+
+function getPastDays(n){
+  const result=[];
+  const now=new Date();
+  for(let i=0;i<n;i++){
+    const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()-i);
+    const label = i===0?'Сегодня':i===1?'Вчера':fmtDate(d);
+    result.push({date:d, label});
+  }
+  return result;
+}
+
+function getPastWeeks(n){
+  const result=[];
+  const now=new Date();
+  const curWS=getWeekStart(now);
+  for(let i=0;i<n;i++){
+    const ws=new Date(curWS); ws.setDate(ws.getDate()-i*7);
+    const we=new Date(ws); we.setDate(we.getDate()+6); we.setHours(23,59,59,999);
+    const label = i===0?`${fmtDate(ws)} — ${fmtDate(we)} (текущая)`:`${fmtDate(ws)} — ${fmtDate(we)}`;
+    result.push({from:ws, to:we, label});
+  }
+  return result;
+}
+
+function buildDropdowns(){
+  // Дни
+  const days=getPastDays(30);
+  document.getElementById('menu-day').innerHTML=days.map((d,i)=>
+    `<button class="period-dd-item" onclick="selectDay(${i})">${d.label}</button>`
+  ).join('');
+
+  // Недели
+  const weeks=getPastWeeks(8);
+  document.getElementById('menu-week').innerHTML=weeks.map((w,i)=>
+    `<button class="period-dd-item${i===0?' selected':''}" onclick="selectWeek(${i})">${w.label}</button>`
+  ).join('');
+}
+
+function toggleDD(type, e){
+  e.stopPropagation();
+  const menu=document.getElementById('menu-'+type);
+  const isOpen=menu.classList.contains('open');
+  closeAllDD();
+  if(!isOpen){ menu.classList.add('open'); activeDDType=type; }
+}
+
+function closeAllDD(){
+  document.querySelectorAll('.period-dd-menu').forEach(m=>m.classList.remove('open'));
+  activeDDType=null;
+}
+
+function selectDay(idx){
+  const days=getPastDays(30);
+  const d=days[idx].date;
+  const from=new Date(d.getFullYear(),d.getMonth(),d.getDate(),0,0,0,0);
+  const to=new Date(d.getFullYear(),d.getMonth(),d.getDate(),23,59,59,999);
+  period={from,to};
+  document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('btn-day').classList.add('active');
+  document.getElementById('btn-day').textContent=days[idx].label+' ▾';
+  document.querySelectorAll('#menu-day .period-dd-item').forEach((b,i)=>b.classList.toggle('selected',i===idx));
+  closeAllDD();
+  render();
+}
+
+function selectWeek(idx){
+  const weeks=getPastWeeks(8);
+  const w=weeks[idx];
+  period={from:w.from, to:w.to};
+  document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('btn-week').classList.add('active');
+  const label=idx===0?'Эта неделя ▾':`Нед. ${fmtDate(w.from)} ▾`;
+  document.getElementById('btn-week').textContent=label;
+  document.querySelectorAll('#menu-week .period-dd-item').forEach((b,i)=>b.classList.toggle('selected',i===idx));
+  closeAllDD();
+  render();
+}
+
+function selectFixed(el, p){
+  period=p;
+  document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('btn-day').textContent='День ▾';
+  document.getElementById('btn-week').textContent='Эта неделя ▾';
+  closeAllDD();
+  render();
+}
+
+document.addEventListener('click', closeAllDD);
+buildDropdowns();
 
 // ─── УТИЛИТЫ ─────────────────────────────────────────────────────────────────
 function money(n){ return Math.round(n).toLocaleString('ru-RU')+'\u00a0₽'; }
