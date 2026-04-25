@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>OMOTI · Дашборд</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0d0d0f;--card:#16161a;--card2:#1e1e24;--border:#2a2a32;
+  --text:#f0ede8;--muted:#6b6b78;--muted2:#44444e;
+  --accent:#c8a84b;--accent2:#e8c96b;
+  --green:#4caf82;--red:#e05555;--blue:#5b8def;--radius:16px;
+}
+body{font-family:'Onest',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.app{max-width:520px;margin:0 auto;padding:0 0 40px}
+
+.topbar{position:sticky;top:0;z-index:30;background:rgba(13,13,15,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:16px 16px 12px}
+.topbar-title{font-size:17px;font-weight:800;letter-spacing:-.02em;color:var(--text);margin-bottom:2px}
+.topbar-sub{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+.period-row{display:flex;gap:6px;padding:14px 16px 0;overflow-x:auto;scrollbar-width:none}
+.period-row::-webkit-scrollbar{display:none}
+.period-btn{white-space:nowrap;border:1px solid var(--border);background:transparent;border-radius:20px;padding:7px 14px;font-size:12px;font-family:'Onest',sans-serif;color:var(--muted);cursor:pointer;transition:.15s}
+.period-btn.active{background:var(--accent);border-color:var(--accent);color:#000;font-weight:700}
+
+.refresh-row{display:flex;justify-content:flex-end;padding:10px 16px 0}
+.refresh-btn{border:none;background:none;font-size:12px;color:var(--muted);cursor:pointer;font-family:'Onest',sans-serif;display:flex;align-items:center;gap:4px;padding:4px 0}
+.refresh-btn:hover{color:var(--text)}
+.refresh-icon{display:inline-block}
+.refresh-btn.spinning .refresh-icon{animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* SUMMARY */
+.summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 16px 0}
+.sum-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 15px}
+.sum-card.accent{background:linear-gradient(135deg,#1e1a0e 0%,#1a1608 100%);border-color:#3a3010}
+.sum-card.wide{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center}
+.sum-label{font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.07em}
+.sum-val{font-size:26px;font-weight:800;line-height:1;color:var(--text)}
+.sum-card.accent .sum-val{color:var(--accent2)}
+.sum-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.sum-card.accent .sum-sub{color:#8a7a40}
+.cash-badge{background:#1e2218;border:1px solid #3a4a2a;border-radius:10px;padding:8px 14px;display:flex;align-items:center;gap:8px}
+.cash-badge-label{font-size:11px;color:#7a9a6a;text-transform:uppercase;letter-spacing:.07em}
+.cash-badge-val{font-size:18px;font-weight:800;color:#a8d48a}
+
+/* SECTION */
+.section{padding:18px 16px 0}
+.sec-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px}
+
+/* POINTS */
+.points-grid{display:flex;flex-direction:column;gap:8px}
+.point-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.point-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border)}
+.point-name{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+.point-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.point-stats{display:grid;grid-template-columns:repeat(3,1fr)}
+.ps-cell{padding:10px 14px;border-right:1px solid var(--border);text-align:center}
+.ps-cell:last-child{border-right:none}
+.ps-val{font-size:15px;font-weight:700;color:var(--text)}
+.ps-label{font-size:10px;color:var(--muted);margin-top:2px}
+.point-extra{display:grid;border-top:1px solid var(--border)}
+.point-extra-cell{padding:8px 14px;border-right:1px solid var(--border);text-align:center}
+.point-extra-cell:last-child{border-right:none}
+.pec-val{font-size:13px;font-weight:700}
+.pec-label{font-size:10px;color:var(--muted);margin-top:1px}
+
+/* CHANNEL BLOCK */
+.ch-block{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.ch-block-title{padding:10px 14px;background:var(--card2);border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;display:flex;justify-content:space-between;align-items:center}
+.ch-row{display:grid;grid-template-columns:1fr 44px 80px 80px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border)}
+.ch-row:last-child{border-bottom:none}
+.ch-row.header{padding:7px 14px;background:rgba(255,255,255,.02)}
+.ch-name{font-size:13px;color:var(--text)}
+.ch-hdr{font-size:10px;color:var(--muted);text-align:right}
+.ch-qty{font-size:13px;font-weight:700;text-align:right;color:var(--text)}
+.ch-sum{font-size:13px;font-weight:700;text-align:right;color:var(--text)}
+.ch-profit{font-size:13px;font-weight:700;text-align:right}
+.ch-row.total-row{background:var(--card2);border-top:2px solid var(--border)}
+.ch-row.total-row .ch-name{font-weight:700}
+.cost-hint{padding:8px 14px;font-size:11px;color:var(--muted2);border-top:1px solid var(--border);line-height:1.6}
+
+/* BRAK / INFO */
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--card)}
+.info-row:last-child{border-bottom:none}
+.info-label{font-size:13px;color:var(--muted)}
+.info-val{font-size:13px;font-weight:700;color:var(--red)}
+
+.skeleton{background:linear-gradient(90deg,var(--card) 25%,var(--card2) 50%,var(--card) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;border-radius:12px;height:80px;margin:10px 16px 0}
+@keyframes shimmer{to{background-position:-200% 0}}
+
+.profit-pos{color:var(--accent)}
+.profit-neg{color:var(--red)}
+
+.color-a{background:#4caf82}
+.color-s{background:#5b8def}
+.color-n{background:#c8a84b}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="topbar">
+  <div class="topbar-title">OMOTI · Дашборд</div>
+  <div class="topbar-sub"><span class="live-dot"></span><span id="last-update">Загрузка...</span></div>
+</div>
+
+<div class="period-row">
+  <button class="period-btn" onclick="setPeriod(this,'today')">Сегодня</button>
+  <button class="period-btn active" onclick="setPeriod(this,'week')">Эта неделя</button>
+  <button class="period-btn" onclick="setPeriod(this,'month')">Этот месяц</button>
+  <button class="period-btn" onclick="setPeriod(this,'prev_month')">Прошлый месяц</button>
+  <button class="period-btn" onclick="setPeriod(this,'all')">Всё время</button>
+</div>
+
+<div class="refresh-row">
+  <button class="refresh-btn" id="refresh-btn" onclick="loadAll()"><span class="refresh-icon">↻</span> Обновить</button>
+</div>
+
+<div id="main-content">
+  <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+</div>
+
+</div>
+
+<script>
+// ─── ТОЧКИ ───────────────────────────────────────────────────────────────────
+const POINTS = [
+  { name:'Аникина',    key:'a', color:'color-a', payPoint:false,
+    api:'https://script.google.com/macros/s/AKfycbwP7_mB2CklN-iNzv8lquiQYy-Kx2hYO6JVqjkuP1mcRqbHji7uXmG0y_HHQpHUNMVlUA/exec' },
+  { name:'Советская',  key:'s', color:'color-s', payPoint:true,
+    api:'https://script.google.com/macros/s/AKfycbyT9qeLuDVhEsM_keCToMuzjVoG6K0Mrq-7Fw-KafWk6NyKrNQ9eH_GJimizoXjF-Rk/exec' },
+  { name:'Новогодняя', key:'n', color:'color-n', payPoint:true,
+    api:'https://script.google.com/macros/s/AKfycbyxuRjHj6VoPcXk95pARvGpM8FyiE277zah2W3XQDqM4V53wjjcJWyNv2FFwHyVm5GPLw/exec' },
+];
+
+// ─── ЗАТРАТЫ ─────────────────────────────────────────────────────────────────
+// Розница: продукты + упаковка + УСН 6% + эквайринг 1% + [30₽ точке]
+// Яндекс:  продукты + упаковка + УСН 6% + агрегатор 45% + [30₽ точке] (эквайринга нет)
+// Себе оплачено: продукты + капсула + пакет (без УСН, без эквайринга, без точки)
+// Себе без оплаты: не считаем (вычитается из выплаты точке)
+// Брак: списание = продукты + капсула (минимальные затраты на продукт)
+
+const C = {
+  products: 22.25,
+  box: 3.00, sticker: 0.60, card: 0.80, package: 2.00, capsule: 0.50,
+  package_self: 0.05,
+  usn: 0.06,
+  acquiring: 0.01,
+  aggregator: 0.45,
+  point_fee: 30,
+};
+
+// фикс затраты на упаковку (розница и яндекс)
+const PACK_COST = C.box + C.sticker + C.card + C.package + C.capsule; // 6.90
+
+function calcRetailProfit(qty, revenue, payPoint) {
+  const fixedCost = qty * (C.products + PACK_COST);
+  const pctCost   = revenue * (C.usn + C.acquiring);
+  const pointCost = payPoint ? qty * C.point_fee : 0;
+  return revenue - fixedCost - pctCost - pointCost;
+}
+
+function calcYandexProfit(qty, revenue, payPoint) {
+  const fixedCost = qty * (C.products + PACK_COST);
+  const pctCost   = revenue * (C.usn + C.aggregator); // нет эквайринга
+  const pointCost = payPoint ? qty * C.point_fee : 0;
+  return revenue - fixedCost - pctCost - pointCost;
+}
+
+function calcSelfPaidProfit(qty, revenue) {
+  // деньги пришли, затраты только продукт + капсула + пакет, без УСН и точек
+  const fixedCost = qty * (C.products + C.capsule + C.package_self);
+  return revenue - fixedCost;
+}
+
+function calcBrakLoss(qty) {
+  // чистое списание продуктов
+  return -(qty * (C.products + C.capsule));
+}
+
+// ─── ТИПЫ ОПЛАТЫ ─────────────────────────────────────────────────────────────
+const PAY_RETAIL    = ['Наличный','Безналичный','Перевод'];
+const PAY_YANDEX    = ['Яндекс'];
+const PAY_SELF_PAID = ['Себе оплачено'];
+const PAY_SELF_FREE = ['Себе без оплаты'];
+const PAY_BRAK      = ['Брак'];
+
+function getPayGroup(pay) {
+  if(PAY_RETAIL.includes(pay))    return 'retail';
+  if(PAY_YANDEX.includes(pay))    return 'yandex';
+  if(PAY_SELF_PAID.includes(pay)) return 'self_paid';
+  if(PAY_SELF_FREE.includes(pay)) return 'self_free';
+  if(PAY_BRAK.includes(pay))      return 'brak';
+  return null;
+}
+
+// ─── ДАННЫЕ ───────────────────────────────────────────────────────────────────
+let allData = {};
+let period  = 'week';
+let loading = false;
+
+function toNum(v){ return Number(String(v||'0').replace(/\s/g,'').replace(',','.'))||0; }
+
+function parseDate(s){
+  const p = String(s||'').split('.');
+  if(p.length===3) return new Date(Number(p[2]),Number(p[1])-1,Number(p[0]));
+  return null;
+}
+
+function normalizeDate(v){
+  const s = String(v||'').trim();
+  if(/^\d{2}\.\d{2}\.\d{4}$/.test(s)) return s;
+  if(/^\d{4}-\d{2}-\d{2}T/.test(s)){
+    const d = new Date(s);
+    if(!isNaN(d)) return pad(d.getDate())+'.'+pad(d.getMonth()+1)+'.'+d.getFullYear();
+  }
+  return s;
+}
+function pad(n){ return String(n).padStart(2,'0'); }
+
+function parseRows(rows){
+  const map  = new Map();
+  const data = rows.length && String(rows[0][0]).trim()==='№' ? rows.slice(1) : rows;
+  data.forEach(r => {
+    if(!r||!r[0]) return;
+    const num = String(r[0]).trim();
+    if(!map.has(num)) map.set(num, {
+      num,
+      date:    normalizeDate(r[1]),
+      point:   String(r[3]||'').trim(),
+      seller:  String(r[4]||'').trim(),
+      pay:     String(r[5]||'').trim(),
+      selfPay: String(r[6]||'').trim(),
+      items:   []
+    });
+    map.get(num).items.push({
+      name:  String(r[7]||'').trim(),
+      qty:   toNum(r[8]),
+      price: toNum(r[9]),
+      sum:   toNum(r[10])
+    });
+  });
+  return Array.from(map.values());
+}
+
+function getPeriodRange(){
+  const now   = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if(period==='today')
+    return { from:today, to:new Date(today.getTime()+86399999) };
+  if(period==='week'){
+    const day = now.getDay()||7;
+    const ws  = new Date(today); ws.setDate(ws.getDate()-day+1);
+    const we  = new Date(ws);    we.setDate(we.getDate()+6); we.setHours(23,59,59,999);
+    return { from:ws, to:we };
+  }
+  if(period==='month')
+    return { from:new Date(now.getFullYear(),now.getMonth(),1),
+             to:  new Date(now.getFullYear(),now.getMonth()+1,0,23,59,59,999) };
+  if(period==='prev_month')
+    return { from:new Date(now.getFullYear(),now.getMonth()-1,1),
+             to:  new Date(now.getFullYear(),now.getMonth(),0,23,59,59,999) };
+  return null;
+}
+
+function inRange(check){
+  const r = getPeriodRange();
+  if(!r) return true;
+  const d = parseDate(check.date);
+  if(!d) return false;
+  return d >= r.from && d <= r.to;
+}
+
+// ─── АГРЕГАЦИЯ ────────────────────────────────────────────────────────────────
+function zero(){ return {qty:0, revenue:0, profit:0}; }
+
+function aggregatePoint(checks, payPoint){
+  const retail   = zero();
+  const yandex   = zero();
+  const selfPaid = zero();
+  const selfFree = {qty:0, revenue:0}; // не считаем прибыль
+  const brak     = {qty:0, loss:0};
+  const byPay    = {}; // розница по типу оплаты
+
+  // наличные = Наличный (розница) + Себе оплачено наличными
+  let cash = 0;
+
+  checks.filter(inRange).forEach(ck => {
+    const group = getPayGroup(ck.pay);
+    if(!group) return;
+    const qty = ck.items.reduce((a,it)=>a+Number(it.qty||0), 0);
+    const rev = ck.items.reduce((a,it)=>a+Number(it.sum||0), 0);
+
+    if(group==='retail'){
+      const profit = calcRetailProfit(qty, rev, payPoint);
+      retail.qty += qty; retail.revenue += rev; retail.profit += profit;
+      if(!byPay[ck.pay]) byPay[ck.pay] = zero();
+      byPay[ck.pay].qty     += qty;
+      byPay[ck.pay].revenue += rev;
+      byPay[ck.pay].profit  += calcRetailProfit(qty, rev, payPoint);
+      if(ck.pay==='Наличный') cash += rev;
+    } else if(group==='yandex'){
+      const profit = calcYandexProfit(qty, rev, payPoint);
+      yandex.qty += qty; yandex.revenue += rev; yandex.profit += profit;
+    } else if(group==='self_paid'){
+      const profit = calcSelfPaidProfit(qty, rev);
+      selfPaid.qty += qty; selfPaid.revenue += rev; selfPaid.profit += profit;
+      // наличные от себе оплачено — если selfPay=Наличные
+      if(ck.selfPay==='Наличные') cash += rev;
+    } else if(group==='self_free'){
+      selfFree.qty += qty; selfFree.revenue += rev;
+    } else if(group==='brak'){
+      brak.qty += qty; brak.loss += Math.abs(calcBrakLoss(qty));
+    }
+  });
+
+  return { retail, yandex, selfPaid, selfFree, brak, byPay, cash };
+}
+
+// ─── ЗАГРУЗКА ─────────────────────────────────────────────────────────────────
+function fetchPoint(pt){
+  return fetch(pt.api+'?limit=2000',{cache:'no-store'})
+    .then(r=>r.json())
+    .then(json=>{ allData[pt.key]=parseRows(Array.isArray(json.rows)?json.rows:[]); })
+    .catch(()=>{ if(!allData[pt.key]) allData[pt.key]=[]; });
+}
+
+function loadAll(){
+  if(loading) return;
+  loading = true;
+  document.getElementById('refresh-btn').classList.add('spinning');
+  document.getElementById('last-update').textContent = 'Обновляю...';
+  Promise.allSettled(POINTS.map(fetchPoint)).then(()=>{
+    loading = false;
+    document.getElementById('refresh-btn').classList.remove('spinning');
+    const now = new Date();
+    document.getElementById('last-update').textContent =
+      'Обновлено в '+pad(now.getHours())+':'+pad(now.getMinutes());
+    render();
+  });
+}
+
+function setPeriod(el, p){
+  period = p;
+  document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  render();
+}
+
+// ─── УТИЛИТЫ ─────────────────────────────────────────────────────────────────
+function money(n){ return Math.round(n).toLocaleString('ru-RU')+'\u00a0₽'; }
+function fmtK(n){
+  n = Math.round(n);
+  if(Math.abs(n)>=10000) return (n/1000).toFixed(1).replace('.',',')+'\u00a0к\u00a0₽';
+  return money(n);
+}
+function pc(n){ return n>=0?'profit-pos':'profit-neg'; }
+function sg(n){ return n>=0?'+':''; }
+function esc(s){ return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+
+// ─── РЕНДЕР ───────────────────────────────────────────────────────────────────
+function render(){
+  const stats = POINTS.map(pt=>({
+    ...pt,
+    agg: aggregatePoint(allData[pt.key]||[], pt.payPoint)
+  }));
+
+  // Суммарно
+  const totRetail   = zero(), totYandex = zero(), totSelf = zero();
+  let   totBrakLoss = 0, totCash = 0;
+  const retailByPay = {};
+
+  stats.forEach(({agg}) => {
+    totRetail.qty+=agg.retail.qty; totRetail.revenue+=agg.retail.revenue; totRetail.profit+=agg.retail.profit;
+    totYandex.qty+=agg.yandex.qty; totYandex.revenue+=agg.yandex.revenue; totYandex.profit+=agg.yandex.profit;
+    totSelf.qty+=agg.selfPaid.qty; totSelf.revenue+=agg.selfPaid.revenue; totSelf.profit+=agg.selfPaid.profit;
+    totBrakLoss += agg.brak.loss;
+    totCash     += agg.cash;
+    Object.entries(agg.byPay).forEach(([pay,d])=>{
+      if(!retailByPay[pay]) retailByPay[pay]=zero();
+      retailByPay[pay].qty+=d.qty; retailByPay[pay].revenue+=d.revenue; retailByPay[pay].profit+=d.profit;
+    });
+  });
+
+  // Чистая прибыль = розница + яндекс + себе оплачено − брак
+  const totalProfit = totRetail.profit + totYandex.profit + totSelf.profit - totBrakLoss;
+  const totalRevenue = totRetail.revenue + totYandex.revenue + totSelf.revenue;
+  const marginPct = totalRevenue>0 ? Math.round(totalProfit/totalRevenue*100) : 0;
+
+  // Строки розницы по типу оплаты
+  const PAY_LABELS = {'Наличный':'Наличные','Безналичный':'Безнал','Перевод':'Перевод'};
+  const retailRows = ['Наличный','Безналичный','Перевод']
+    .filter(p=>retailByPay[p]&&retailByPay[p].qty>0)
+    .map(p=>({label:PAY_LABELS[p], ...retailByPay[p]}));
+
+  function chBlock(title, rows, total, hint){
+    const rowsHtml = rows.map(r=>`
+      <div class="ch-row">
+        <div class="ch-name">${esc(r.label)}</div>
+        <div class="ch-qty">${r.qty}</div>
+        <div class="ch-sum">${r.qty>0?fmtK(r.revenue):'—'}</div>
+        <div class="ch-profit ${pc(r.profit)}">${r.qty>0?sg(r.profit)+fmtK(r.profit):'—'}</div>
+      </div>`).join('');
+    return `
+      <div class="ch-block">
+        <div class="ch-block-title">${title}</div>
+        <div class="ch-row header">
+          <div class="ch-name" style="font-size:10px;color:var(--muted)">Тип</div>
+          <div class="ch-hdr">Шт</div><div class="ch-hdr">Выручка</div><div class="ch-hdr">Прибыль</div>
+        </div>
+        ${rowsHtml||'<div style="padding:12px 14px;font-size:13px;color:var(--muted)">Нет данных</div>'}
+        <div class="ch-row total-row">
+          <div class="ch-name">Итого</div>
+          <div class="ch-qty">${total.qty}</div>
+          <div class="ch-sum">${total.qty>0?fmtK(total.revenue):'—'}</div>
+          <div class="ch-profit ${pc(total.profit)}">${total.qty>0?sg(total.profit)+fmtK(total.profit):'—'}</div>
+        </div>
+        ${hint?`<div class="cost-hint">${hint}</div>`:''}
+      </div>`;
+  }
+
+  const html = `
+    <div class="summary">
+      <div class="sum-card">
+        <div class="sum-label">Шт продано</div>
+        <div class="sum-val">${totRetail.qty+totYandex.qty+totSelf.qty}</div>
+        <div class="sum-sub">розница + Яндекс + себе</div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-label">Выручка розница</div>
+        <div class="sum-val">${fmtK(totRetail.revenue+totSelf.revenue)}</div>
+        <div class="sum-sub">+ Яндекс прибыль: ${totYandex.qty>0?sg(totYandex.profit)+fmtK(totYandex.profit):'—'}</div>
+      </div>
+      <div class="sum-card accent">
+        <div class="sum-label">Чистая прибыль</div>
+        <div class="sum-val">${fmtK(totalProfit)}</div>
+        <div class="sum-sub">все каналы − брак · маржа ${marginPct}%</div>
+      </div>
+      <div class="sum-card" style="background:#110e08;border-color:#2a2010">
+        <div class="sum-label" style="color:#7a6a40">Наличных в кассе</div>
+        <div class="sum-val" style="color:#e8c96b">${fmtK(totCash)}</div>
+        <div class="sum-sub" style="color:#5a4a28">розница нал + себе нал</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="sec-title">По точкам (розница)</div>
+      <div class="points-grid">
+        ${stats.map(p=>{
+          const a = p.agg;
+          const extras = [];
+          if(a.yandex.qty>0)   extras.push({label:'Яндекс',  val:`${a.yandex.qty} шт · ${fmtK(a.yandex.profit)}`,   color:'var(--blue)'});
+          if(a.selfPaid.qty>0) extras.push({label:'Себе опл',val:`${a.selfPaid.qty} шт · ${fmtK(a.selfPaid.profit)}`,color:'var(--green)'});
+          if(a.brak.qty>0)     extras.push({label:'Брак',     val:`${a.brak.qty} шт · −${fmtK(a.brak.loss)}`,        color:'var(--red)'});
+          return `
+          <div class="point-card">
+            <div class="point-head">
+              <div class="point-name"><span class="point-dot ${p.color}"></span>${p.name}</div>
+              <div style="font-size:11px;color:var(--muted)">${p.payPoint?'−30 ₽/шт точке':'без доплаты'}</div>
+            </div>
+            <div class="point-stats">
+              <div class="ps-cell"><div class="ps-val">${a.retail.qty}</div><div class="ps-label">шт</div></div>
+              <div class="ps-cell"><div class="ps-val">${fmtK(a.retail.revenue)}</div><div class="ps-label">выручка</div></div>
+              <div class="ps-cell"><div class="ps-val ${pc(a.retail.profit)}">${fmtK(a.retail.profit)}</div><div class="ps-label">прибыль</div></div>
+            </div>
+            ${extras.length?`<div class="point-extra" style="grid-template-columns:repeat(${extras.length},1fr)">
+              ${extras.map(e=>`<div class="point-extra-cell" style="border-right:1px solid var(--border)"><div class="pec-val" style="color:${e.color}">${e.val}</div><div class="pec-label">${e.label}</div></div>`).join('')}
+            </div>`:''}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="section" style="display:flex;flex-direction:column;gap:10px">
+      <div class="sec-title" style="margin-bottom:0">По каналам</div>
+
+      ${chBlock('Розница',
+        retailRows,
+        totRetail,
+        `Затраты/шт: продукты ${C.products}₽ + упаковка ${PACK_COST.toFixed(2)}₽ + УСН 6% + эквайринг 1% + 30₽/шт (Советская, Новогодняя)`
+      )}
+
+      ${chBlock('Яндекс',
+        [{label:'Яндекс Доставка', ...totYandex}],
+        totYandex,
+        `Затраты/шт: продукты ${C.products}₽ + упаковка ${PACK_COST.toFixed(2)}₽ + УСН 6% + агрегатор 45% + 30₽/шт (Советская, Новогодняя). Эквайринга нет.`
+      )}
+
+      ${chBlock('Себе оплачено',
+        [{label:'Себе (оптовая цена)', ...totSelf}],
+        totSelf,
+        `Затраты/шт: продукты ${C.products}₽ + капсула ${C.capsule}₽ + пакет ${C.package_self}₽. Без УСН, без эквайринга, без доплаты точке.`
+      )}
+
+      ${totBrakLoss>0||stats.some(p=>p.agg.selfFree.qty>0)?`
+      <div class="ch-block">
+        <div class="ch-block-title">Не в прибыль</div>
+        ${totBrakLoss>0?`<div class="info-row"><span class="info-label">Брак · ${stats.reduce((a,p)=>a+p.agg.brak.qty,0)} шт</span><span class="info-val">−${fmtK(totBrakLoss)}</span></div>`:''}
+        ${stats.some(p=>p.agg.selfFree.qty>0)?`<div class="info-row"><span class="info-label" style="color:var(--muted)">Себе без оплаты · ${stats.reduce((a,p)=>a+p.agg.selfFree.qty,0)} шт</span><span style="font-size:13px;font-weight:700;color:var(--muted)">${fmtK(stats.reduce((a,p)=>a+p.agg.selfFree.revenue,0))}</span></div>`:''}
+      </div>`:''}
+    </div>
+  `;
+
+  document.getElementById('main-content').innerHTML = html;
+}
+
+loadAll();
+setInterval(loadAll, 3*60*1000);
+</script>
+</body>
+</html>
