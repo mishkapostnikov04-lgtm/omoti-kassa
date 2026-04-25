@@ -121,11 +121,11 @@ body{font-family:'Onest',system-ui,sans-serif;background:var(--bg);color:var(--t
 
 <div class="period-row" id="period-row">
   <div class="period-dropdown" id="dd-day">
-    <button class="period-btn" id="btn-day" onclick="toggleDD('day',event)">День ▾</button>
+    <button class="period-btn" id="btn-day" onclick="toggleDD('day',event)" ontouchend="toggleDD('day',event)">День ▾</button>
     <div class="period-dd-menu" id="menu-day"></div>
   </div>
   <div class="period-dropdown" id="dd-week">
-    <button class="period-btn active" id="btn-week" onclick="toggleDD('week',event)">Эта неделя ▾</button>
+    <button class="period-btn active" id="btn-week" onclick="toggleDD('week',event)" ontouchend="toggleDD('week',event)">Эта неделя ▾</button>
     <div class="period-dd-menu" id="menu-week"></div>
   </div>
   <button class="period-btn" id="btn-month" onclick="selectFixed(this,'month')">Этот месяц</button>
@@ -417,6 +417,7 @@ function buildDropdowns(){
 
 function toggleDD(type, e){
   e.stopPropagation();
+  e.preventDefault();
   const menu=document.getElementById('menu-'+type);
   const btn=document.getElementById('btn-'+type);
   const isOpen=menu.classList.contains('open');
@@ -632,6 +633,8 @@ function render(){
 loadAll();
 setInterval(loadAll, 3*60*1000);
 buildDropdowns();
+document.addEventListener('click', function(e){ if(!e.target.closest('.period-dropdown')) closeAllDD(); });
+document.addEventListener('touchend', function(e){ if(!e.target.closest('.period-dropdown')) closeAllDD(); });
 </script>
 </body>
 </html>
