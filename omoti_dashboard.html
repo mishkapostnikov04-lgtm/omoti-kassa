@@ -130,7 +130,6 @@ body{font-family:'Onest',system-ui,sans-serif;background:var(--bg);color:var(--t
   </div>
   <button class="period-btn" id="btn-month" onclick="selectFixed(this,'month')">Этот месяц</button>
   <button class="period-btn" id="btn-prev_month" onclick="selectFixed(this,'prev_month')">Прошлый месяц</button>
-  <button class="period-btn" id="btn-all" onclick="selectFixed(this,'all')">Всё время</button>
 </div>
 
 <div class="refresh-row">
@@ -466,9 +465,6 @@ function selectFixed(el, p){
   render();
 }
 
-document.addEventListener('click', closeAllDD);
-buildDropdowns();
-
 // ─── УТИЛИТЫ ─────────────────────────────────────────────────────────────────
 function money(n){ return Math.round(n).toLocaleString('ru-RU')+'\u00a0₽'; }
 function fmtK(n){
@@ -628,6 +624,7 @@ function render(){
 
 loadAll();
 setInterval(loadAll, 3*60*1000);
+buildDropdowns();
 </script>
 </body>
 </html>
