@@ -103,17 +103,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 .result-section{margin:12px 14px 0}
 .result-group{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:8px;overflow:hidden}
 .result-group-header{padding:10px 14px;background:var(--green);color:#fff;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
-.result-row{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--border)}
+.result-row{display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border)}
 .result-row:last-child{border-bottom:none}
 .result-row.need{background:var(--red-light)}
 .result-row.ok{background:var(--green-light)}
-.rr-name{flex:1;font-size:13px;font-weight:600;color:var(--text);min-width:0}
-.rr-need{font-size:12px;color:var(--muted);min-width:60px;text-align:right}
-.rr-have{font-size:12px;min-width:60px;text-align:right}
-.rr-buy{font-size:13px;font-weight:700;min-width:70px;text-align:right}
+.rr-name{font-size:13px;font-weight:600;color:var(--text);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rr-need{font-size:12px;color:var(--muted);text-align:right;white-space:nowrap}
+.rr-stock-wrap{display:flex;align-items:center;gap:3px}
+.rr-stock-inp{width:48px;border:1.5px solid var(--border);background:#fff;border-radius:6px;padding:3px 5px;font-size:12px;font-weight:700;font-family:inherit;color:var(--text);outline:none;text-align:center}
+.rr-stock-inp:focus{border-color:var(--green)}
+.rr-stock-lbl{font-size:10px;color:var(--muted2);white-space:nowrap}
+.rr-buy{font-size:13px;font-weight:700;text-align:right;white-space:nowrap;min-width:56px}
 .rr-buy.none{color:var(--green)}
 .rr-buy.buy{color:var(--red)}
-.rr-price{font-size:11px;color:var(--muted);min-width:55px;text-align:right}
 
 .result-summary{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);margin:8px 0;padding:14px 16px}
 .sum-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:13px}
@@ -123,13 +125,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 .sum-val.red{color:var(--red)}
 .sum-val.green{color:var(--green)}
 
-.col-headers{display:flex;align-items:center;gap:8px;padding:4px 14px 4px;margin-bottom:2px}
+.col-headers{display:grid;grid-template-columns:1fr auto auto auto;gap:8px;padding:4px 12px;margin-bottom:2px}
 .ch{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
-.ch.name{flex:1}
-.ch.need{min-width:60px;text-align:right}
-.ch.have{min-width:60px;text-align:right}
-.ch.buy{min-width:70px;text-align:right}
-.ch.price{min-width:55px;text-align:right}
+.ch.have{width:68px;text-align:center}
+.ch.buy{min-width:56px;text-align:right}
 
 .empty-result{padding:32px;text-align:center;color:var(--muted);font-size:14px}
 </style>
@@ -155,15 +154,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
         <div class="plan-flavor-list" id="plan-flavor-list"></div>
       </div>
     </div>
-    <div id="plan-stock-card" style="display:none">
-      <div class="card">
-        <label class="stock-toggle">
-          <input type="checkbox" id="plan-stock-toggle" onchange="toggleStock('plan')">
-          <span>Указать остатки на складе (необязательно)</span>
-        </label>
-        <div id="plan-stock-grid" style="display:none" class="stock-grid"></div>
-      </div>
-    </div>
     <button class="calc-btn" id="plan-calc-btn" onclick="calcPlan()" disabled>Рассчитать</button>
     <div id="plan-result"></div>
   </div>
@@ -174,13 +164,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
       <div class="sec-label">Вкусы и количество</div>
       <div id="manual-rows"></div>
       <button class="add-row-btn" onclick="addManualRow()">+ Добавить вкус</button>
-    </div>
-    <div class="card" id="manual-stock-outer">
-      <label class="stock-toggle">
-        <input type="checkbox" id="manual-stock-toggle" onchange="toggleStock('manual')">
-        <span>Указать остатки на складе (необязательно)</span>
-      </label>
-      <div id="manual-stock-grid" style="display:none" class="stock-grid"></div>
     </div>
     <button class="calc-btn" id="manual-calc-btn" onclick="calcManual()">Рассчитать</button>
     <div id="manual-result"></div>
@@ -283,8 +266,6 @@ function showToast(txt,isErr){const el=document.getElementById('toast');el.textC
         `<div class="pf-row"><span class="pf-name">${escHtml(name)}</span><span class="pf-qty">${qty} шт</span></div>`
       ).join('');
       document.getElementById('plan-flavor-card').style.display='block';
-      buildStockGrid('plan', getIngredientsForFlavors(totals));
-      document.getElementById('plan-stock-card').style.display='block';
       document.getElementById('plan-calc-btn').disabled=false;
     })
     .catch(()=>{
@@ -333,72 +314,14 @@ function acBlur(n){setTimeout(()=>{const l=document.getElementById('ac-'+n);if(l
 // Инициализируем 3 строки
 addManualRow();addManualRow();addManualRow();
 
-// ── ОСТАТКИ ───────────────────────────────────────────────────────────────────
-function getIngredientsForFlavors(flavors){
-  // flavors: {name: qty}
-  const ingSet=new Set();
+// ── РАСЧЁТ ────────────────────────────────────────────────────────────────────
+function calcIngredients(flavors){
+  const needs={};
   Object.entries(flavors).forEach(([fname,qty])=>{
     if(qty<=0) return;
     const recipe=RECIPES[fname];
     if(!recipe) return;
-    recipe.forEach(({n})=>ingSet.add(n));
-  });
-  return [...ingSet].sort((a,b)=>a.localeCompare(b,'ru'));
-}
-
-function buildStockGrid(mode, ingredients){
-  const grid=document.getElementById(mode+'-stock-grid');
-  grid.innerHTML=ingredients.map(name=>{
-    const pr=PRICES[name];
-    const unit=pr?`уп × ${pr.pack}г`:'г';
-    return `<div class="stock-item">
-      <div class="stock-item-name" title="${escHtml(name)}">${escHtml(name)}</div>
-      <div class="stock-inp-row">
-        <input class="stock-inp" type="number" min="0" step="0.1" placeholder="0" id="st-${mode}-${name.replace(/[^a-zA-Zа-яА-ЯёЁ0-9]/g,'_')}">
-        <span class="stock-unit">${unit}</span>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function toggleStock(mode){
-  const checked=document.getElementById(mode+'-stock-toggle').checked;
-  const grid=document.getElementById(mode+'-stock-grid');
-  if(checked){
-    // Если вручную — нужно сначала собрать ингредиенты из введённых вкусов
-    if(mode==='manual'){
-      const flavors=getManualFlavors();
-      const ings=getIngredientsForFlavors(flavors);
-      if(!ings.length){showToast('Сначала добавьте вкусы',false);document.getElementById('manual-stock-toggle').checked=false;return;}
-      buildStockGrid('manual',ings);
-    }
-    grid.style.display='grid';
-  } else {
-    grid.style.display='none';
-  }
-}
-
-function getStockGrams(mode, ingName){
-  const pr=PRICES[ingName];
-  const id='st-'+mode+'-'+ingName.replace(/[^a-zA-Zа-яА-ЯёЁ0-9]/g,'_');
-  const el=document.getElementById(id);
-  if(!el) return 0;
-  const val=parseFloat(el.value)||0;
-  if(!val) return 0;
-  return pr ? val*pr.pack : val;
-}
-
-// ── РАСЧЁТ ────────────────────────────────────────────────────────────────────
-function calcIngredients(flavors){
-  // flavors: {name: qty}
-  const needs={}; // ingName -> totalGrams
-  Object.entries(flavors).forEach(([fname,qty])=>{
-    if(qty<=0) return;
-    const recipe=RECIPES[fname];
-    if(!recipe){return;}
-    recipe.forEach(({n,w})=>{
-      needs[n]=(needs[n]||0)+w*qty;
-    });
+    recipe.forEach(({n,w})=>{ needs[n]=(needs[n]||0)+w*qty; });
   });
   return needs;
 }
@@ -417,77 +340,108 @@ function getManualFlavors(){
   return flavors;
 }
 
-function renderResult(needs, mode, containerId){
-  const stockEnabled=document.getElementById(mode+'-stock-toggle').checked;
+// currentNeeds хранит последний расчёт для пересчёта при вводе остатков
+let currentNeeds={};
+let currentResultId='';
 
-  // Группируем по группам
-  const groups={};
-  Object.entries(needs).forEach(([name,totalG])=>{
-    const pr=PRICES[name];
-    const group=findGroup(name);
-    if(!groups[group]) groups[group]=[];
-    const haveG=stockEnabled?getStockGrams(mode,name):0;
-    const needG=Math.max(0,totalG-haveG);
-    const packs=pr?Math.ceil(needG/pr.pack):null;
-    const cost=pr?(needG*pr.p):null;
-    groups[group].push({name,totalG,haveG,needG,packs,cost,pr});
-  });
+function renderResult(needs, containerId){
+  currentNeeds=needs;
+  currentResultId=containerId;
 
   const groupOrder=['1. Молочные','2. Пюре','3. Сиропы','4. Ягоды','5. Варенье','6. Шоколад','7. Орехи и пасты','8. Подсластители','9. Основа','Прочее'];
-  let totalCost=0;
-  let html='<div class="result-section">';
 
-  // Колонки
+  // Группируем
+  const groups={};
+  Object.entries(needs).forEach(([name,totalG])=>{
+    const group=findGroup(name);
+    if(!groups[group]) groups[group]=[];
+    groups[group].push({name,totalG});
+  });
+
+  let html='<div class="result-section">';
   html+=`<div class="col-headers">
-    <span class="ch name">Продукт</span>
-    <span class="ch need">Нужно</span>
-    ${stockEnabled?'<span class="ch have">Есть</span>':''}
-    <span class="ch buy">${stockEnabled?'Докупить':'Упаковок'}</span>
-    <span class="ch price">Сумма</span>
+    <span class="ch">Продукт</span>
+    <span class="ch" style="text-align:right;font-size:10px">Нужно</span>
+    <span class="ch have">Есть, уп</span>
+    <span class="ch buy">Купить</span>
   </div>`;
 
   groupOrder.forEach(g=>{
     const items=groups[g];
     if(!items||!items.length) return;
-    html+=`<div class="result-group">
-      <div class="result-group-header">${escHtml(g)}</div>`;
-    items.sort((a,b)=>a.name.localeCompare(b.name,'ru')).forEach(({name,totalG,haveG,needG,packs,cost,pr})=>{
-      const isNeed=needG>0;
-      const rowClass=isNeed?'need':'ok';
-      const buyText=packs!==null?(isNeed?`${packs} уп`:'✓'):(isNeed?`${Math.round(needG)}г`:'✓');
-      const buyClass=isNeed?'buy':'none';
-      const costText=cost!==null&&isNeed?`${Math.round(cost)} ₽`:'';
-      if(cost&&isNeed) totalCost+=cost;
-      const needText=pr?`${Math.ceil(totalG/pr.pack)} уп`:`${Math.round(totalG)}г`;
-      const haveText=stockEnabled?(pr?`${Math.round(haveG/pr.pack*10)/10} уп`:`${Math.round(haveG)}г`):'';
-      html+=`<div class="result-row ${rowClass}">
-        <span class="rr-name">${escHtml(name)}</span>
-        <span class="rr-need">${needText}</span>
-        ${stockEnabled?`<span class="rr-have">${haveText}</span>`:''}
-        <span class="rr-buy ${buyClass}">${buyText}</span>
-        <span class="rr-price">${costText}</span>
+    html+=`<div class="result-group"><div class="result-group-header">${escHtml(g)}</div>`;
+    items.sort((a,b)=>a.name.localeCompare(b.name,'ru')).forEach(({name,totalG})=>{
+      const pr=PRICES[name];
+      const needPacks=pr?Math.ceil(totalG/pr.pack):Math.round(totalG);
+      const sid='si-'+name.replace(/[^a-zA-Zа-яА-ЯёЁ0-9]/g,'_');
+      html+=`<div class="result-row" id="row-${sid}" data-name="${escHtml(name)}" data-total="${totalG}">
+        <span class="rr-name" title="${escHtml(name)}">${escHtml(name)}</span>
+        <span class="rr-need">${needPacks} ${pr?'уп':'г'}</span>
+        <div class="rr-stock-wrap">
+          <input class="rr-stock-inp" type="number" min="0" step="0.5" placeholder="0" id="${sid}"
+            oninput="recalcRow('${sid}','${name.replace(/'/g,"\\'")}',${totalG})">
+        </div>
+        <span class="rr-buy buy" id="buy-${sid}">${needPacks} ${pr?'уп':'г'}</span>
       </div>`;
     });
     html+='</div>';
   });
 
-  // Итого
-  html+=`<div class="result-summary">
-    <div class="sum-row"><span class="sum-label">Позиций к закупке</span><span class="sum-val red">${countNeed(groups)}</span></div>
-    <div class="sum-row"><span class="sum-label">Итого сумма закупки</span><span class="sum-val red">${Math.round(totalCost).toLocaleString('ru-RU')} ₽</span></div>
+  html+=`<div class="result-summary" id="result-summary-${containerId}">
+    <div class="sum-row"><span class="sum-label">Позиций к закупке</span><span class="sum-val red" id="sum-count-${containerId}">—</span></div>
+    <div class="sum-row"><span class="sum-label">Итого закупка</span><span class="sum-val red" id="sum-cost-${containerId}">—</span></div>
   </div>`;
   html+='</div>';
   document.getElementById(containerId).innerHTML=html;
+  updateSummary(containerId);
 }
 
-function countNeed(groups){
-  let n=0;
-  Object.values(groups).forEach(items=>items.forEach(({needG})=>{if(needG>0)n++;}));
-  return n;
+function recalcRow(sid, name, totalG){
+  const pr=PRICES[name];
+  const inp=document.getElementById(sid);
+  const haveUnits=parseFloat(inp?.value)||0;
+  const haveG=pr?haveUnits*pr.pack:haveUnits;
+  const needG=Math.max(0,totalG-haveG);
+  const buyPacks=pr?Math.ceil(needG/pr.pack):Math.round(needG);
+  const unit=pr?'уп':'г';
+  const buyEl=document.getElementById('buy-'+sid);
+  const rowEl=document.getElementById('row-'+sid);
+  if(!buyEl||!rowEl) return;
+  if(needG<=0){
+    buyEl.textContent='✓';
+    buyEl.className='rr-buy none';
+    rowEl.className='result-row ok';
+  } else {
+    buyEl.textContent=`${buyPacks} ${unit}`;
+    buyEl.className='rr-buy buy';
+    rowEl.className='result-row need';
+  }
+  updateSummary(currentResultId);
+}
+
+function updateSummary(containerId){
+  let count=0, cost=0;
+  document.querySelectorAll(`#${containerId} .result-row`).forEach(row=>{
+    const name=row.dataset.name;
+    const totalG=parseFloat(row.dataset.total)||0;
+    const pr=PRICES[name];
+    const sid='si-'+name.replace(/[^a-zA-Zа-яА-ЯёЁ0-9]/g,'_');
+    const inp=document.getElementById(sid);
+    const haveUnits=parseFloat(inp?.value)||0;
+    const haveG=pr?haveUnits*pr.pack:haveUnits;
+    const needG=Math.max(0,totalG-haveG);
+    if(needG>0){
+      count++;
+      if(pr) cost+=needG*pr.p;
+    }
+  });
+  const cEl=document.getElementById('sum-count-'+containerId);
+  const costEl=document.getElementById('sum-cost-'+containerId);
+  if(cEl) cEl.textContent=count;
+  if(costEl) costEl.textContent=Math.round(cost).toLocaleString('ru-RU')+' ₽';
 }
 
 function findGroup(name){
-  // Определяем группу по первому вхождению в рецептах
   for(const recipe of Object.values(RECIPES)){
     const ing=recipe.find(i=>i.n===name);
     if(ing) return ing.g;
@@ -498,20 +452,14 @@ function findGroup(name){
 function calcPlan(){
   if(!planData) return;
   const needs=calcIngredients(planData);
-  renderResult(needs,'plan','plan-result');
+  renderResult(needs,'plan-result');
 }
 
 function calcManual(){
   const flavors=getManualFlavors();
   if(!Object.keys(flavors).length){showToast('Добавьте хотя бы один вкус',true);return;}
-  // Обновляем stock grid если включён
-  if(document.getElementById('manual-stock-toggle').checked){
-    const ings=getIngredientsForFlavors(flavors);
-    buildStockGrid('manual',ings);
-    document.getElementById('manual-stock-grid').style.display='grid';
-  }
   const needs=calcIngredients(flavors);
-  renderResult(needs,'manual','manual-result');
+  renderResult(needs,'manual-result');
 }
 </script>
 </body>
