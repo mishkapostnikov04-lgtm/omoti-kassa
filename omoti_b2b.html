@@ -405,7 +405,15 @@ function openClient(name){
   document.getElementById('clients-main').style.display='none';
   const pg=document.getElementById('client-page');
   pg.style.display='block';
-  const myO=orders.filter(o=>o.client===name).sort((a,b)=>new Date(b.created)-new Date(a.created));
+  const localO=orders.filter(o=>o.client===name).sort((a,b)=>new Date(b.created||0)-new Date(a.created||0));
+  renderClientPage(pg,c,localO,'Загружаю из таблицы...');
+  fetch(API_B2B,{method:'POST',body:JSON.stringify({action:'get_orders',client:name})})
+    .then(r=>r.json())
+    .then(res=>{if(res.ok&&res.orders&&res.orders.length)renderClientPage(pg,c,res.orders,'');})
+    .catch(()=>{});
+}
+
+function renderClientPage(pg,c,myO,loadingMsg){
   pg.innerHTML=`
     <div class="cp-back" onclick="showList()">← Назад</div>
     <div class="cp-header"><div class="cp-name">${esc(c.name)}</div><div class="cp-tag ${c.status}">${SL[c.status]}</div></div>
@@ -418,9 +426,9 @@ function openClient(name){
       <div class="cp-mc"><div class="cp-mc-val">${fmt(c.total_revenue)} ₽</div><div class="cp-mc-lbl">за всё время</div></div>
     </div>
     ${c.status!=='active'?`<div class="cp-section"><div class="cp-alert ${c.status==='lost'?'lost':''}">${c.status==='sleeping'?`⚠️ Обычно заказывает каждые ~${Math.round(c.avg_interval)} дн. Прошло уже ${c.days_since} дн — пора написать.`:`🔴 Не заказывал ${c.days_since} дн при интервале ~${Math.round(c.avg_interval)} дн.`}</div></div>`:''}
-    ${c.addr?`<div class="cp-section"><div class="sec-label">Адрес</div><div class="cp-addr"><span class="cp-addr-text">${esc(c.addr)}</span><button class="copy-btn" onclick="navigator.clipboard.writeText('${esc(c.addr)}').then(()=>toast('Скопировано',true))">Копировать</button></div></div>`:''}
-    <div class="cp-section"><div class="sec-label">Заказы</div>
-      ${myO.length?`<div class="cp-orders">${myO.slice(0,10).map(o=>`<div class="cp-order-row"><span class="cor-date">${o.date}</span><span class="cor-qty">${o.totalQty} шт${o.comment?' · '+esc(o.comment):''}</span><span class="cor-sum">${fmt(o.sum)} ₽</span></div>`).join('')}</div>`:`<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">История появится после добавления заказов</div>`}
+    <div class="cp-section"><div class="sec-label">Заказы через дашборд</div>
+      ${loadingMsg?`<div style="padding:16px;text-align:center;color:var(--muted);font-size:13px">${loadingMsg}</div>`:
+        myO.length?`<div class="cp-orders">${myO.slice(0,15).map(o=>`<div class="cp-order-row"><span class="cor-date">${o.date}</span><span class="cor-qty">${o.totalQty} шт${o.addr?' · '+esc(o.addr):''}</span><span class="cor-sum">${fmt(o.sum)} ₽</span></div>`).join('')}</div>`:`<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">Нет заказов</div>`}
     </div>
     <div class="cp-section" style="margin-bottom:20px"><button class="submit-btn" onclick="orderFor('${esc(c.name)}')">+ Новый заказ</button></div>`;
 }
@@ -479,11 +487,40 @@ function submitOrder(){
   if(totalQty===0){toast('Добавьте хотя бы один вкус');return;}
   const points=CONTRAGENTS[client]||[];
   const addr=addrIdx!==''&&points[parseInt(addrIdx)]?points[parseInt(addrIdx)].addr:'';
-  const flavors=Object.entries(fq).filter(([,q])=>q>0).map(([f,q])=>f+': '+q).join(', ');
-  const o={client,addr,entity,date:date.split('-').reverse().join('.'),sum,comment,totalQty,flavors,created:new Date().toISOString()};
-  orders.unshift(o);
+  // Вкусы как объект {название: количество}
+  const flavorsObj={};
+  Object.entries(fq).filter(([,q])=>q>0).forEach(([f,q])=>flavorsObj[f]=q);
+  const flavorsStr=Object.entries(flavorsObj).map(([f,q])=>f+': '+q).join(', ');
+
+  const order={
+    client,addr,entity,
+    date:date.split('-').reverse().join('.'),
+    sum,comment,totalQty,
+    flavors:flavorsObj,  // объект для Apps Script
+    flavorsStr,          // строка для отображения
+    created:new Date().toISOString()
+  };
+
+  // Сохраняем локально сразу
+  orders.unshift({...order, flavors:flavorsStr});
   try{localStorage.setItem('omoti_b2b_orders',JSON.stringify(orders));}catch(e){}
-  toast('Заказ сохранён ✓',true);
+
+  // Отправляем в Google Sheets
+  const btn=document.querySelector('.submit-btn');
+  btn.disabled=true;btn.textContent='Сохраняю...';
+
+  fetch(API_B2B,{
+    method:'POST',
+    body:JSON.stringify({action:'add_order',order}),
+  })
+  .then(r=>r.json())
+  .then(res=>{
+    if(res.ok){toast('Заказ сохранён в таблицу ✓',true);}
+    else{toast('Сохранено локально (ошибка сервера)',false);}
+  })
+  .catch(()=>toast('Сохранено локально (нет сети)',false))
+  .finally(()=>{btn.disabled=false;btn.textContent='Сохранить заказ';});
+
   fq={};renderFlavors();
   document.getElementById('o-sum').value='';
   document.getElementById('o-comment').value='';
@@ -517,6 +554,8 @@ function renderAnalytics(){
       <div style="font-size:12px;color:var(--muted);margin-top:4px">${tot} клиентов · ${CD.reduce((a,c)=>a+c.orders,0)} заказов</div>
     </div>`;
 }
+
+const API_B2B='https://script.google.com/macros/s/AKfycbzzYjNdSonuoQ2A0Rzqz5z5-Ek8ZxLcN0P5PlzZjlOn0t_uQ_Uvnl50CRcdRDUKnp3T/exec';
 
 renderMetrics();renderAlertBlock();renderClients();initOrderForm();
 </script>
