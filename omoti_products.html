@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>OMOTI · Расчёт продуктов</title>
+<link rel="icon" type="image/png" href="grin.png">
+<meta name="theme-color" content="#2d7a3a">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#f0f4f0;
+  --card:#fff;
+  --border:#d6e4d6;
+  --text:#1c2b1c;
+  --muted:#7a967a;
+  --muted2:#b8ccb8;
+  --green:#2d7a3a;
+  --green-light:#e8f5e9;
+  --green-mid:#4caf62;
+  --teal:#1a8c78;
+  --teal-light:#e0f5f1;
+  --amber:#e07c1a;
+  --amber-light:#fff3e0;
+  --red:#c0392b;
+  --red-light:#fdecea;
+  --radius:16px;
+  --shadow:0 2px 12px rgba(0,0,0,.07);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.app{max-width:520px;margin:0 auto;padding-bottom:60px}
+
+/* HEADER */
+.header{background:var(--green);padding:20px 18px 0;position:sticky;top:0;z-index:20}
+.header-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.18);border-radius:999px;padding:4px 10px;margin-bottom:8px}
+.header-badge span{font-size:11px;font-weight:800;color:#fff;letter-spacing:.06em;text-transform:uppercase}
+.header-dot{width:6px;height:6px;border-radius:999px;background:#7dff9a}
+.header-title{font-size:22px;font-weight:700;color:#fff;line-height:1}
+.header-sub{font-size:12px;color:rgba(255,255,255,.65);margin-top:4px;margin-bottom:14px}
+.tab-row{display:flex;gap:4px;background:rgba(0,0,0,.18);border-radius:12px;padding:3px}
+.tab-btn{flex:1;border:none;background:transparent;border-radius:10px;padding:8px 6px;font-size:13px;font-weight:600;font-family:inherit;color:rgba(255,255,255,.6);cursor:pointer;transition:.15s}
+.tab-btn.active{background:#fff;color:var(--green)}
+
+/* SCREENS */
+.screen{display:none}.screen.active{display:block}
+
+/* CARDS */
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);margin:12px 14px 0;padding:16px}
+.sec-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px}
+
+/* SPINNER */
+.spinner{text-align:center;padding:28px;font-size:13px;color:var(--muted)}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#1c2b1c;color:#fff;padding:10px 20px;border-radius:999px;font-size:13px;font-weight:600;opacity:0;transition:.25s;pointer-events:none;z-index:99;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.err{background:var(--red)}
+
+/* PLAN MODE */
+.plan-flavor-list{display:flex;flex-direction:column;gap:4px}
+.pf-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:14px}
+.pf-row:last-child{border-bottom:none}
+.pf-name{font-weight:600;color:var(--text)}
+.pf-qty{font-weight:700;color:var(--green)}
+
+/* MANUAL MODE */
+.manual-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
+.manual-row:last-child{border-bottom:none}
+.manual-num{font-size:12px;font-weight:700;color:var(--muted2);min-width:18px}
+.manual-name-inp{flex:2;border:1.5px solid var(--border);background:#fff;border-radius:8px;padding:7px 10px;font-size:13px;font-weight:600;font-family:inherit;color:var(--text);outline:none}
+.manual-name-inp:focus{border-color:var(--green)}
+.manual-qty-inp{width:72px;border:1.5px solid var(--border);background:#fff;border-radius:8px;padding:7px 8px;font-size:13px;font-weight:700;font-family:inherit;color:var(--text);outline:none;text-align:center}
+.manual-qty-inp:focus{border-color:var(--green)}
+.manual-del{width:28px;height:28px;border:none;background:none;color:var(--muted2);cursor:pointer;font-size:16px;flex-shrink:0;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:.12s}
+.manual-del:active{background:var(--red-light);color:var(--red)}
+.add-row-btn{width:100%;border:1.5px dashed var(--border);background:transparent;border-radius:10px;padding:10px;font-size:13px;font-weight:600;font-family:inherit;color:var(--green);cursor:pointer;margin-top:8px;transition:.15s}
+.add-row-btn:active{background:var(--green-light)}
+
+/* AUTOCOMPLETE */
+.ac-wrap{position:relative;flex:2}
+.ac-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--green);border-radius:8px;box-shadow:var(--shadow);z-index:50;max-height:180px;overflow-y:auto;margin-top:2px}
+.ac-item{padding:8px 12px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text);border-bottom:1px solid var(--border)}
+.ac-item:last-child{border-bottom:none}
+.ac-item:hover,.ac-item.selected{background:var(--green-light);color:var(--green)}
+
+/* ОСТАТКИ */
+.stock-toggle{display:flex;align-items:center;gap:10px;cursor:pointer;padding:2px 0}
+.stock-toggle input[type=checkbox]{width:18px;height:18px;accent-color:var(--green);cursor:pointer}
+.stock-toggle span{font-size:13px;font-weight:600;color:var(--muted)}
+.stock-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px}
+.stock-item{background:#f7faf7;border:1.5px solid var(--border);border-radius:10px;padding:8px 10px}
+.stock-item-name{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stock-inp-row{display:flex;align-items:center;gap:6px}
+.stock-inp{flex:1;border:1.5px solid var(--border);background:#fff;border-radius:6px;padding:5px 7px;font-size:13px;font-weight:700;font-family:inherit;color:var(--text);outline:none;text-align:center;min-width:0}
+.stock-inp:focus{border-color:var(--green)}
+.stock-unit{font-size:11px;color:var(--muted2);font-weight:600;white-space:nowrap}
+
+/* РЕЗУЛЬТАТ */
+.calc-btn{width:calc(100% - 28px);margin:12px 14px 0;background:var(--green);color:#fff;border:none;border-radius:12px;padding:15px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;transition:.15s}
+.calc-btn:active{opacity:.85}
+.calc-btn:disabled{opacity:.5;cursor:default}
+
+.result-section{margin:12px 14px 0}
+.result-group{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:8px;overflow:hidden}
+.result-group-header{padding:10px 14px;background:var(--green);color:#fff;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
+.result-row{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--border)}
+.result-row:last-child{border-bottom:none}
+.result-row.need{background:var(--red-light)}
+.result-row.ok{background:var(--green-light)}
+.rr-name{flex:1;font-size:13px;font-weight:600;color:var(--text);min-width:0}
+.rr-need{font-size:12px;color:var(--muted);min-width:60px;text-align:right}
+.rr-have{font-size:12px;min-width:60px;text-align:right}
+.rr-buy{font-size:13px;font-weight:700;min-width:70px;text-align:right}
+.rr-buy.none{color:var(--green)}
+.rr-buy.buy{color:var(--red)}
+.rr-price{font-size:11px;color:var(--muted);min-width:55px;text-align:right}
+
+.result-summary{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);margin:8px 0;padding:14px 16px}
+.sum-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:13px}
+.sum-row:last-child{border-bottom:none}
+.sum-label{color:var(--muted);font-weight:600}
+.sum-val{font-weight:700;color:var(--text)}
+.sum-val.red{color:var(--red)}
+.sum-val.green{color:var(--green)}
+
+.col-headers{display:flex;align-items:center;gap:8px;padding:4px 14px 4px;margin-bottom:2px}
+.ch{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.ch.name{flex:1}
+.ch.need{min-width:60px;text-align:right}
+.ch.have{min-width:60px;text-align:right}
+.ch.buy{min-width:70px;text-align:right}
+.ch.price{min-width:55px;text-align:right}
+
+.empty-result{padding:32px;text-align:center;color:var(--muted);font-size:14px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-badge"><div class="header-dot"></div><span>OMOTI · Продукты</span></div>
+    <div class="header-title">Расчёт продуктов</div>
+    <div class="header-sub">Сколько нужно закупить под план</div>
+    <div class="tab-row">
+      <button class="tab-btn active" onclick="switchTab('plan')">По плану</button>
+      <button class="tab-btn" onclick="switchTab('manual')">Вручную</button>
+    </div>
+  </div>
+
+  <!-- ПО ПЛАНУ -->
+  <div class="screen active" id="screen-plan">
+    <div class="spinner" id="plan-spinner">Загружаю план...</div>
+    <div id="plan-flavor-card" style="display:none">
+      <div class="card">
+        <div class="sec-label">Вкусы из плана на неделю</div>
+        <div class="plan-flavor-list" id="plan-flavor-list"></div>
+      </div>
+    </div>
+    <div id="plan-stock-card" style="display:none">
+      <div class="card">
+        <label class="stock-toggle">
+          <input type="checkbox" id="plan-stock-toggle" onchange="toggleStock('plan')">
+          <span>Указать остатки на складе (необязательно)</span>
+        </label>
+        <div id="plan-stock-grid" style="display:none" class="stock-grid"></div>
+      </div>
+    </div>
+    <button class="calc-btn" id="plan-calc-btn" onclick="calcPlan()" disabled>Рассчитать</button>
+    <div id="plan-result"></div>
+  </div>
+
+  <!-- ВРУЧНУЮ -->
+  <div class="screen" id="screen-manual">
+    <div class="card">
+      <div class="sec-label">Вкусы и количество</div>
+      <div id="manual-rows"></div>
+      <button class="add-row-btn" onclick="addManualRow()">+ Добавить вкус</button>
+    </div>
+    <div class="card" id="manual-stock-outer">
+      <label class="stock-toggle">
+        <input type="checkbox" id="manual-stock-toggle" onchange="toggleStock('manual')">
+        <span>Указать остатки на складе (необязательно)</span>
+      </label>
+      <div id="manual-stock-grid" style="display:none" class="stock-grid"></div>
+    </div>
+    <button class="calc-btn" id="manual-calc-btn" onclick="calcManual()">Рассчитать</button>
+    <div id="manual-result"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const API='https://script.google.com/macros/s/AKfycbyItLqVWxgGSYuWXc4HT6qtaSeDwSeRqv67dJBFBPaLWFbXxKSIyl9jq_q4i3WT4IPC/exec';
+
+// ── РЕЦЕПТУРЫ (граммы на 1 шт) ───────────────────────────────────────────────
+const RECIPES={
+  'Арбуз - Дыня':[{g:'1. Молочные',n:'Сливки',w:1.6667},{g:'1. Молочные',n:'Творожный сыр',w:11},{g:'2. Пюре',n:'Дыня пюре',w:5},{g:'2. Пюре',n:'Яблочное пюре',w:3.4667},{g:'3. Сиропы',n:'Арбуз сироп',w:3},{g:'3. Сиропы',n:'Инв. сироп',w:1},{g:'8. Подсластители',n:'Сахар',w:8.3333},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'9. Основа',n:'Пектин',w:0.2},{g:'Прочее',n:'Масло растительное',w:0.8}],
+  'Бабл Гам':[{g:'1. Молочные',n:'Сливки',w:3.3333},{g:'1. Молочные',n:'Творожный сыр',w:13.3333},{g:'3. Сиропы',n:'Бабл Гам сироп',w:2.6667},{g:'8. Подсластители',n:'Маршмелоу',w:2},{g:'8. Подсластители',n:'Сахар',w:8.2},{g:'8. Подсластители',n:'Тримолин',w:1.3333},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'Прочее',n:'Желатин',w:1.16},{g:'Прочее',n:'Масло растительное',w:0.8}],
+  'Банан- Нутелла':[{g:'1. Молочные',n:'Сливки',w:2.6667},{g:'1. Молочные',n:'Творожный сыр',w:12.3333},{g:'3. Сиропы',n:'Инв. сироп',w:1.1333},{g:'4. Ягоды',n:'Банан',w:15},{g:'7. Орехи и пасты',n:'Шоколадная паста',w:3},{g:'8. Подсластители',n:'Сахар',w:7.5333},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'Прочее',n:'Масло растительное',w:0.8}],
+  'Вишня-Тонка':[{g:'1. Молочные',n:'Сливки',w:4},{g:'1. Молочные',n:'Творожный сыр',w:10},{g:'3. Сиропы',n:'Инв. сироп',w:1},{g:'4. Ягоды',n:'Вишня пюре',w:8},{g:'8. Подсластители',n:'Сахар',w:9.8},{g:'8. Подсластители',n:'Сахарная пудра',w:2.3333},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'9. Основа',n:'Пектин',w:0.2},{g:'Прочее',n:'Бобы тонка',w:0.0667},{g:'Прочее',n:'Масло растительное',w:0.8}],
+  'Дубайский шоколад':[{g:'1. Молочные',n:'Сливки',w:5},{g:'1. Молочные',n:'Творожный сыр',w:11.6667},{g:'6. Шоколад',n:'Молочный шоколад',w:6},{g:'7. Орехи и пасты',n:'Тахини паста',w:0.3333},{g:'7. Орехи и пасты',n:'Фисташковая паста',w:2.6},{g:'8. Подсластители',n:'Сахар',w:6.8667},{g:'8. Подсластители',n:'Сахарная пудра',w:4},{g:'9. Основа',n:'Катаифи тесто',w:2.3333},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'Прочее',n:'Масло растительное',w:0.8}],
+  'Киви-Алоэ':[{g:'1. Молочные',n:'Сливки',w:3.4667},{g:'1. Молочные',n:'Творожный сыр',w:11.6667},{g:'2. Пюре',n:'Лайм пюре',w:0.3},{g:'3. Сиропы',n:'Зелёное яблоко сироп',w:2},{g:'3. Сиропы',n:'Инв. сироп',w:0.8},{g:'4. Ягоды',n:'Киви',w:4.6667},{g:'5. Варенье',n:'Алоэ варенье',w:3.6},{g:'6. Шоколад',n:'Молочный шоколад',w:2},{g:'8. Подсластители',n:'Сахар',w:7.5333},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'9. Основа',n:'Пектин',w:0.2},{g:'Прочее',n:'Масло растительное',w:0.8}],
+  'Клубника':[{g:'1. Молочные',n:'Сливки',w:1.4},{g:'1. Молочные',n:'Творожный сыр',w:11},{g:'2. Пюре',n:'Клубника пюре',w:8},{g:'3. Сиропы',n:'Инв. сироп',w:1.1333},{g:'4. Ягоды',n:'Клубника ягода',w:2.6},{g:'6. Шоколад',n:'Белый шоколад',w:1.8667},{g:'8. Подсластители',n:'Сахар',w:9.3333},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'9. Основа',n:'Пектин',w:0.2},{g:'Прочее',n:'Масло растительное',w:0.8}],
+  'Кокос-Маракуйя':[{g:'1. Молочные',n:'Сгущёнка',w:2.4},{g:'1. Молочные',n:'Творожный сыр',w:10},{g:'2. Пюре',n:'Кокос пюре',w:4.4},{g:'2. Пюре',n:'Маракуя пюре',w:8},{g:'3. Сиропы',n:'Инв. сироп',w:1},{g:'8. Подсластители',n:'Сахар',w:8.3333},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'9. Основа',n:'Пектин',w:0.2667},{g:'Прочее',n:'Масло растительное',w:0.8}],
+  'Кокосовый пломбир':[{g:'1. Молочные',n:'Сгущёнка',w:3.4667},{g:'1. Молочные',n:'Творожный сыр',w:14},{g:'2. Пюре',n:'Кокос пюре',w:4.4667},{g:'3. Сиропы',n:'Инв. сироп',w:1.4667},{g:'8. Подсластители',n:'Сахар',w:6.8667},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'Прочее',n:'Кокос стружка',w:3.3333},{g:'Прочее',n:'Масло растительное',w:0.8}],
+  'Кофе-Карамель':[{g:'1. Молочные',n:'Сливки',w:6},{g:'1. Молочные',n:'Творожный сыр',w:12.4667},{g:'3. Сиропы',n:'Инв. сироп',w:2},{g:'8. Подсластители',n:'Сахар',w:6.8667},{g:'8. Подсластители',n:'Сахарная пудра',w:2.4667},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'Прочее',n:'Карамель',w:3},{g:'Прочее',n:'Кофе',w:0.1333},{g:'Прочее',n:'Масло растительное',w:0.8}],
+  'Криспи':[{g:'1. Молочные',n:'Сливки',w:4.66},{g:'1. Молочные',n:'Творожный сыр',w:13},{g:'3. Сиропы',n:'Глюкозный сироп',w:0.41},{g:'3. Сиропы',n:'Инв. сироп',w:1.2},{g:'6. Шоколад',n:'Криспи',w:4.166},{g:'8. Подсластители',n:'Ванильная паста',w:0.833},{g:'8. Подсластители',n:'Сахар',w:6.25},{g:'8. Подсластители',n:'Сахарная пудра',w:1.4},{g:'9. Основа',n:'Крахмал кукурузный',w:0.67},{g:'9. Основа',n:'Мука рисовая',w:6.66},{g:'Прочее',n:'Масло растительное',w:0.66}],
+  'Малина-Ваниль':[{g:'1. Молочные',n:'Сливки',w:4},{g:'1. Молочные',n:'Творожный сыр',w:10},{g:'2. Пюре',n:'Малина пюре',w:8},{g:'3. Сиропы',n:'Инв. сироп',w:1},{g:'8. Подсластители',n:'Ванильная паста',w:0.2667},{g:'8. Подсластители',n:'Сахар',w:8.3333},{g:'8. Подсластители',n:'Сахарная пудра',w:2.3333},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'9. Основа',n:'Пектин',w:0.2},{g:'Прочее',n:'Масло растительное',w:0.8}],
+  'Мандарин':[{g:'1. Молочные',n:'Сливки',w:5.3333},{g:'1. Молочные',n:'Творожный сыр',w:14.6667},{g:'3. Сиропы',n:'Инв. сироп',w:1.3333},{g:'4. Ягоды',n:'Авокадо',w:6.6667},{g:'4. Ягоды',n:'Лайм',w:2.3333},{g:'8. Подсластители',n:'Сахар',w:6.8667},{g:'8. Подсластители',n:'Сахарная пудра',w:2.6667},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'Прочее',n:'Масло растительное',w:0.8}],
+  'Матча-Манго':[{g:'1. Молочные',n:'Сливки',w:4},{g:'1. Молочные',n:'Творожный сыр',w:11},{g:'2. Пюре',n:'Манго пюре',w:8},{g:'3. Сиропы',n:'Инв. сироп',w:1},{g:'8. Подсластители',n:'Сахар',w:9.8},{g:'8. Подсластители',n:'Сахарная пудра',w:2.3333},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'9. Основа',n:'Пектин',w:0.2},{g:'Прочее',n:'Масло растительное',w:0.8},{g:'Прочее',n:'Матча',w:0.4}],
+  'Мохито':[{g:'1. Молочные',n:'Сливки',w:3},{g:'1. Молочные',n:'Творожный сыр',w:16.3333},{g:'2. Пюре',n:'Лайм пюре',w:6.6667},{g:'3. Сиропы',n:'Инв. сироп',w:1.3333},{g:'3. Сиропы',n:'Лайм сироп',w:3.33},{g:'3. Сиропы',n:'Мята сироп',w:0.66},{g:'4. Ягоды',n:'Мята листья',w:0.6667},{g:'8. Подсластители',n:'Сахар',w:8.2},{g:'8. Подсластители',n:'Сахарная пудра',w:3.3333},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'9. Основа',n:'Пектин',w:0.1333},{g:'Прочее',n:'Масло растительное',w:0.8}],
+  'Мункейки':[{g:'1. Молочные',n:'Творожный сыр',w:12},{g:'8. Подсластители',n:'Сахар',w:7},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'Прочее',n:'Масло растительное',w:0.8}],
+  'Печенье с топлёным молоком':[{g:'1. Молочные',n:'Масло сливочное',w:1.3333},{g:'1. Молочные',n:'Сливки',w:7.2},{g:'1. Молочные',n:'Сухое молоко',w:1.4667},{g:'1. Молочные',n:'Творожный сыр',w:13.3333},{g:'3. Сиропы',n:'Инв. сироп',w:1.0667},{g:'8. Подсластители',n:'Сахар',w:8.2},{g:'8. Подсластители',n:'Сахарная пудра',w:1.0667},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'9. Основа',n:'Мука пшеничная',w:1.3333},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'Прочее',n:'Масло растительное',w:0.8}],
+  'Пряник':[{g:'1. Молочные',n:'Творожный сыр',w:12},{g:'8. Подсластители',n:'Сахар',w:7},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'Прочее',n:'Масло растительное',w:0.8}],
+  'Сливочный лимон':[{g:'1. Молочные',n:'Масло сливочное',w:2.1333},{g:'1. Молочные',n:'Сливки',w:4},{g:'1. Молочные',n:'Творожный сыр',w:11},{g:'3. Сиропы',n:'Инв. сироп',w:1},{g:'4. Ягоды',n:'Лимон',w:6.6667},{g:'5. Варенье',n:'Лимон варенье',w:1.3333},{g:'8. Подсластители',n:'Сахар',w:8.4667},{g:'8. Подсластители',n:'Сахарная пудра',w:2},{g:'9. Основа',n:'Желток',w:2.5333},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'Прочее',n:'Масло растительное',w:0.8}],
+  'Смородина':[{g:'1. Молочные',n:'Сливки',w:5.3333},{g:'1. Молочные',n:'Творожный сыр',w:11.2},{g:'3. Сиропы',n:'Инв. сироп',w:1},{g:'5. Варенье',n:'Смородина варенье',w:5.3333},{g:'8. Подсластители',n:'Сахар',w:6.8667},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'Прочее',n:'Желатин',w:0.083},{g:'Прочее',n:'Масло растительное',w:0.8}],
+  'Сникерс':[{g:'1. Молочные',n:'Сливки',w:4.6667},{g:'1. Молочные',n:'Творожный сыр',w:13},{g:'3. Сиропы',n:'Инв. сироп',w:0.5333},{g:'6. Шоколад',n:'Молочный шоколад',w:1},{g:'6. Шоколад',n:'Темный шоколад',w:1},{g:'7. Орехи и пасты',n:'Арахис драблённый',w:1},{g:'7. Орехи и пасты',n:'Арахисовая паста',w:1},{g:'8. Подсластители',n:'Сахар',w:9.2},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'Прочее',n:'Карамель',w:3},{g:'Прочее',n:'Масло растительное',w:0.8}],
+  'Твикс':[{g:'1. Молочные',n:'Сливки',w:4},{g:'1. Молочные',n:'Творожный сыр',w:10},{g:'3. Сиропы',n:'Инв. сироп',w:0.8},{g:'6. Шоколад',n:'Молочный шоколад',w:2.6667},{g:'8. Подсластители',n:'Сахар',w:6.8667},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'Прочее',n:'Карамель',w:4.3333},{g:'Прочее',n:'Крекер тук',w:2.3333},{g:'Прочее',n:'Масло растительное',w:1.1333}],
+  'Трюфель':[{g:'1. Молочные',n:'Сливки',w:5.9333},{g:'1. Молочные',n:'Сыр белый (бри)',w:2.0667},{g:'1. Молочные',n:'Сыр голубой (блю)',w:1.5333},{g:'1. Молочные',n:'Творожный сыр',w:13},{g:'3. Сиропы',n:'Инв. сироп',w:1.2},{g:'6. Шоколад',n:'Темный шоколад',w:2.5333},{g:'8. Подсластители',n:'Сахар',w:6.8667},{g:'8. Подсластители',n:'Сахарная пудра',w:1.4},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'Прочее',n:'Масло растительное',w:0.8}],
+  'Шоколад':[{g:'1. Молочные',n:'Сливки',w:5},{g:'1. Молочные',n:'Творожный сыр',w:11.4667},{g:'6. Шоколад',n:'Кокао',w:2.2},{g:'6. Шоколад',n:'Молочный шоколад',w:4},{g:'6. Шоколад',n:'Темный шоколад',w:1.3333},{g:'8. Подсластители',n:'Сахар',w:6.8667},{g:'8. Подсластители',n:'Сахарная пудра',w:4},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'Прочее',n:'Карамель',w:5},{g:'Прочее',n:'Масло растительное',w:0.8}],
+};
+
+// ── ЦЕНЫ за 1 г ──────────────────────────────────────────────────────────────
+const PRICES={
+  'Масло сливочное':{p:1.3,pack:1000},'Сгущёнка':{p:0.4444,pack:270},'Сливки':{p:0.499,pack:1000},
+  'Сухое молоко':{p:1.2667,pack:150},'Сыр белый (бри)':{p:2,pack:125},'Сыр голубой (блю)':{p:2.3,pack:100},
+  'Творожный сыр':{p:0.6,pack:2250},'Гуава пюре':{p:0.65,pack:1000},'Дыня пюре':{p:0.75,pack:1000},
+  'Клубника пюре':{p:0.54,pack:1000},'Кокос пюре':{p:1.005,pack:1000},'Лайм пюре':{p:0.5,pack:1000},
+  'Малина пюре':{p:0.75,pack:1000},'Манго пюре':{p:0.571,pack:1000},'Маракуя пюре':{p:1.025,pack:1000},
+  'Яблочное пюре':{p:0.4,pack:100},'Вишня пюре':{p:0.65,pack:1000},'Арбуз сироп':{p:0.6,pack:1000},
+  'Бабл Гам сироп':{p:0.56,pack:1000},'Зелёное яблоко сироп':{p:0.56,pack:1000},'Глюкозный сироп':{p:0.21,pack:1000},
+  'Инв. сироп':{p:0.3714,pack:350},'Лайм сироп':{p:0.6,pack:1000},'Мята сироп':{p:0.6,pack:1000},
+  'Банан':{p:0.16,pack:1000},'Вишня ягода':{p:0.52,pack:1000},'Грепфрут':{p:0.35,pack:1000},
+  'Киви':{p:0.45,pack:1000},'Клубника ягода':{p:0.2667,pack:300},'Лимон':{p:0.16,pack:1000},
+  'Мята листья':{p:3.2,pack:50},'Авокадо':{p:0.6,pack:1000},'Лайм':{p:1,pack:1000},
+  'Алоэ варенье':{p:1.1,pack:1000},'Лимон варенье':{p:0.5,pack:200},'Смородина варенье':{p:0.525,pack:200},
+  'Белый шоколад':{p:1.5,pack:1000},'Кокао':{p:2,pack:1000},'Криспи':{p:3.4,pack:50},
+  'Молочный шоколад':{p:1.3,pack:1000},'Темный шоколад':{p:1.42,pack:1000},
+  'Арахис драблённый':{p:0.48,pack:500},'Арахисовая паста':{p:1.1,pack:200},
+  'Тахини паста':{p:0.65,pack:200},'Фисташковая паста':{p:3.5,pack:1000},'Шоколадная паста':{p:0.6286,pack:350},
+  'Ванильная паста':{p:7,pack:100},'Маршмелоу':{p:0.75,pack:200},'Сахар':{p:0.07,pack:1000},
+  'Сахарная пудра':{p:0.135,pack:1000},'Тримолин':{p:0.7,pack:1000},
+  'Желток':{p:0.5333,pack:900},'Катаифи тесто':{p:0.7,pack:1000},'Крахмал кукурузный':{p:0.14,pack:500},
+  'Мука пшеничная':{p:0.07,pack:1000},'Мука рисовая':{p:0.4,pack:400},'Пектин':{p:4.15,pack:500},
+  'Бобы тонка':{p:50,pack:10},'Желатин':{p:1,pack:180},'Карамель':{p:0.545,pack:200},
+  'Кокос стружка':{p:0.55,pack:100},'Кофе':{p:2.4105,pack:95},'Крекер тук':{p:0.75,pack:100},
+  'Масло растительное':{p:0.17,pack:1000},'Матча':{p:5,pack:100},
+};
+
+const FLAVORS=Object.keys(RECIPES).sort((a,b)=>a.localeCompare(b,'ru'));
+
+let planData=null;
+let manualRowCount=0;
+
+// ── TABS ─────────────────────────────────────────────────────────────────────
+function switchTab(tab){
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['plan','manual'][i]===tab));
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+tab).classList.add('active');
+}
+
+// ── UTILS ────────────────────────────────────────────────────────────────────
+function escHtml(s){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');}
+function showToast(txt,isErr){const el=document.getElementById('toast');el.textContent=txt;el.className='toast show'+(isErr?' err':'');clearTimeout(showToast._t);showToast._t=setTimeout(()=>el.classList.remove('show'),2500);}
+
+// ── PLAN TAB ─────────────────────────────────────────────────────────────────
+(function loadPlan(){
+  fetch(API+'?action=get_plan',{cache:'no-store'})
+    .then(r=>r.json())
+    .then(json=>{
+      document.getElementById('plan-spinner').style.display='none';
+      if(!json.ok||!json.plan){showToast('Не удалось загрузить план',true);return;}
+      // Суммируем план за неделю по вкусам
+      const totals={};
+      Object.values(json.plan).forEach(dayPlan=>{
+        Object.entries(dayPlan).forEach(([name,qty])=>{
+          totals[name]=(totals[name]||0)+qty;
+        });
+      });
+      planData=totals;
+      const entries=Object.entries(totals).filter(([,q])=>q>0).sort((a,b)=>a[0].localeCompare(b[0],'ru'));
+      if(!entries.length){document.getElementById('plan-flavor-card').innerHTML='<div class="card"><div class="empty-result">План на текущую неделю пуст</div></div>';document.getElementById('plan-flavor-card').style.display='block';return;}
+      document.getElementById('plan-flavor-list').innerHTML=entries.map(([name,qty])=>
+        `<div class="pf-row"><span class="pf-name">${escHtml(name)}</span><span class="pf-qty">${qty} шт</span></div>`
+      ).join('');
+      document.getElementById('plan-flavor-card').style.display='block';
+      buildStockGrid('plan', getIngredientsForFlavors(totals));
+      document.getElementById('plan-stock-card').style.display='block';
+      document.getElementById('plan-calc-btn').disabled=false;
+    })
+    .catch(()=>{
+      document.getElementById('plan-spinner').textContent='Нет связи — план недоступен';
+    });
+})();
+
+// ── MANUAL TAB ───────────────────────────────────────────────────────────────
+function addManualRow(){
+  manualRowCount++;
+  const n=manualRowCount;
+  const div=document.createElement('div');
+  div.className='manual-row';
+  div.id='mr-'+n;
+  div.innerHTML=`
+    <span class="manual-num">${n}</span>
+    <div class="ac-wrap">
+      <input class="manual-name-inp" type="text" placeholder="Вкус" id="mn-${n}" oninput="acInput(${n})" onblur="acBlur(${n})" autocomplete="off">
+      <div class="ac-list" id="ac-${n}" style="display:none"></div>
+    </div>
+    <input class="manual-qty-inp" type="number" min="1" step="1" placeholder="шт" id="mq-${n}">
+    <button class="manual-del" onclick="delManualRow(${n})">✕</button>`;
+  document.getElementById('manual-rows').appendChild(div);
+}
+function delManualRow(n){const el=document.getElementById('mr-'+n);if(el)el.remove();}
+
+// Autocomplete
+let acActive=-1;
+function acInput(n){
+  const val=document.getElementById('mn-'+n).value.trim().toLowerCase();
+  const list=document.getElementById('ac-'+n);
+  if(!val){list.style.display='none';return;}
+  const matches=FLAVORS.filter(f=>f.toLowerCase().includes(val)).slice(0,8);
+  if(!matches.length){list.style.display='none';return;}
+  list.innerHTML=matches.map(f=>`<div class="ac-item" onmousedown="acSelect(${n},'${f.replace(/'/g,"\\'")}')">
+    ${escHtml(f)}</div>`).join('');
+  list.style.display='block';
+}
+function acSelect(n,val){
+  document.getElementById('mn-'+n).value=val;
+  document.getElementById('ac-'+n).style.display='none';
+  document.getElementById('mq-'+n)&&document.getElementById('mq-'+n).focus();
+}
+function acBlur(n){setTimeout(()=>{const l=document.getElementById('ac-'+n);if(l)l.style.display='none';},150);}
+
+// Инициализируем 3 строки
+addManualRow();addManualRow();addManualRow();
+
+// ── ОСТАТКИ ───────────────────────────────────────────────────────────────────
+function getIngredientsForFlavors(flavors){
+  // flavors: {name: qty}
+  const ingSet=new Set();
+  Object.entries(flavors).forEach(([fname,qty])=>{
+    if(qty<=0) return;
+    const recipe=RECIPES[fname];
+    if(!recipe) return;
+    recipe.forEach(({n})=>ingSet.add(n));
+  });
+  return [...ingSet].sort((a,b)=>a.localeCompare(b,'ru'));
+}
+
+function buildStockGrid(mode, ingredients){
+  const grid=document.getElementById(mode+'-stock-grid');
+  grid.innerHTML=ingredients.map(name=>{
+    const pr=PRICES[name];
+    const unit=pr?`уп × ${pr.pack}г`:'г';
+    return `<div class="stock-item">
+      <div class="stock-item-name" title="${escHtml(name)}">${escHtml(name)}</div>
+      <div class="stock-inp-row">
+        <input class="stock-inp" type="number" min="0" step="0.1" placeholder="0" id="st-${mode}-${name.replace(/[^a-zA-Zа-яА-ЯёЁ0-9]/g,'_')}">
+        <span class="stock-unit">${unit}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleStock(mode){
+  const checked=document.getElementById(mode+'-stock-toggle').checked;
+  const grid=document.getElementById(mode+'-stock-grid');
+  if(checked){
+    // Если вручную — нужно сначала собрать ингредиенты из введённых вкусов
+    if(mode==='manual'){
+      const flavors=getManualFlavors();
+      const ings=getIngredientsForFlavors(flavors);
+      if(!ings.length){showToast('Сначала добавьте вкусы',false);document.getElementById('manual-stock-toggle').checked=false;return;}
+      buildStockGrid('manual',ings);
+    }
+    grid.style.display='grid';
+  } else {
+    grid.style.display='none';
+  }
+}
+
+function getStockGrams(mode, ingName){
+  const pr=PRICES[ingName];
+  const id='st-'+mode+'-'+ingName.replace(/[^a-zA-Zа-яА-ЯёЁ0-9]/g,'_');
+  const el=document.getElementById(id);
+  if(!el) return 0;
+  const val=parseFloat(el.value)||0;
+  if(!val) return 0;
+  return pr ? val*pr.pack : val;
+}
+
+// ── РАСЧЁТ ────────────────────────────────────────────────────────────────────
+function calcIngredients(flavors){
+  // flavors: {name: qty}
+  const needs={}; // ingName -> totalGrams
+  Object.entries(flavors).forEach(([fname,qty])=>{
+    if(qty<=0) return;
+    const recipe=RECIPES[fname];
+    if(!recipe){return;}
+    recipe.forEach(({n,w})=>{
+      needs[n]=(needs[n]||0)+w*qty;
+    });
+  });
+  return needs;
+}
+
+function getManualFlavors(){
+  const flavors={};
+  document.querySelectorAll('.manual-row').forEach(row=>{
+    const id=row.id.replace('mr-','');
+    const nameEl=document.getElementById('mn-'+id);
+    const qtyEl=document.getElementById('mq-'+id);
+    if(!nameEl||!qtyEl) return;
+    const name=nameEl.value.trim();
+    const qty=parseInt(qtyEl.value)||0;
+    if(name&&qty>0) flavors[name]=(flavors[name]||0)+qty;
+  });
+  return flavors;
+}
+
+function renderResult(needs, mode, containerId){
+  const stockEnabled=document.getElementById(mode+'-stock-toggle').checked;
+
+  // Группируем по группам
+  const groups={};
+  Object.entries(needs).forEach(([name,totalG])=>{
+    const pr=PRICES[name];
+    const group=findGroup(name);
+    if(!groups[group]) groups[group]=[];
+    const haveG=stockEnabled?getStockGrams(mode,name):0;
+    const needG=Math.max(0,totalG-haveG);
+    const packs=pr?Math.ceil(needG/pr.pack):null;
+    const cost=pr?(needG*pr.p):null;
+    groups[group].push({name,totalG,haveG,needG,packs,cost,pr});
+  });
+
+  const groupOrder=['1. Молочные','2. Пюре','3. Сиропы','4. Ягоды','5. Варенье','6. Шоколад','7. Орехи и пасты','8. Подсластители','9. Основа','Прочее'];
+  let totalCost=0;
+  let html='<div class="result-section">';
+
+  // Колонки
+  html+=`<div class="col-headers">
+    <span class="ch name">Продукт</span>
+    <span class="ch need">Нужно</span>
+    ${stockEnabled?'<span class="ch have">Есть</span>':''}
+    <span class="ch buy">${stockEnabled?'Докупить':'Упаковок'}</span>
+    <span class="ch price">Сумма</span>
+  </div>`;
+
+  groupOrder.forEach(g=>{
+    const items=groups[g];
+    if(!items||!items.length) return;
+    html+=`<div class="result-group">
+      <div class="result-group-header">${escHtml(g)}</div>`;
+    items.sort((a,b)=>a.name.localeCompare(b.name,'ru')).forEach(({name,totalG,haveG,needG,packs,cost,pr})=>{
+      const isNeed=needG>0;
+      const rowClass=isNeed?'need':'ok';
+      const buyText=packs!==null?(isNeed?`${packs} уп`:'✓'):(isNeed?`${Math.round(needG)}г`:'✓');
+      const buyClass=isNeed?'buy':'none';
+      const costText=cost!==null&&isNeed?`${Math.round(cost)} ₽`:'';
+      if(cost&&isNeed) totalCost+=cost;
+      const needText=pr?`${Math.ceil(totalG/pr.pack)} уп`:`${Math.round(totalG)}г`;
+      const haveText=stockEnabled?(pr?`${Math.round(haveG/pr.pack*10)/10} уп`:`${Math.round(haveG)}г`):'';
+      html+=`<div class="result-row ${rowClass}">
+        <span class="rr-name">${escHtml(name)}</span>
+        <span class="rr-need">${needText}</span>
+        ${stockEnabled?`<span class="rr-have">${haveText}</span>`:''}
+        <span class="rr-buy ${buyClass}">${buyText}</span>
+        <span class="rr-price">${costText}</span>
+      </div>`;
+    });
+    html+='</div>';
+  });
+
+  // Итого
+  html+=`<div class="result-summary">
+    <div class="sum-row"><span class="sum-label">Позиций к закупке</span><span class="sum-val red">${countNeed(groups)}</span></div>
+    <div class="sum-row"><span class="sum-label">Итого сумма закупки</span><span class="sum-val red">${Math.round(totalCost).toLocaleString('ru-RU')} ₽</span></div>
+  </div>`;
+  html+='</div>';
+  document.getElementById(containerId).innerHTML=html;
+}
+
+function countNeed(groups){
+  let n=0;
+  Object.values(groups).forEach(items=>items.forEach(({needG})=>{if(needG>0)n++;}));
+  return n;
+}
+
+function findGroup(name){
+  // Определяем группу по первому вхождению в рецептах
+  for(const recipe of Object.values(RECIPES)){
+    const ing=recipe.find(i=>i.n===name);
+    if(ing) return ing.g;
+  }
+  return 'Прочее';
+}
+
+function calcPlan(){
+  if(!planData) return;
+  const needs=calcIngredients(planData);
+  renderResult(needs,'plan','plan-result');
+}
+
+function calcManual(){
+  const flavors=getManualFlavors();
+  if(!Object.keys(flavors).length){showToast('Добавьте хотя бы один вкус',true);return;}
+  // Обновляем stock grid если включён
+  if(document.getElementById('manual-stock-toggle').checked){
+    const ings=getIngredientsForFlavors(flavors);
+    buildStockGrid('manual',ings);
+    document.getElementById('manual-stock-grid').style.display='grid';
+  }
+  const needs=calcIngredients(flavors);
+  renderResult(needs,'manual','manual-result');
+}
+</script>
+</body>
+</html>
