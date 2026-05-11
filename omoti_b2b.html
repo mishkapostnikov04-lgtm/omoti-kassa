@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>OMOTI · B2B</title>
+<link rel="icon" type="image/png" href="grin.png">
+<meta name="theme-color" content="#1a1714">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#faf7f2;--bg2:#f3efe8;--card:#fff;--border:#e8e0d4;--border2:#d4c9b8;
+  --text:#1a1714;--text2:#5a5048;--muted:#9a8e82;--muted2:#c4b8aa;
+  --accent:#2c2420;--gold:#c9a96e;
+  --green:#3a7d44;--green-light:#edf7ef;
+  --amber:#c17d2a;--amber-light:#fdf3e3;
+  --red:#b03a2e;--red-light:#fdf0ee;
+  --radius:14px;--shadow:0 1px 4px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.04);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.app{max-width:520px;margin:0 auto;padding-bottom:80px}
+.header{background:var(--accent);padding:20px 18px 0;position:sticky;top:0;z-index:20}
+.hbadge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border-radius:999px;padding:4px 10px;margin-bottom:10px}
+.hbadge span{font-size:11px;font-weight:700;color:rgba(255,255,255,.6);letter-spacing:.08em;text-transform:uppercase}
+.hdot{width:6px;height:6px;border-radius:999px;background:var(--gold)}
+.htitle{font-size:24px;font-weight:800;color:#fff;line-height:1;letter-spacing:-.3px}
+.hsub{font-size:12px;color:rgba(255,255,255,.4);margin-top:4px;margin-bottom:16px}
+.tab-row{display:flex;gap:2px;background:rgba(0,0,0,.3);border-radius:12px;padding:3px}
+.tab-btn{flex:1;border:none;background:transparent;border-radius:9px;padding:8px 4px;font-size:11px;font-weight:600;font-family:inherit;color:rgba(255,255,255,.4);cursor:pointer;transition:.15s;white-space:nowrap}
+.tab-btn.active{background:#fff;color:var(--accent)}
+.screen{display:none}.screen.active{display:block}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px 14px 0}
+.mc{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border);padding:14px}
+.mc-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.mc-val{font-size:24px;font-weight:800;color:var(--text);line-height:1;letter-spacing:-.5px}
+.mc-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.alert-block{margin:10px 14px 0;background:var(--amber-light);border:1px solid #e8c87a;border-radius:var(--radius);padding:14px}
+.alert-title{font-size:10px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.alert-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(193,125,42,.15)}
+.alert-row:last-child{border-bottom:none}
+.alert-name{font-size:13px;font-weight:700;color:var(--text)}
+.alert-days{font-size:12px;color:var(--amber);font-weight:600}
+.filters{display:flex;gap:6px;padding:10px 14px 0;overflow-x:auto;scrollbar-width:none}
+.filters::-webkit-scrollbar{display:none}
+.fc{border:1.5px solid var(--border);background:var(--card);border-radius:999px;padding:6px 14px;font-size:12px;font-weight:600;font-family:inherit;color:var(--text2);cursor:pointer;transition:.15s;white-space:nowrap;flex-shrink:0}
+.fc.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.fc.s-sleeping.active{background:var(--amber);border-color:var(--amber)}
+.fc.s-lost.active{background:var(--red);border-color:var(--red)}
+.search-wrap{padding:8px 14px 0}
+.search-inp{width:100%;border:1.5px solid var(--border);background:var(--card);border-radius:10px;padding:10px 14px;font-size:14px;font-family:inherit;color:var(--text);outline:none}
+.search-inp:focus{border-color:var(--accent)}
+.client-list{padding:8px 14px 0;display:flex;flex-direction:column;gap:6px}
+.cc{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border);overflow:hidden;cursor:pointer;transition:.1s}
+.cc:active{opacity:.85}
+.cc-top{display:flex;align-items:center;gap:10px;padding:13px 14px}
+.cc-dot{width:8px;height:8px;border-radius:999px;flex-shrink:0}
+.cc-dot.active{background:var(--green)}.cc-dot.sleeping{background:var(--amber)}.cc-dot.lost{background:var(--red)}
+.cc-name{flex:1;font-size:15px;font-weight:700;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cc-tag{font-size:11px;font-weight:700;border-radius:6px;padding:3px 8px;white-space:nowrap}
+.cc-tag.active{background:var(--green-light);color:var(--green)}
+.cc-tag.sleeping{background:var(--amber-light);color:var(--amber)}
+.cc-tag.lost{background:var(--red-light);color:var(--red)}
+.cc-stats{display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid var(--border)}
+.cc-stat{padding:8px 10px;text-align:center;border-right:1px solid var(--border)}
+.cc-stat:last-child{border-right:none}
+.cs-val{font-size:13px;font-weight:700;color:var(--text)}
+.cs-lbl{font-size:10px;color:var(--muted);margin-top:1px}
+.cp-back{display:flex;align-items:center;gap:8px;padding:14px 14px 0;cursor:pointer;color:var(--text2);font-size:13px;font-weight:600}
+.cp-header{padding:14px 14px 0}
+.cp-name{font-size:24px;font-weight:800;color:var(--text);letter-spacing:-.3px}
+.cp-tag{display:inline-block;margin-top:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700}
+.cp-tag.active{background:var(--green-light);color:var(--green)}
+.cp-tag.sleeping{background:var(--amber-light);color:var(--amber)}
+.cp-tag.lost{background:var(--red-light);color:var(--red)}
+.cp-metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 14px 0}
+.cp-mc{background:var(--card);border-radius:12px;border:1px solid var(--border);padding:12px 14px}
+.cp-mc-val{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.3px}
+.cp-mc-lbl{font-size:11px;color:var(--muted);margin-top:3px}
+.cp-section{margin:10px 14px 0}
+.sec-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+.cp-alert{background:var(--amber-light);border:1px solid #e8c87a;border-radius:12px;padding:12px 14px;font-size:13px;color:var(--text);line-height:1.5}
+.cp-alert.lost{background:var(--red-light);border-color:#e8b0a8}
+.cp-orders{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden}
+.cp-order-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border)}
+.cp-order-row:last-child{border-bottom:none}
+.cor-date{font-size:12px;color:var(--muted);min-width:72px}
+.cor-qty{font-size:13px;font-weight:600;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cor-sum{font-size:13px;font-weight:700;color:var(--green);white-space:nowrap}
+.cp-addr{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px}
+.cp-addr-text{font-size:13px;font-weight:600;color:var(--text2);flex:1}
+.copy-btn{border:none;background:var(--accent);color:#fff;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;flex-shrink:0}
+.no-wrap{padding:12px 14px 0}
+.no-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:16px;margin-bottom:8px}
+.no-field{margin-bottom:14px}
+.no-field:last-child{margin-bottom:0}
+.no-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.no-inp{width:100%;border:1.5px solid var(--border);background:var(--bg);border-radius:10px;padding:10px 12px;font-size:14px;font-family:inherit;color:var(--text);outline:none;transition:.15s}
+.no-inp:focus{border-color:var(--accent);background:#fff}
+.no-inp.sel{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239a8e82' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.no-inp.ta{resize:vertical;min-height:70px;line-height:1.5}
+.flavor-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.fi{border:1.5px solid var(--border);background:var(--bg);border-radius:10px;padding:8px 10px}
+.fi.has{border-color:var(--accent);background:#fff}
+.fi-name{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px;line-height:1.3}
+.fi-row{display:flex;align-items:center;gap:6px}
+.fi-btn{width:26px;height:26px;border:1.5px solid var(--border);background:var(--card);border-radius:6px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text);font-weight:700;flex-shrink:0}
+.fi-btn:active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.fi-num{flex:1;text-align:center;font-size:15px;font-weight:800;color:var(--muted2)}
+.fi-num.has{color:var(--accent)}
+.order-total{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bg2);border-radius:10px;margin-bottom:14px}
+.ot-label{font-size:12px;font-weight:700;color:var(--muted)}
+.ot-val{font-size:20px;font-weight:800;color:var(--text)}
+.submit-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:15px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer}
+.submit-btn:active{opacity:.85}
+.analytics{padding:12px 14px 0;display:flex;flex-direction:column;gap:8px}
+.anal-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:14px}
+.anal-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.bar-row:last-child{margin-bottom:0}
+.bar-lbl{font-size:12px;font-weight:600;color:var(--text);min-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-bg{flex:1;background:var(--bg2);border-radius:999px;height:6px;overflow:hidden}
+.bar-fill{height:100%;border-radius:999px;background:var(--accent)}
+.bar-fill.green{background:var(--green)}.bar-fill.amber{background:var(--amber)}.bar-fill.red{background:var(--red)}
+.bar-val{font-size:11px;font-weight:700;color:var(--muted);min-width:44px;text-align:right}
+.top-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)}
+.top-row:last-child{border-bottom:none}
+.top-num{font-size:12px;font-weight:700;color:var(--muted2);min-width:18px}
+.top-name{flex:1;font-size:13px;font-weight:600;color:var(--text)}
+.top-val{font-size:13px;font-weight:700;color:var(--accent)}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);color:#fff;padding:10px 20px;border-radius:999px;font-size:13px;font-weight:600;opacity:0;transition:.25s;pointer-events:none;z-index:99}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}.toast.ok{background:var(--green)}
+.empty{padding:40px;text-align:center;color:var(--muted);font-size:14px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="hbadge"><div class="hdot"></div><span>OMOTI · B2B</span></div>
+    <div class="htitle">Клиенты опт</div>
+    <div class="hsub">Обновлено: 18.02.2025</div>
+    <div class="tab-row">
+      <button class="tab-btn active" onclick="switchTab('clients')">Клиенты</button>
+      <button class="tab-btn" onclick="switchTab('order')">+ Заказ</button>
+      <button class="tab-btn" onclick="switchTab('analytics')">Аналитика</button>
+    </div>
+  </div>
+
+  <div class="screen active" id="screen-clients">
+    <div id="client-page" style="display:none"></div>
+    <div id="clients-main">
+      <div class="metrics" id="metrics"></div>
+      <div id="alert-block"></div>
+      <div class="filters">
+        <button class="fc active" onclick="setFilter('all',this)">Все</button>
+        <button class="fc" onclick="setFilter('active',this)">Активные</button>
+        <button class="fc s-sleeping" onclick="setFilter('sleeping',this)">Засыпают</button>
+        <button class="fc s-lost" onclick="setFilter('lost',this)">Потеряны</button>
+      </div>
+      <div class="search-wrap"><input class="search-inp" type="text" placeholder="Поиск..." oninput="renderClients()"></div>
+      <div class="client-list" id="client-list"></div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-order">
+    <div class="no-wrap">
+      <div class="no-card">
+        <div class="no-field">
+          <div class="no-label">Клиент</div>
+          <div style="position:relative">
+            <input class="no-inp" type="text" id="o-client-inp" placeholder="Начните вводить название..." oninput="acClientInput()" onblur="acClientBlur()" autocomplete="off">
+            <div id="o-client-list" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--accent);border-radius:10px;box-shadow:var(--shadow);z-index:50;max-height:200px;overflow-y:auto;margin-top:2px"></div>
+          </div>
+        </div>
+        <div class="no-field" id="o-addr-field" style="display:none">
+          <div class="no-label">Адрес доставки</div>
+          <select class="no-inp sel" id="o-addr-sel" onchange="onAddrSelect()">
+            <option value="">— выберите адрес —</option>
+          </select>
+        </div>
+        <div class="no-field" id="o-entity-field" style="display:none">
+          <div class="no-label">Юр лицо</div>
+          <input class="no-inp" type="text" id="o-entity" readonly style="background:var(--bg2);color:var(--text2)">
+        </div>
+        <div class="no-field">
+          <div class="no-label">Дата доставки</div>
+          <input class="no-inp" type="date" id="o-date">
+        </div>
+      </div>
+      <div class="no-card">
+        <div class="no-label">Вкусы и количество</div>
+        <div class="flavor-grid" id="flavor-grid"></div>
+      </div>
+      <div class="no-card">
+        <div class="order-total">
+          <span class="ot-label">Итого штук</span>
+          <span class="ot-val" id="o-total-qty">0 шт</span>
+        </div>
+        <div class="no-field">
+          <div class="no-label">Сумма (₽)</div>
+          <input class="no-inp" type="number" id="o-sum" placeholder="0" min="0" step="100">
+        </div>
+        <div class="no-field">
+          <div class="no-label">Комментарий (упаковка, пожелания)</div>
+          <textarea class="no-inp ta" id="o-comment" placeholder="Коробки по 8 шт, без малины..."></textarea>
+        </div>
+        <button class="submit-btn" onclick="submitOrder()">Сохранить заказ</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-analytics">
+    <div class="analytics" id="analytics-content"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const CD=[
+  {name:"Суши Ням",orders:48,last_date:"18.02.2025",days_since:0,avg_interval:7.4,avg_qty:94,avg_check:8465,total_revenue:406330,month_revenue:31380,status:"active",addr:""},
+  {name:"Имбирь",orders:46,last_date:"18.02.2025",days_since:0,avg_interval:4.8,avg_qty:101,avg_check:9053,total_revenue:416430,month_revenue:59670,status:"active",addr:""},
+  {name:"Мурчим",orders:12,last_date:"18.02.2025",days_since:0,avg_interval:15.0,avg_qty:32,avg_check:2866,total_revenue:34390,month_revenue:8100,status:"active",addr:""},
+  {name:"Александр Дистрибютер",orders:10,last_date:"18.02.2025",days_since:0,avg_interval:3.6,avg_qty:52,avg_check:4819,total_revenue:48190,month_revenue:45450,status:"active",addr:""},
+  {name:"Shakuma Река",orders:2,last_date:"18.02.2025",days_since:0,avg_interval:19.0,avg_qty:62,avg_check:5850,total_revenue:11700,month_revenue:11700,status:"active",addr:""},
+  {name:"ИП Журавлёв Д.Г.",orders:2,last_date:"18.02.2025",days_since:0,avg_interval:13.0,avg_qty:84,avg_check:7640,total_revenue:15280,month_revenue:15280,status:"active",addr:""},
+  {name:"ИП Журавлёва О.П.",orders:3,last_date:"16.02.2025",days_since:2,avg_interval:5.5,avg_qty:84,avg_check:7640,total_revenue:22920,month_revenue:22920,status:"active",addr:""},
+  {name:"ИП Волкова",orders:57,last_date:"15.02.2025",days_since:3,avg_interval:6.0,avg_qty:87,avg_check:7935,total_revenue:452270,month_revenue:17780,status:"active",addr:""},
+  {name:"Lasosь",orders:11,last_date:"14.02.2025",days_since:4,avg_interval:40.5,avg_qty:38,avg_check:3404,total_revenue:37440,month_revenue:3150,status:"active",addr:""},
+  {name:"Make Cake",orders:17,last_date:"13.02.2025",days_since:5,avg_interval:13.9,avg_qty:38,avg_check:3517,total_revenue:59790,month_revenue:13720,status:"active",addr:""},
+  {name:"Pho Ma",orders:3,last_date:"13.02.2025",days_since:5,avg_interval:12.5,avg_qty:31,avg_check:2863,total_revenue:8590,month_revenue:8590,status:"active",addr:""},
+  {name:"Shakuma Курчатова",orders:4,last_date:"12.02.2025",days_since:6,avg_interval:4.0,avg_qty:60,avg_check:5725,total_revenue:22900,month_revenue:22900,status:"sleeping",addr:""},
+  {name:"Сузун",orders:20,last_date:"10.02.2025",days_since:8,avg_interval:10.4,avg_qty:47,avg_check:4315,total_revenue:86300,month_revenue:7270,status:"active",addr:""},
+  {name:"Картель Ролс",orders:2,last_date:"10.02.2025",days_since:8,avg_interval:24.0,avg_qty:35,avg_check:3225,total_revenue:6450,month_revenue:3700,status:"active",addr:""},
+  {name:"Saranghae",orders:5,last_date:"09.02.2025",days_since:9,avg_interval:11.8,avg_qty:36,avg_check:3332,total_revenue:16660,month_revenue:2800,status:"active",addr:""},
+  {name:"Круги",orders:5,last_date:"07.02.2025",days_since:11,avg_interval:29.8,avg_qty:34,avg_check:3124,total_revenue:15620,month_revenue:3000,status:"active",addr:""},
+  {name:"Император ролл",orders:29,last_date:"05.02.2025",days_since:13,avg_interval:8.9,avg_qty:121,avg_check:10978,total_revenue:318350,month_revenue:59000,status:"sleeping",addr:""},
+  {name:"Shakuma",orders:7,last_date:"28.01.2025",days_since:21,avg_interval:64.7,avg_qty:54,avg_check:5043,total_revenue:35300,month_revenue:17640,status:"active",addr:""},
+  {name:"Аригато",orders:6,last_date:"23.01.2025",days_since:26,avg_interval:24.4,avg_qty:38,avg_check:3498,total_revenue:20990,month_revenue:6910,status:"sleeping",addr:""},
+  {name:"Суши цех",orders:20,last_date:"21.01.2025",days_since:28,avg_interval:16.6,avg_qty:56,avg_check:5056,total_revenue:101110,month_revenue:4090,status:"sleeping",addr:""},
+  {name:"Зебруши",orders:3,last_date:"12.01.2025",days_since:37,avg_interval:64.0,avg_qty:1014,avg_check:91297,total_revenue:273890,month_revenue:0,status:"active",addr:""},
+  {name:"Набережная",orders:2,last_date:"03.01.2025",days_since:46,avg_interval:5.0,avg_qty:39,avg_check:3560,total_revenue:7120,month_revenue:0,status:"lost",addr:""},
+  {name:"Суши ням",orders:3,last_date:"19.11.2024",days_since:91,avg_interval:28.0,avg_qty:143,avg_check:12930,total_revenue:38790,month_revenue:0,status:"lost",addr:""},
+  {name:"Hexler",orders:6,last_date:"24.09.2024",days_since:147,avg_interval:28.6,avg_qty:30,avg_check:2708,total_revenue:16250,month_revenue:0,status:"lost",addr:""},
+  {name:"Точка кофе",orders:3,last_date:"08.09.2024",days_since:163,avg_interval:12.5,avg_qty:1436,avg_check:129773,total_revenue:389320,month_revenue:0,status:"lost",addr:""},
+  {name:"Брусена",orders:3,last_date:"28.07.2024",days_since:205,avg_interval:4.5,avg_qty:30,avg_check:2733,total_revenue:8200,month_revenue:0,status:"lost",addr:""},
+  {name:"Император Ролл",orders:10,last_date:"28.06.2024",days_since:235,avg_interval:12.1,avg_qty:105,avg_check:9450,total_revenue:94500,month_revenue:0,status:"lost",addr:""},
+  {name:"NexLer",orders:2,last_date:"09.04.2024",days_since:315,avg_interval:21.0,avg_qty:32,avg_check:2880,total_revenue:5760,month_revenue:0,status:"lost",addr:""},
+];
+
+// Контрагенты: клиент → [{addr, entity}]
+const CONTRAGENTS={
+  "Имбирь":[{addr:"Оловозоводская, 11",entity:"ИП Крупницкая Лариса Георгиевна"},{addr:"Селезнёва, 47",entity:"ИП Фольмер Екатерина Константиновна"},{addr:"Перевозчикова, 9",entity:"ИП Фольмер Екатерина Константиновна"},{addr:"Блюхера, 61",entity:"ИП Петрунин Андрей Аликович"},{addr:"Гурьевская, 76а",entity:"ИП Петрунин Андрей Аликович"},{addr:"Ватутина, 33",entity:"ИП Петрунин Андрей Аликович"},{addr:"Геодезическая, 2/1",entity:"ИП Петрунин Андрей Аликович"},{addr:"Титова, 11",entity:"ИП Петрунин Андрей Аликович"},{addr:"Наумова, 26",entity:"ИП Фольмер Екатерина Константиновна"},{addr:"Никольский проспект, 6",entity:"ИП Фольмер Екатерина Константиновна"}],
+  "Суши Ням":[{addr:"Волховская, 30",entity:"ИП МИЛЯЕВ Ю.А."},{addr:"Дуси Ковальчук, 260 к1",entity:"ИП БАРАНОВА А.П."},{addr:"Приморская, 30а",entity:"ИП БАРАНОВ Р. Н."},{addr:"Физкультурная, 5",entity:"ИП НОВИКОВА А. В."},{addr:"Белоусова, 7",entity:"ИП Койлыбаева Юлия Витальевна"}],
+  "Император ролл":[{addr:"Толстого, 71",entity:"ИП Черненко Екатерина Сергеевна"},{addr:"Связистов, 113а",entity:"ИП Черненко Екатерина Сергеевна"},{addr:"1-й Порт-Артурский переулок, 78",entity:"ИП Черненко Екатерина Сергеевна"},{addr:"Забалуева, 49 к1",entity:"ИП Черненко Екатерина Сергеевна"},{addr:"Междуреченская, 3в",entity:"ИП Черненко Екатерина Сергеевна"}],
+  "Суши от Зебруши":[{addr:"Кошурникова, 33",entity:"ИП Ковалев Дмитрий Александрович"},{addr:"Балтийская, 35",entity:"ИП Ковалев Дмитрий Александрович"},{addr:"Горский микрорайон, 53",entity:"ИП Ковалев Дмитрий Александрович"},{addr:"Линейная, 43 к1",entity:"ИП Ковалев Дмитрий Александрович"},{addr:"Фадеева, 66/5",entity:"ИП Ковалев Дмитрий Александрович"},{addr:"Петухова, 14Б",entity:"ИП Ковалев Дмитрий Александрович"},{addr:"Гурьевская, 64Б",entity:"ИП Ковалев Дмитрий Александрович"},{addr:"Бердск, Вокзальная, 26Б",entity:"ИП Ковалев Дмитрий Александрович"}],
+  "Мурчим":[{addr:"Блюхера, 61",entity:"ИП Трощенкова Галина Валерьевна"}],
+  "Сузун":[{addr:"Авиастроителей 11/1",entity:"ИП Зелингер Ксения Александровна"}],
+  "Uji":[{addr:"Курчатова, 1",entity:"ИП Батрименко Александр Владимирович"},{addr:"Богдана Хмельницкого, 27",entity:"ИП Батрименко Александр Владимирович"}],
+  "Pho ma":[{addr:"Красноярская, 32 к4",entity:"—"}],
+  "Toka sushi":[{addr:"ЖК Авиатор, Аэропорт, 88",entity:"ИП Третьяков Евгений Вячеславович"}],
+  "Saranghae":[{addr:"РЕКА, Большевистская, 45/1",entity:"ИП Карпухина Оксана Алексеевна"},{addr:"Набережная",entity:"ИП Карпухина Оксана Алексеевна"}],
+  "Круги":[{addr:"Стартовая, 1",entity:"ИП Кривцова Мария Васильевна"}],
+  "Lasosь":[{addr:"Владимира Заровного, 26/1",entity:"ИП Кулакова Алина Евгеньевна"}],
+  "Make Cake":[{addr:"Фрунзе, 8",entity:"—"}],
+  "Mushroom":[{addr:"Ленина, 3 к1",entity:"—"}],
+  "Maple tree house coffeeshop":[{addr:"Зыряновская, 63",entity:"ИП Волков Роман Константинович"}],
+  "Тепло в ладошках":[{addr:"Николая Островского, 195/1",entity:"ИП Семеченко Наталья Викторовна"}],
+  "Craft sushi":[{addr:"Горский микрорайон, 60",entity:"ИП Сырнев Артем Станиславович"}],
+  "Долина Топинамбура":[{addr:"р.п. Краснообск, Восточная 33а",entity:"ИП Стинская Юлия Петровна"}],
+  "Odonata":[{addr:"Арена парк",entity:"ИП Радченко Наталья Николаевна"}],
+  "ООО Шеф Ланч":[{addr:"Кропоткина 273, офис 1",entity:"ООО Шеф Ланч"}],
+  "Per Te":[{addr:"Бердск, Ленина 33",entity:"ИП Шалаев Вячеслав Валерьевич"}],
+  "Taki taki":[{addr:"Красный проспект 161",entity:"ИП Магеррамова Алия Маратовна"}],
+  "Японский домик":[{addr:"Выборная 118/1",entity:"ИП Лунган Иван Валерьевич"},{addr:"Дуси Ковальчук, 260",entity:"ИП Лунган Иван Валерьевич"},{addr:"Мясниковой 29",entity:"ИП Лунган Иван Валерьевич"}],
+  "Бурлинка":[{addr:"Пермитина, 24 к2",entity:"ООО Эльторг"},{addr:"Железнодорожная, 11а",entity:"ООО Эльторг"}],
+  "BonЯпон":[{addr:"Дуси Ковальчук, 250",entity:"ИП Гулина Ксения Сергеевна"}],
+  "Three wise monkeys":[{addr:"Морской проспект, 22",entity:"ООО Медика"}],
+  "Sushi Seven":[{addr:"Пархоменко, 15",entity:"ИП Умаров Умарджон Абдуллоджонович"}],
+  "Kannam chicken":[{addr:"Пролетарская, 48/1",entity:"ИП Опрышко Денис Александрович"}],
+  "Львуши":[{addr:"Дуси Ковальчук, 179/5",entity:"ИП Леонтьева Наталья Анатольевна"}],
+  "ДАО":[{addr:"Гоголя, 42",entity:"ООО Компас"}],
+  "Синлун":[{addr:"Кирова, 29",entity:"ООО Компас"}],
+  "96 азиаток":[{addr:"Блюхера, 77",entity:"ИП Ниненко Юлия Андреевна"}],
+  "Империя восходящего солнца":[{addr:"Челюскинцев, 3",entity:"ИП Шокирова Гулнора Зайнидиновна"},{addr:"Кочубея, 3/1",entity:"ИП Шпраер Евгения Сергеевна"},{addr:"Титова, 10",entity:"ИП Шпраер Евгения Сергеевна"},{addr:"Улица Героев Революции, 72",entity:"ИП Шокирова Гулнора Зайнидиновна"}],
+  "Black Table":[{addr:"Бердск, Ленина 33",entity:"ИП Казарян Геворг Мартинович"}],
+  "Nicks food":[{addr:"Зорге, 1а",entity:"ИП Космынина Елена Владимировна"}],
+  "Макитория":[{addr:"Ипподромская улица, 19",entity:"ИП Варданян Эвелина Ваниковна"},{addr:"Улица Ватутина, 11/3",entity:"ИП Варданян Эвелина Ваниковна"},{addr:"Улица Зорге, 197",entity:"ИП Варданян Эвелина Ваниковна"}],
+  "Sayori суши":[{addr:"Горский микрорайон, 78",entity:"ИП Васин Павел Алексеевич"},{addr:"Улица Восход, 46",entity:"ИП Васин Павел Алексеевич"},{addr:"Улица Адриена Лежена, 17",entity:"ИП Васин Павел Алексеевич"},{addr:"2-й микрорайон, 232, рп. Краснообск",entity:"ИП Васин Павел Алексеевич"},{addr:"ЖК Северная корона, ул. Мясниковой, 30",entity:"ИП Васин Павел Алексеевич"},{addr:"Никольский проспект, 14, рп. Кольцово",entity:"ИП Васин Павел Алексеевич"}],
+  "Сушняк":[{addr:"Виктора Уса, 15 цокольный этаж",entity:"ИП Мамедов Рамиль Рахим Оглы"}],
+  "Orso Coffe":[{addr:"Зорге, 47/2 к2",entity:"ИП Галансков Денис Александрович"}],
+  "TOM YUM'ная":[{addr:"Вокзальная магистраль, 1",entity:"ИП Мазепа Екатерина Евгеньевна"},{addr:"Выборная улица, 140",entity:"ИП Дворкин Антон Борисович"}],
+  "Chan Pho":[{addr:"ТРК Эдем, Кутателадзе, 4/4, 3 этаж",entity:"ИП Чан Михаил"}],
+  "Сыр томат и аромат":[{addr:"Дуси Ковальчук, 77",entity:"ИП Симинченко Сергей Владимирович"},{addr:"Широкая, 113/2",entity:"ИП Полищук Денис Валерьевич"},{addr:"Королёва, 16",entity:"ИП Тогушаев Самат Сергеевич"}],
+  "ИП Волкова":[{addr:"Разные точки",entity:"ИП Волкова"}],
+  "Александр Дистрибютер":[{addr:"Доставка дистрибютору",entity:"—"}],
+};
+
+const FLAVORS=["Арбуз - Дыня","Бабл Гам","Банан- Нутелла","Вишня-Тонка","Дубайский шоколад","Киви-Алоэ","Клубника","Кокос-Маракуйя","Кокосовый пломбир","Кофе-Карамель","Криспи","Малина-Ваниль","Матча-Манго","Мохито","Мункейки","Печенье с топлёным молоком","Пряник","Сливочный лимон","Смородина","Сникерс","Твикс","Трюфель","Шоколад"];
+const SL={active:'Активный',sleeping:'Засыпает',lost:'Потерян'};
+let cf='all', fq={};
+let orders=JSON.parse(localStorage.getItem('omoti_b2b_orders')||'[]');
+
+// ── AUTOCOMPLETE CLIENT ────────────────────────────────────────────────────────
+function acClientInput(){
+  const val=document.getElementById('o-client-inp').value.trim().toLowerCase();
+  const list=document.getElementById('o-client-list');
+  if(!val){list.style.display='none';return;}
+  const matches=ALL_CLIENTS.filter(c=>c.toLowerCase().includes(val)).slice(0,8);
+  if(!matches.length){list.style.display='none';return;}
+  list.innerHTML=matches.map(c=>`<div onclick="acClientSelect('${esc(c)}')" style="padding:10px 14px;font-size:14px;font-weight:600;cursor:pointer;border-bottom:1px solid var(--border);color:var(--text)" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">${esc(c)}</div>`).join('');
+  list.style.display='block';
+}
+function acClientSelect(name){
+  selectedClient=name;
+  document.getElementById('o-client-inp').value=name;
+  document.getElementById('o-client-list').style.display='none';
+  // Show address dropdown
+  const points=CONTRAGENTS[name]||[];
+  const addrSel=document.getElementById('o-addr-sel');
+  addrSel.innerHTML='<option value="">— выберите адрес —</option>';
+  points.forEach((p,i)=>addrSel.innerHTML+=`<option value="${i}">${esc(p.addr)}</option>`);
+  if(points.length===1){addrSel.value='0';onAddrSelect();}
+  document.getElementById('o-addr-field').style.display='block';
+  document.getElementById('o-entity-field').style.display='none';
+  document.getElementById('o-entity').value='';
+}
+function acClientBlur(){setTimeout(()=>{document.getElementById('o-client-list').style.display='none';},150);}
+
+function onAddrSelect(){
+  const idx=document.getElementById('o-addr-sel').value;
+  if(idx===''){document.getElementById('o-entity-field').style.display='none';return;}
+  const points=CONTRAGENTS[selectedClient]||[];
+  const p=points[parseInt(idx)];
+  if(p){
+    document.getElementById('o-entity').value=p.entity||'';
+    document.getElementById('o-entity-field').style.display='block';
+  }
+}
+
+function initOrderForm(){
+  selectedClient='';
+  document.getElementById('o-client-inp').value='';
+  document.getElementById('o-client-list').style.display='none';
+  document.getElementById('o-addr-field').style.display='none';
+  document.getElementById('o-entity-field').style.display='none';
+  document.getElementById('o-entity').value='';
+  const t=new Date();document.getElementById('o-date').value=t.toISOString().split('T')[0];
+  fq={};renderFlavors();updateTotal();
+}
+
+function orderFor(name){
+  switchTab('order');
+  setTimeout(()=>{
+    document.getElementById('o-client-inp').value=name;
+    acClientSelect(name);
+  },100);
+}
+
+function fmt(n){return Math.round(n).toLocaleString('ru-RU');}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function toast(t,ok){const e=document.getElementById('toast');e.textContent=t;e.className='toast show'+(ok?' ok':'');clearTimeout(toast._t);toast._t=setTimeout(()=>e.classList.remove('show'),2500);}
+
+function switchTab(t){
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['clients','order','analytics'][i]===t));
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+t).classList.add('active');
+  if(t==='analytics')renderAnalytics();
+  if(t==='order')initOrderForm();
+  if(t!=='clients')showList();
+}
+
+function setFilter(f,el){cf=f;document.querySelectorAll('.fc').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderClients();}
+
+function renderMetrics(){
+  const a=CD.filter(c=>c.status==='active').length,s=CD.filter(c=>c.status==='sleeping').length,l=CD.filter(c=>c.status==='lost').length;
+  const mr=CD.reduce((a,c)=>a+c.month_revenue,0);
+  document.getElementById('metrics').innerHTML=`
+    <div class="mc"><div class="mc-label">За месяц</div><div class="mc-val">${fmt(mr)} ₽</div><div class="mc-sub">выручка опт</div></div>
+    <div class="mc"><div class="mc-label">Клиенты</div><div class="mc-val">${CD.length}</div><div class="mc-sub"><span style="color:var(--green)">${a} акт</span> · <span style="color:var(--amber)">${s} засып</span> · <span style="color:var(--red)">${l} потер</span></div></div>`;
+}
+
+function renderAlertBlock(){
+  const sl=CD.filter(c=>c.status==='sleeping');
+  if(!sl.length){document.getElementById('alert-block').innerHTML='';return;}
+  document.getElementById('alert-block').innerHTML=`<div class="alert-block"><div class="alert-title">Написать сегодня</div>${sl.map(c=>`<div class="alert-row"><span class="alert-name">${esc(c.name)}</span><span class="alert-days">${c.days_since} дн · ~${Math.round(c.avg_interval)} дн интервал</span></div>`).join('')}</div>`;
+}
+
+function renderClients(){
+  const q=(document.querySelector('.search-inp')||{value:''}).value.trim().toLowerCase();
+  let list=CD;
+  if(cf!=='all')list=list.filter(c=>c.status===cf);
+  if(q)list=list.filter(c=>c.name.toLowerCase().includes(q));
+  const el=document.getElementById('client-list');
+  if(!list.length){el.innerHTML='<div class="empty">Нет клиентов</div>';return;}
+  el.innerHTML=list.map(c=>`<div class="cc" onclick="openClient('${esc(c.name)}')">
+    <div class="cc-top"><div class="cc-dot ${c.status}"></div><span class="cc-name">${esc(c.name)}</span><span class="cc-tag ${c.status}">${SL[c.status]}</span></div>
+    <div class="cc-stats">
+      <div class="cc-stat"><div class="cs-val">${c.days_since===0?'сегодня':c.days_since+' дн'}</div><div class="cs-lbl">посл. заказ</div></div>
+      <div class="cc-stat"><div class="cs-val">${c.avg_qty} шт</div><div class="cs-lbl">ср. заказ</div></div>
+      <div class="cc-stat"><div class="cs-val">${fmt(c.avg_check)} ₽</div><div class="cs-lbl">ср. чек</div></div>
+    </div></div>`).join('');
+}
+
+function openClient(name){
+  const c=CD.find(x=>x.name===name);if(!c)return;
+  document.getElementById('clients-main').style.display='none';
+  const pg=document.getElementById('client-page');
+  pg.style.display='block';
+  const myO=orders.filter(o=>o.client===name).sort((a,b)=>new Date(b.created)-new Date(a.created));
+  pg.innerHTML=`
+    <div class="cp-back" onclick="showList()">← Назад</div>
+    <div class="cp-header"><div class="cp-name">${esc(c.name)}</div><div class="cp-tag ${c.status}">${SL[c.status]}</div></div>
+    <div class="cp-metrics">
+      <div class="cp-mc"><div class="cp-mc-val">${c.orders}</div><div class="cp-mc-lbl">заказов всего</div></div>
+      <div class="cp-mc"><div class="cp-mc-val">${c.avg_qty} шт</div><div class="cp-mc-lbl">средний заказ</div></div>
+      <div class="cp-mc"><div class="cp-mc-val">${fmt(c.avg_check)} ₽</div><div class="cp-mc-lbl">средний чек</div></div>
+      <div class="cp-mc"><div class="cp-mc-val">${c.days_since===0?'сегодня':c.days_since+' дн'}</div><div class="cp-mc-lbl">последний заказ</div></div>
+      <div class="cp-mc"><div class="cp-mc-val">${fmt(c.month_revenue)} ₽</div><div class="cp-mc-lbl">за месяц</div></div>
+      <div class="cp-mc"><div class="cp-mc-val">${fmt(c.total_revenue)} ₽</div><div class="cp-mc-lbl">за всё время</div></div>
+    </div>
+    ${c.status!=='active'?`<div class="cp-section"><div class="cp-alert ${c.status==='lost'?'lost':''}">${c.status==='sleeping'?`⚠️ Обычно заказывает каждые ~${Math.round(c.avg_interval)} дн. Прошло уже ${c.days_since} дн — пора написать.`:`🔴 Не заказывал ${c.days_since} дн при интервале ~${Math.round(c.avg_interval)} дн.`}</div></div>`:''}
+    ${c.addr?`<div class="cp-section"><div class="sec-label">Адрес</div><div class="cp-addr"><span class="cp-addr-text">${esc(c.addr)}</span><button class="copy-btn" onclick="navigator.clipboard.writeText('${esc(c.addr)}').then(()=>toast('Скопировано',true))">Копировать</button></div></div>`:''}
+    <div class="cp-section"><div class="sec-label">Заказы</div>
+      ${myO.length?`<div class="cp-orders">${myO.slice(0,10).map(o=>`<div class="cp-order-row"><span class="cor-date">${o.date}</span><span class="cor-qty">${o.totalQty} шт${o.comment?' · '+esc(o.comment):''}</span><span class="cor-sum">${fmt(o.sum)} ₽</span></div>`).join('')}</div>`:`<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">История появится после добавления заказов</div>`}
+    </div>
+    <div class="cp-section" style="margin-bottom:20px"><button class="submit-btn" onclick="orderFor('${esc(c.name)}')">+ Новый заказ</button></div>`;
+}
+
+function showList(){document.getElementById('client-page').style.display='none';document.getElementById('clients-main').style.display='block';}
+
+function renderFlavors(){
+  document.getElementById('flavor-grid').innerHTML=FLAVORS.map(f=>{
+    const q=fq[f]||0;
+    const id='fq_'+f.replace(/[^а-яёa-z0-9]/gi,'_');
+    return `<div class="fi${q>0?' has':''}" id="fi_${id}">
+      <div class="fi-name">${esc(f)}</div>
+      <div class="fi-row">
+        <button class="fi-btn" onclick="chQ('${esc(f)}',-1)">−</button>
+        <input class="fi-num${q>0?' has':''}" id="${id}" type="number" min="0" step="1" value="${q||''}" placeholder="·" oninput="chQDirect('${esc(f)}',this.value)" style="border:none;outline:none;background:transparent;width:100%;text-align:center;font-size:15px;font-weight:800;font-family:inherit">
+        <button class="fi-btn" onclick="chQ('${esc(f)}',1)">+</button>
+      </div></div>`;
+  }).join('');
+}
+
+function chQ(f,d){
+  fq[f]=Math.max(0,(fq[f]||0)+d);
+  const id='fq_'+f.replace(/[^а-яёa-z0-9]/gi,'_');
+  const el=document.getElementById(id);
+  const fi=document.getElementById('fi_'+id);
+  if(el){el.value=fq[f]||'';el.className='fi-num'+(fq[f]>0?' has':'');}
+  if(fi){fi.className='fi'+(fq[f]>0?' has':'');}
+  updateTotal();
+}
+
+function chQDirect(f,val){
+  fq[f]=Math.max(0,parseInt(val)||0);
+  const id='fq_'+f.replace(/[^а-яёa-z0-9]/gi,'_');
+  const el=document.getElementById(id);
+  const fi=document.getElementById('fi_'+id);
+  if(el) el.className='fi-num'+(fq[f]>0?' has':'');
+  if(fi) fi.className='fi'+(fq[f]>0?' has':'');
+  updateTotal();
+}
+
+function updateTotal(){
+  const t=Object.values(fq).reduce((a,b)=>a+b,0);
+  document.getElementById('o-total-qty').textContent=t+' шт';
+}
+
+function submitOrder(){
+  const client=document.getElementById('o-client-inp').value.trim();
+  const addrIdx=document.getElementById('o-addr-sel').value;
+  const date=document.getElementById('o-date').value;
+  const entity=document.getElementById('o-entity').value.trim();
+  const sum=parseFloat(document.getElementById('o-sum').value)||0;
+  const comment=document.getElementById('o-comment').value.trim();
+  const totalQty=Object.values(fq).reduce((a,b)=>a+b,0);
+  if(!client){toast('Выберите клиента');return;}
+  if(!date){toast('Укажите дату');return;}
+  if(totalQty===0){toast('Добавьте хотя бы один вкус');return;}
+  const points=CONTRAGENTS[client]||[];
+  const addr=addrIdx!==''&&points[parseInt(addrIdx)]?points[parseInt(addrIdx)].addr:'';
+  const flavors=Object.entries(fq).filter(([,q])=>q>0).map(([f,q])=>f+': '+q).join(', ');
+  const o={client,addr,entity,date:date.split('-').reverse().join('.'),sum,comment,totalQty,flavors,created:new Date().toISOString()};
+  orders.unshift(o);
+  try{localStorage.setItem('omoti_b2b_orders',JSON.stringify(orders));}catch(e){}
+  toast('Заказ сохранён ✓',true);
+  fq={};renderFlavors();
+  document.getElementById('o-sum').value='';
+  document.getElementById('o-comment').value='';
+  updateTotal();
+}
+
+function renderAnalytics(){
+  const byR=[...CD].sort((a,b)=>b.total_revenue-a.total_revenue).slice(0,8);
+  const mx=byR[0]?.total_revenue||1;
+  const byO=[...CD].sort((a,b)=>b.orders-a.orders).slice(0,5);
+  const byC=[...CD].filter(c=>c.orders>=3).sort((a,b)=>b.avg_check-a.avg_check).slice(0,5);
+  const a=CD.filter(c=>c.status==='active').length,s=CD.filter(c=>c.status==='sleeping').length,l=CD.filter(c=>c.status==='lost').length,tot=CD.length;
+  const tr=CD.reduce((a,c)=>a+c.total_revenue,0);
+  document.getElementById('analytics-content').innerHTML=`
+    <div class="anal-card"><div class="anal-title">Статусы</div>
+      <div class="bar-row"><span class="bar-lbl" style="color:var(--green)">Активные</span><div class="bar-bg"><div class="bar-fill green" style="width:${a/tot*100}%"></div></div><span class="bar-val">${a} (${Math.round(a/tot*100)}%)</span></div>
+      <div class="bar-row"><span class="bar-lbl" style="color:var(--amber)">Засыпают</span><div class="bar-bg"><div class="bar-fill amber" style="width:${s/tot*100}%"></div></div><span class="bar-val">${s} (${Math.round(s/tot*100)}%)</span></div>
+      <div class="bar-row"><span class="bar-lbl" style="color:var(--red)">Потеряны</span><div class="bar-bg"><div class="bar-fill red" style="width:${l/tot*100}%"></div></div><span class="bar-val">${l} (${Math.round(l/tot*100)}%)</span></div>
+    </div>
+    <div class="anal-card"><div class="anal-title">Топ по выручке</div>
+      ${byR.map(c=>`<div class="bar-row"><span class="bar-lbl">${esc(c.name)}</span><div class="bar-bg"><div class="bar-fill" style="width:${c.total_revenue/mx*100}%"></div></div><span class="bar-val">${fmt(c.total_revenue/1000)}к</span></div>`).join('')}
+    </div>
+    <div class="anal-card"><div class="anal-title">Топ по заказам</div>
+      ${byO.map((c,i)=>`<div class="top-row"><span class="top-num">${i+1}</span><span class="top-name">${esc(c.name)}</span><span class="top-val">${c.orders} заказов</span></div>`).join('')}
+    </div>
+    <div class="anal-card"><div class="anal-title">Топ по среднему чеку (≥3 заказов)</div>
+      ${byC.map((c,i)=>`<div class="top-row"><span class="top-num">${i+1}</span><span class="top-name">${esc(c.name)}</span><span class="top-val">${fmt(c.avg_check)} ₽</span></div>`).join('')}
+    </div>
+    <div class="anal-card"><div class="anal-title">Итого за всё время</div>
+      <div style="font-size:28px;font-weight:800;color:var(--text);letter-spacing:-.5px">${fmt(tr)} ₽</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">${tot} клиентов · ${CD.reduce((a,c)=>a+c.orders,0)} заказов</div>
+    </div>`;
+}
+
+renderMetrics();renderAlertBlock();renderClients();initOrderForm();
+</script>
+</body>
+</html>
