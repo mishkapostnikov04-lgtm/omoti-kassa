@@ -501,20 +501,32 @@ function renderAnalytics(){
     fetch(API_B2B, {method:'POST', body:JSON.stringify({action:'get_analytics'})})
       .then(r=>r.json())
       .then(res=>{
-        if(res.ok){ analyticsData=res; document.getElementById('anal-body').innerHTML=renderAnalBody(); }
+        if(res.ok){
+          // Поддержка обоих форматов ответа
+          if(res.periods) analyticsData = res;
+          else analyticsData = {periods:{today:{totalQty:0,totalOrders:0,topClients:[]},week:{totalQty:0,totalOrders:0,topClients:[]},month:{totalQty:0,totalOrders:0,topClients:[]},quarter:{totalQty:0,totalOrders:0,topClients:[]}},dynamics:[],clientDynamics:[]};
+          const body = document.getElementById('anal-body');
+          if(body) body.innerHTML = renderAnalBody();
+        }
       })
-      .catch(()=>{ document.getElementById('anal-body').innerHTML='<div class="empty">Нет данных</div>'; });
+      .catch(()=>{ const b=document.getElementById('anal-body'); if(b) b.innerHTML='<div class="empty">Нет данных</div>'; });
   }
 }
 
 function setPeriod(p){
   activePeriod=p;
-  renderAnalytics();
+  if(!analyticsData){renderAnalytics();return;}
+  const body=document.getElementById('anal-body');
+  if(body) body.innerHTML=renderAnalBody();
+  // Обновляем активную кнопку
+  document.querySelectorAll('#analytics-content .fc').forEach(b=>{
+    b.classList.toggle('active', b.textContent.trim()==={today:'Сегодня',week:'Неделя',month:'Месяц',quarter:'Квартал'}[p]);
+  });
 }
 
 function renderAnalBody(){
-  if(!analyticsData) return '<div class="empty">Нет данных</div>';
-  const p = analyticsData.periods[activePeriod];
+  if(!analyticsData || !analyticsData.periods) return '<div class="empty">Нет данных</div>';
+  const p = analyticsData.periods[activePeriod] || {totalQty:0,totalOrders:0,topClients:[]};
   const dynamics = analyticsData.dynamics||[];
   const clientDyn = analyticsData.clientDynamics||[];
   const maxQty = Math.max(...(p.topClients||[]).map(c=>c.qty), 1);
