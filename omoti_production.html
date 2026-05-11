@@ -1135,6 +1135,18 @@ function renderTable(){
 
   if(!flavors.length){el.innerHTML='<div style="padding:28px;text-align:center;color:var(--muted)">Нет вкусов в плане</div>';return;}
 
+  // Факт за неделю по выбранному типу (Лепка или Начинки)
+  const factByType=getWeekFact(tableWorkType, weekStart, weekEnd);
+  const weekFactTotals=factByType._weekTotal||{};
+
+  // Недельный план по вкусу
+  const weekPlanTotals={};
+  Object.values(planData).forEach(dayPlan=>{
+    Object.entries(dayPlan).forEach(([name,qty])=>{
+      weekPlanTotals[name]=(weekPlanTotals[name]||0)+qty;
+    });
+  });
+
   // Заголовок
   let thead='<tr><th>Вкус</th>';
   activeDays.forEach((ds,i)=>{
@@ -1150,7 +1162,9 @@ function renderTable(){
   const colTotals=new Array(activeDays.length).fill(0);
   let grandTotal=0;
   flavors.forEach(name=>{
-    const isPrem=PREMIUM.has(name);
+    const weekPlan=weekPlanTotals[name]||0;
+    const weekFact=weekFactTotals[name]||0;
+    const done=weekFact>=weekPlan&&weekPlan>0;
     let rowTotal=0;
     let cells='';
     activeDays.forEach((ds,i)=>{
@@ -1159,10 +1173,13 @@ function renderTable(){
       const qty=(planData[ds]||{})[name]||0;
       colTotals[i]+=qty;
       rowTotal+=qty;
-      cells+=`<td class="qty${qty===0?' empty':''}${isToday?' today-col':''}">${qty||'—'}</td>`;
+      const cellStyle=done?'color:var(--muted2);text-decoration:line-through':'';
+      cells+=`<td class="qty${qty===0?' empty':''}${isToday?' today-col':''}" style="${cellStyle}">${qty||'—'}</td>`;
     });
     grandTotal+=rowTotal;
-    tbody+=`<tr><td class="${isPrem?'premium-name':''}">${escHtml(name)}</td>${cells}<td class="total">${rowTotal||'—'}</td></tr>`;
+    const nameStyle=done?'color:var(--muted2);text-decoration:line-through':'';
+    const totalStyle=done?'color:var(--muted2);text-decoration:line-through':'';
+    tbody+=`<tr><td style="${nameStyle}">${escHtml(name)}</td>${cells}<td class="total" style="${totalStyle}">${rowTotal||'—'}</td></tr>`;
   });
 
   // Итого по столбцам
