@@ -483,31 +483,102 @@ function submitOrder(){
   updateTotal();
 }
 
+let analyticsData = null;
+let activePeriod = 'month';
+
 function renderAnalytics(){
-  const byR=[...CD].sort((a,b)=>b.total_revenue-a.total_revenue).slice(0,8);
-  const mx=byR[0]?.total_revenue||1;
-  const byO=[...CD].sort((a,b)=>b.orders-a.orders).slice(0,5);
-  const byC=[...CD].filter(c=>c.orders>=3).sort((a,b)=>b.avg_check-a.avg_check).slice(0,5);
-  const a=CD.filter(c=>c.status==='active').length,s=CD.filter(c=>c.status==='sleeping').length,l=CD.filter(c=>c.status==='lost').length,tot=CD.length;
-  const tr=CD.reduce((a,c)=>a+c.total_revenue,0);
-  document.getElementById('analytics-content').innerHTML=`
-    <div class="anal-card"><div class="anal-title">Статусы</div>
+  const el = document.getElementById('analytics-content');
+  el.innerHTML = `
+    <div style="display:flex;gap:6px;padding:0 0 0;flex-wrap:wrap">
+      <button class="fc ${activePeriod==='today'?'active':''}" onclick="setPeriod('today')">Сегодня</button>
+      <button class="fc ${activePeriod==='week'?'active':''}" onclick="setPeriod('week')">Неделя</button>
+      <button class="fc ${activePeriod==='month'?'active':''}" onclick="setPeriod('month')">Месяц</button>
+      <button class="fc ${activePeriod==='quarter'?'active':''}" onclick="setPeriod('quarter')">Квартал</button>
+    </div>
+    <div id="anal-body" style="margin-top:0">${analyticsData ? renderAnalBody() : '<div class="empty">Загружаю...</div>'}</div>`;
+
+  if (!analyticsData) {
+    fetch(API_B2B, {method:'POST', body:JSON.stringify({action:'get_analytics'})})
+      .then(r=>r.json())
+      .then(res=>{
+        if(res.ok){ analyticsData=res; document.getElementById('anal-body').innerHTML=renderAnalBody(); }
+      })
+      .catch(()=>{ document.getElementById('anal-body').innerHTML='<div class="empty">Нет данных</div>'; });
+  }
+}
+
+function setPeriod(p){
+  activePeriod=p;
+  renderAnalytics();
+}
+
+function renderAnalBody(){
+  if(!analyticsData) return '<div class="empty">Нет данных</div>';
+  const p = analyticsData.periods[activePeriod];
+  const dynamics = analyticsData.dynamics||[];
+  const clientDyn = analyticsData.clientDynamics||[];
+  const maxQty = Math.max(...(p.topClients||[]).map(c=>c.qty), 1);
+  const maxDyn = Math.max(...dynamics.map(d=>d.qty), 1);
+  const a=CD.filter(c=>c.status==='active').length;
+  const s=CD.filter(c=>c.status==='sleeping').length;
+  const l=CD.filter(c=>c.status==='lost').length;
+  const tot=CD.length||1;
+
+  return `
+    <div class="anal-card" style="margin-top:8px">
+      <div class="anal-title">Итого за период</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="background:var(--bg2);border-radius:10px;padding:10px 12px">
+          <div style="font-size:22px;font-weight:800;color:var(--text)">${fmt(p.totalQty)} шт</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">продано моти</div>
+        </div>
+        <div style="background:var(--bg2);border-radius:10px;padding:10px 12px">
+          <div style="font-size:22px;font-weight:800;color:var(--text)">${p.totalOrders}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">заказов</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="anal-card">
+      <div class="anal-title">Топ клиентов по штукам</div>
+      ${(p.topClients||[]).map(c=>`
+        <div class="bar-row">
+          <span class="bar-lbl">${esc(c.name)}</span>
+          <div class="bar-bg"><div class="bar-fill" style="width:${c.qty/maxQty*100}%"></div></div>
+          <span class="bar-val">${fmt(c.qty)} шт</span>
+        </div>`).join('')||'<div style="color:var(--muted);font-size:13px">Нет данных за период</div>'}
+    </div>
+
+    <div class="anal-card">
+      <div class="anal-title">Динамика по месяцам (штук)</div>
+      ${dynamics.map(d=>`
+        <div class="bar-row">
+          <span class="bar-lbl">${esc(d.month)}</span>
+          <div class="bar-bg"><div class="bar-fill green" style="width:${d.qty/maxDyn*100}%"></div></div>
+          <span class="bar-val">${fmt(d.qty)}</span>
+        </div>`).join('')}
+    </div>
+
+    <div class="anal-card">
+      <div class="anal-title">Клиенты: этот месяц vs прошлый</div>
+      ${clientDyn.map(c=>{
+        const delta = c.delta;
+        const sign = delta>0?'+':'';
+        const col = delta>0?'var(--green)':delta<0?'var(--red)':'var(--muted)';
+        return `<div class="top-row">
+          <span class="top-name">${esc(c.name)}</span>
+          <span style="font-size:12px;color:var(--muted);min-width:50px;text-align:right">${fmt(c.prev)} шт</span>
+          <span style="font-size:13px;font-weight:700;min-width:55px;text-align:right">→ ${fmt(c.cur)}</span>
+          <span style="font-size:12px;font-weight:700;color:${col};min-width:45px;text-align:right">${sign}${fmt(delta)}</span>
+        </div>`;
+      }).join('')||'<div style="color:var(--muted);font-size:13px">Нет данных</div>'}
+    </div>
+
+    <div class="anal-card">
+      <div class="anal-title">Статусы клиентов</div>
       <div class="bar-row"><span class="bar-lbl" style="color:var(--green)">Активные</span><div class="bar-bg"><div class="bar-fill green" style="width:${a/tot*100}%"></div></div><span class="bar-val">${a} (${Math.round(a/tot*100)}%)</span></div>
       <div class="bar-row"><span class="bar-lbl" style="color:var(--amber)">Засыпают</span><div class="bar-bg"><div class="bar-fill amber" style="width:${s/tot*100}%"></div></div><span class="bar-val">${s} (${Math.round(s/tot*100)}%)</span></div>
       <div class="bar-row"><span class="bar-lbl" style="color:var(--red)">Потеряны</span><div class="bar-bg"><div class="bar-fill red" style="width:${l/tot*100}%"></div></div><span class="bar-val">${l} (${Math.round(l/tot*100)}%)</span></div>
-    </div>
-    <div class="anal-card"><div class="anal-title">Топ по выручке</div>
-      ${byR.map(c=>`<div class="bar-row"><span class="bar-lbl">${esc(c.name)}</span><div class="bar-bg"><div class="bar-fill" style="width:${c.total_revenue/mx*100}%"></div></div><span class="bar-val">${fmt(c.total_revenue/1000)}к</span></div>`).join('')}
-    </div>
-    <div class="anal-card"><div class="anal-title">Топ по заказам</div>
-      ${byO.map((c,i)=>`<div class="top-row"><span class="top-num">${i+1}</span><span class="top-name">${esc(c.name)}</span><span class="top-val">${c.orders} заказов</span></div>`).join('')}
-    </div>
-    <div class="anal-card"><div class="anal-title">Топ по среднему чеку (≥3 заказов)</div>
-      ${byC.map((c,i)=>`<div class="top-row"><span class="top-num">${i+1}</span><span class="top-name">${esc(c.name)}</span><span class="top-val">${fmt(c.avg_check)} ₽</span></div>`).join('')}
-    </div>
-    <div class="anal-card"><div class="anal-title">Итого за всё время</div>
-      <div style="font-size:28px;font-weight:800;color:var(--text);letter-spacing:-.5px">${fmt(tr)} ₽</div>
-      <div style="font-size:12px;color:var(--muted);margin-top:4px">${tot} клиентов · ${CD.reduce((a,c)=>a+c.orders,0)} заказов</div>
     </div>`;
 }
 
