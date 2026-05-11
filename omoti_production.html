@@ -31,7 +31,23 @@
   --radius:16px;
   --shadow:0 2px 12px rgba(0,0,0,.07);
 }
-body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+/* ── TABLE VIEW ── */
+.plan-table{width:calc(100% - 28px);margin:0 14px;border-collapse:collapse;font-size:12px}
+.plan-table th{background:var(--green);color:#fff;font-weight:700;padding:8px 6px;text-align:center;white-space:nowrap;position:sticky;top:0;z-index:2}
+.plan-table th:first-child{text-align:left;min-width:120px;position:sticky;left:0;z-index:3;background:var(--green)}
+.plan-table td{padding:7px 6px;border-bottom:1px solid var(--border);vertical-align:middle}
+.plan-table td:first-child{font-size:12px;font-weight:600;color:var(--text);background:#fff;position:sticky;left:0;z-index:1;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.plan-table tr:nth-child(even) td{background:#f7faf7}
+.plan-table tr:nth-child(even) td:first-child{background:#f7faf7}
+.plan-table td.qty{text-align:center;font-weight:700;color:var(--text)}
+.plan-table td.qty.empty{color:var(--muted2)}
+.plan-table td.total{text-align:center;font-weight:800;color:var(--green);background:var(--green-light)!important}
+.plan-table th.today-col{background:#1e5c27}
+.plan-table td.today-col{background:var(--green-light)!important;font-weight:800;color:var(--green)}
+.plan-table tfoot td{font-weight:800;font-size:12px;background:var(--green-light);color:var(--green);text-align:center;border-top:2px solid var(--green);padding:8px 6px}
+.plan-table tfoot td:first-child{text-align:left;color:var(--text)}
+.plan-table td.premium-name{color:var(--amber)}
+
 .app{max-width:480px;margin:0 auto;padding-bottom:48px}
 
 .header{background:var(--green);padding:20px 18px 0;position:sticky;top:0;z-index:20}
@@ -204,6 +220,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
     <button class="tab-btn" onclick="switchTab('history')">История</button>
     <button class="tab-btn" onclick="switchTab('stats')">Итоги</button>
     <button class="tab-btn" onclick="switchTab('plan')">План</button>
+    <button class="tab-btn" onclick="switchTab('table')">Таблица</button>
   </div>
 </div>
 
@@ -305,10 +322,10 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
       <div id="tempo-list"></div>
     </div>
     <div class="metrics-grid">
-      <div class="metric-card"><div class="m-label">Всего штук</div><div class="m-val green" id="s-total">—</div><div class="m-sub" id="s-period-sub"></div></div>
-      <div class="metric-card"><div class="m-label">Смен</div><div class="m-val" id="s-shifts">—</div><div class="m-sub" id="s-avgday">— шт/смену</div></div>
-      <div class="metric-card"><div class="m-label">Лепка</div><div class="m-val" id="s-lepka">—</div><div class="m-sub">штук</div><div class="m-sub" id="s-lepka-remain" style="display:none;margin-top:5px"></div></div>
-      <div class="metric-card"><div class="m-label">Начинки</div><div class="m-val" id="s-nachinka">—</div><div class="m-sub">штук</div><div class="m-sub" id="s-nachinka-remain" style="display:none;margin-top:5px"></div></div>
+      <div class="metric-card"><div class="m-label">Лепка</div><div class="m-val green" id="s-lepka">—</div><div class="m-sub" id="s-lepka-sub">— смен</div><div class="m-sub" id="s-lepka-remain" style="display:none;margin-top:5px"></div></div>
+      <div class="metric-card"><div class="m-label">Начинки</div><div class="m-val" id="s-nachinka">—</div><div class="m-sub" id="s-nachinka-sub">— смен</div><div class="m-sub" id="s-nachinka-remain" style="display:none;margin-top:5px"></div></div>
+      <div class="metric-card"><div class="m-label">Смен всего</div><div class="m-val" id="s-shifts">—</div><div class="m-sub" id="s-avgday">— шт/смену</div></div>
+      <div class="metric-card"><div class="m-label">Период</div><div class="m-val" style="font-size:13px;font-weight:700" id="s-total">—</div><div class="m-sub" id="s-period-sub"></div></div>
     </div>
     <div class="stat-section">
       <div class="sec-label">По кондитеру</div>
@@ -348,6 +365,19 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
     <div id="plan-changes-list" style="font-size:13px;color:#7a6000;line-height:1.7"></div>
   </div>
   <div id="plan-content"></div>
+</div>
+
+<!-- TABLE -->
+<div class="screen" id="screen-table">
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px 0">
+    <span style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">Таблица плана</span>
+    <button onclick="refreshPlan();renderTable();" style="font-size:12px;color:var(--green);background:none;border:none;cursor:pointer;font-family:inherit;font-weight:600;padding:4px 0">↻ Обновить</button>
+  </div>
+  <div style="display:flex;gap:8px;margin:10px 14px 0">
+    <button class="type-chip lepka active" id="table-type-lepka" onclick="setTableType('Лепка')">Лепка</button>
+    <button class="type-chip nachinka" id="table-type-nachinka" onclick="setTableType('Начинки')">Начинки</button>
+  </div>
+  <div id="table-content" style="padding:10px 0 20px;overflow-x:auto"></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -397,7 +427,7 @@ function hideModal(){document.getElementById('overlay').style.display='none';doc
 function modalConfirm(){const v=document.getElementById('modal-inp').value.trim();if(!v)return;if(!persons.includes(v)){persons.push(v);savePersons();}person=v;renderPersons();validateForm();hideModal();}
 
 function switchTab(tab){
-  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['form','history','stats','plan'][i]===tab));
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['form','history','stats','plan','table'][i]===tab));
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+tab).classList.add('active');
   if(tab==='history'||tab==='stats'){
@@ -406,6 +436,10 @@ function switchTab(tab){
   }
   if(tab==='plan'){
     if(!planLoaded){planLoaded=true;loadPlan();}
+  }
+  if(tab==='table'){
+    if(!planLoaded){planLoaded=true;loadPlan();}
+    else renderTable();
   }
 }
 
@@ -574,14 +608,19 @@ function renderJournal(){
 function loadStats(){
   const range=currentPeriodRange||{from:null,to:null,label:'Всё время'};
   const inRange=allRecords.filter(r=>{const d=parseDate(r.date);if(!d)return false;if(!range.from&&!range.to)return true;return d>=range.from&&d<=range.to;});
-  const total=inRange.reduce((a,r)=>a+r.total,0),shifts=inRange.length,avg=shifts?Math.round(total/shifts):0;
-  document.getElementById('s-total').textContent=total;
-  document.getElementById('s-shifts').textContent=shifts;
-  document.getElementById('s-avgday').textContent=avg+' шт/смену';
-  const factLepka=inRange.filter(r=>r.workType==='Лепка').reduce((a,r)=>a+r.total,0);
-  const factNachinka=inRange.filter(r=>r.workType==='Начинки').reduce((a,r)=>a+r.total,0);
+  const lepkaRecs=inRange.filter(r=>r.workType==='Лепка');
+  const nachinkaRecs=inRange.filter(r=>r.workType==='Начинки');
+  const factLepka=lepkaRecs.reduce((a,r)=>a+r.total,0);
+  const factNachinka=nachinkaRecs.reduce((a,r)=>a+r.total,0);
+  const shifts=inRange.length,avg=shifts?Math.round((factLepka+factNachinka)/shifts):0;
   document.getElementById('s-lepka').textContent=factLepka;
   document.getElementById('s-nachinka').textContent=factNachinka;
+  document.getElementById('s-lepka-sub').textContent=lepkaRecs.length+' смен';
+  document.getElementById('s-nachinka-sub').textContent=nachinkaRecs.length+' смен';
+  document.getElementById('s-shifts').textContent=shifts;
+  document.getElementById('s-avgday').textContent=avg+' шт/смену';
+  document.getElementById('s-total').textContent='';
+  document.getElementById('s-period-sub').textContent=range.label||'Всё время';
 
   // Остаток по плану — только текущая неделя + если план загружен
   const remainLepkaEl=document.getElementById('s-lepka-remain');
@@ -807,6 +846,7 @@ function loadPlan(){
       if(!planJson.ok){showToast('Не удалось загрузить план',true);return;}
       planData=planJson.plan; planBase=planJson.base; planWeekDates=planJson.weekDates;
       renderPlan(planData, planBase, planWeekDates);
+      renderTable();
       loadStats(); // обновляем остаток по плану в Итогах
     })
     .catch(()=>{
@@ -831,13 +871,14 @@ function getWeekFact(workType, weekStart, weekEnd){
       fact[dateStr][nf.name]=(fact[dateStr][nf.name]||0)+Number(nf.qty||0);
     });
   });
-  fact._weekTotal={};
-  Object.values(fact).forEach(dayFact=>{
+  const weekTotal={};
+  Object.entries(fact).forEach(([dateStr,dayFact])=>{
     if(typeof dayFact!=='object') return;
     Object.entries(dayFact).forEach(([name,qty])=>{
-      fact._weekTotal[name]=(fact._weekTotal[name]||0)+qty;
+      weekTotal[name]=(weekTotal[name]||0)+qty;
     });
   });
+  fact._weekTotal=weekTotal;
   return fact;
 }
 
@@ -957,39 +998,41 @@ function renderPlan(plan, base, weekDates){
       let dualStatusHtml='';
 
       if(planWorkType==='Лепка'){
-        // Двойной статус: начинки и лепка отдельно
+        // Статус по недельным итогам
         const weekNachinkaTotal=weekTotalNachinka[name]||0;
         const weekLepkaTotal=weekTotal[name]||0;
         const weekPlanQty=weekPlan[name]||planQty;
         const nachinkaOk=weekNachinkaTotal>=weekPlanQty;
         const lepkaOk=weekLepkaTotal>=weekPlanQty;
 
-        const nachinkaIcon=nachinkaOk
-          ?'<span style="color:var(--green)">🥄✓</span>'
-          :`<span style="color:var(--muted2)">🥄${weekNachinkaTotal>0?weekNachinkaTotal+' шт':'—'}</span>`;
-        const lepkaIcon=lepkaOk
-          ?'<span style="color:var(--green)">🫱✓</span>'
-          :`<span style="color:var(--muted2)">🫱${weekLepkaTotal>0?weekLepkaTotal+' шт':'—'}</span>`;
+        const nacBadge=nachinkaOk
+          ?`<span style="font-size:11px;font-weight:700;color:var(--green);background:var(--green-light);border-radius:4px;padding:1px 5px">нач ✓</span>`
+          :`<span style="font-size:11px;font-weight:600;color:var(--muted);background:#f0f4f0;border-radius:4px;padding:1px 5px">нач ${weekNachinkaTotal>0?weekNachinkaTotal:'—'}</span>`;
+        const lepBadge=lepkaOk
+          ?`<span style="font-size:11px;font-weight:700;color:var(--teal);background:var(--teal-light);border-radius:4px;padding:1px 5px">леп ✓</span>`
+          :`<span style="font-size:11px;font-weight:600;color:var(--muted);background:#f0f4f0;border-radius:4px;padding:1px 5px">леп ${weekLepkaTotal>0?weekLepkaTotal:'—'}</span>`;
 
-        dualStatusHtml=`<div style="font-size:11px;margin-top:3px;display:flex;gap:10px">${nachinkaIcon}${lepkaIcon}</div>`;
+        dualStatusHtml=`<div style="font-size:11px;margin-top:4px;display:flex;gap:5px">${nacBadge}${lepBadge}</div>`;
 
         if(nachinkaOk&&lepkaOk){
           nameStyle='font-size:14px;color:var(--muted);text-decoration:line-through';
           qtyHtml=`<span style="font-size:14px;font-weight:700;color:var(--muted)">${planQty} шт</span>`;
           rowBg='rgba(45,122,58,0.07)';
         } else if(nachinkaOk&&!isPast){
-          // начинки готовы, можно лепить — только сегодня и будущее
           rowBg='rgba(255,193,7,0.07)';
         }
       } else {
-        // Режим Начинки — обычная логика
-        if(effectiveFact>=planQty){
+        // Режим Начинки — зачёркивать если недельный факт >= недельного плана
+        const weekNachinkaTotal=weekTotal[name]||0;
+        const weekPlanQty=weekPlan[name]||planQty;
+        const done=weekNachinkaTotal>=weekPlanQty;
+        if(done){
           nameStyle='font-size:14px;color:var(--muted);text-decoration:line-through';
           statusHtml='<span style="font-size:12px;color:var(--green);margin-right:6px">✓</span>';
           qtyHtml=`<span style="font-size:14px;font-weight:700;color:var(--muted)">${planQty} шт</span>`;
           rowBg='rgba(45,122,58,0.07)';
-        } else if(effectiveFact>0){
-          qtyHtml=`<span style="font-size:13px;color:var(--muted);font-style:italic;margin-right:4px">${effectiveFact}/</span><span style="font-size:14px;font-weight:700;color:${isToday?'var(--green)':'var(--text)'}">${planQty} шт</span>`;
+        } else if(weekNachinkaTotal>0){
+          qtyHtml=`<span style="font-size:13px;color:var(--muted);font-style:italic;margin-right:4px">${weekNachinkaTotal}/</span><span style="font-size:14px;font-weight:700;color:${isToday?'var(--green)':'var(--text)'}">${planQty} шт</span>`;
         }
       }
 
@@ -1050,6 +1093,95 @@ const cached=loadCache();if(cached)allRecords=cached;
 init();
 // Грузим план сразу — нужен для отображения остатка в Итогах
 if(!planLoaded){planLoaded=true;loadPlan();}
+
+// ── ТАБЛИЦА ──────────────────────────────────────────────────────────────────
+let tableWorkType='Лепка';
+
+function setTableType(type){
+  tableWorkType=type;
+  document.getElementById('table-type-lepka').className='type-chip lepka'+(type==='Лепка'?' active':'');
+  document.getElementById('table-type-nachinka').className='type-chip nachinka'+(type==='Начинки'?' active':'');
+  renderTable();
+}
+
+function renderTable(){
+  const el=document.getElementById('table-content');
+  if(!planData){el.innerHTML='<div style="padding:28px;text-align:center;color:var(--muted);font-size:14px">План не загружен</div>';return;}
+
+  const today=new Date(); today.setHours(0,0,0,0);
+  const planDays=Object.keys(planData).sort((a,b)=>parseDate(a)-parseDate(b));
+  if(!planDays.length){el.innerHTML='<div style="padding:28px;text-align:center;color:var(--muted)">План не заполнен</div>';return;}
+
+  const weekStart=parseDate(planDays[0]); weekStart.setHours(0,0,0,0);
+  const weekEnd=new Date(weekStart); weekEnd.setDate(weekEnd.getDate()+6); weekEnd.setHours(23,59,59,999);
+
+  // Дни Пн–Пт (только рабочие из плана, где есть хоть одна позиция)
+  const days=[];
+  const DAY_SHORT=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+  for(let i=0;i<7;i++){
+    const d=new Date(weekStart); d.setDate(d.getDate()+i);
+    days.push(formatDate(d));
+  }
+  // Оставляем только дни с планом или сегодня
+  const activeDays=days.filter(ds=>{
+    const d=parseDate(ds); d.setHours(0,0,0,0);
+    return (planData[ds]&&Object.keys(planData[ds]).length>0)||d.getTime()===today.getTime();
+  });
+
+  // Все вкусы из плана
+  const allFlavors=new Set();
+  Object.values(planData).forEach(day=>Object.keys(day).forEach(f=>allFlavors.add(f)));
+  const flavors=[...allFlavors].sort((a,b)=>a.localeCompare(b,'ru'));
+
+  if(!flavors.length){el.innerHTML='<div style="padding:28px;text-align:center;color:var(--muted)">Нет вкусов в плане</div>';return;}
+
+  // Заголовок
+  let thead='<tr><th>Вкус</th>';
+  activeDays.forEach((ds,i)=>{
+    const d=parseDate(ds); d.setHours(0,0,0,0);
+    const isToday=d.getTime()===today.getTime();
+    const dayIdx=days.indexOf(ds);
+    thead+=`<th class="${isToday?'today-col':''}">${DAY_SHORT[dayIdx]}<br><span style="font-size:10px;font-weight:400">${ds.slice(0,5)}</span></th>`;
+  });
+  thead+='<th>Итого</th></tr>';
+
+  // Строки по вкусам
+  let tbody='';
+  const colTotals=new Array(activeDays.length).fill(0);
+  let grandTotal=0;
+  flavors.forEach(name=>{
+    const isPrem=PREMIUM.has(name);
+    let rowTotal=0;
+    let cells='';
+    activeDays.forEach((ds,i)=>{
+      const d=parseDate(ds); d.setHours(0,0,0,0);
+      const isToday=d.getTime()===today.getTime();
+      const qty=(planData[ds]||{})[name]||0;
+      colTotals[i]+=qty;
+      rowTotal+=qty;
+      cells+=`<td class="qty${qty===0?' empty':''}${isToday?' today-col':''}">${qty||'—'}</td>`;
+    });
+    grandTotal+=rowTotal;
+    tbody+=`<tr><td class="${isPrem?'premium-name':''}">${escHtml(name)}</td>${cells}<td class="total">${rowTotal||'—'}</td></tr>`;
+  });
+
+  // Итого по столбцам
+  let tfoot='<tr><td>Итого</td>';
+  colTotals.forEach((t,i)=>{
+    const d=parseDate(activeDays[i]); d.setHours(0,0,0,0);
+    const isToday=d.getTime()===today.getTime();
+    tfoot+=`<td class="${isToday?'today-col':''}">${t||'—'}</td>`;
+  });
+  tfoot+=`<td>${grandTotal}</td></tr>`;
+
+  el.innerHTML=`<div style="overflow-x:auto;padding:0 0 4px">
+    <table class="plan-table">
+      <thead>${thead}</thead>
+      <tbody>${tbody}</tbody>
+      <tfoot>${tfoot}</tfoot>
+    </table>
+  </div>`;
+}
 </script>
 </body>
 </html>
