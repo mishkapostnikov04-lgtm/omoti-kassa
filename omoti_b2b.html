@@ -215,36 +215,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 <div class="toast" id="toast"></div>
 
 <script>
-const CD=[
-  {name:"Суши Ням",orders:48,last_date:"18.02.2025",days_since:0,avg_interval:7.4,avg_qty:94,avg_check:8465,total_revenue:406330,month_revenue:31380,status:"active",addr:""},
-  {name:"Имбирь",orders:46,last_date:"18.02.2025",days_since:0,avg_interval:4.8,avg_qty:101,avg_check:9053,total_revenue:416430,month_revenue:59670,status:"active",addr:""},
-  {name:"Мурчим",orders:12,last_date:"18.02.2025",days_since:0,avg_interval:15.0,avg_qty:32,avg_check:2866,total_revenue:34390,month_revenue:8100,status:"active",addr:""},
-  {name:"Александр Дистрибютер",orders:10,last_date:"18.02.2025",days_since:0,avg_interval:3.6,avg_qty:52,avg_check:4819,total_revenue:48190,month_revenue:45450,status:"active",addr:""},
-  {name:"Shakuma Река",orders:2,last_date:"18.02.2025",days_since:0,avg_interval:19.0,avg_qty:62,avg_check:5850,total_revenue:11700,month_revenue:11700,status:"active",addr:""},
-  {name:"ИП Журавлёв Д.Г.",orders:2,last_date:"18.02.2025",days_since:0,avg_interval:13.0,avg_qty:84,avg_check:7640,total_revenue:15280,month_revenue:15280,status:"active",addr:""},
-  {name:"ИП Журавлёва О.П.",orders:3,last_date:"16.02.2025",days_since:2,avg_interval:5.5,avg_qty:84,avg_check:7640,total_revenue:22920,month_revenue:22920,status:"active",addr:""},
-  {name:"ИП Волкова",orders:57,last_date:"15.02.2025",days_since:3,avg_interval:6.0,avg_qty:87,avg_check:7935,total_revenue:452270,month_revenue:17780,status:"active",addr:""},
-  {name:"Lasosь",orders:11,last_date:"14.02.2025",days_since:4,avg_interval:40.5,avg_qty:38,avg_check:3404,total_revenue:37440,month_revenue:3150,status:"active",addr:""},
-  {name:"Make Cake",orders:17,last_date:"13.02.2025",days_since:5,avg_interval:13.9,avg_qty:38,avg_check:3517,total_revenue:59790,month_revenue:13720,status:"active",addr:""},
-  {name:"Pho Ma",orders:3,last_date:"13.02.2025",days_since:5,avg_interval:12.5,avg_qty:31,avg_check:2863,total_revenue:8590,month_revenue:8590,status:"active",addr:""},
-  {name:"Shakuma Курчатова",orders:4,last_date:"12.02.2025",days_since:6,avg_interval:4.0,avg_qty:60,avg_check:5725,total_revenue:22900,month_revenue:22900,status:"sleeping",addr:""},
-  {name:"Сузун",orders:20,last_date:"10.02.2025",days_since:8,avg_interval:10.4,avg_qty:47,avg_check:4315,total_revenue:86300,month_revenue:7270,status:"active",addr:""},
-  {name:"Картель Ролс",orders:2,last_date:"10.02.2025",days_since:8,avg_interval:24.0,avg_qty:35,avg_check:3225,total_revenue:6450,month_revenue:3700,status:"active",addr:""},
-  {name:"Saranghae",orders:5,last_date:"09.02.2025",days_since:9,avg_interval:11.8,avg_qty:36,avg_check:3332,total_revenue:16660,month_revenue:2800,status:"active",addr:""},
-  {name:"Круги",orders:5,last_date:"07.02.2025",days_since:11,avg_interval:29.8,avg_qty:34,avg_check:3124,total_revenue:15620,month_revenue:3000,status:"active",addr:""},
-  {name:"Император ролл",orders:29,last_date:"05.02.2025",days_since:13,avg_interval:8.9,avg_qty:121,avg_check:10978,total_revenue:318350,month_revenue:59000,status:"sleeping",addr:""},
-  {name:"Shakuma",orders:7,last_date:"28.01.2025",days_since:21,avg_interval:64.7,avg_qty:54,avg_check:5043,total_revenue:35300,month_revenue:17640,status:"active",addr:""},
-  {name:"Аригато",orders:6,last_date:"23.01.2025",days_since:26,avg_interval:24.4,avg_qty:38,avg_check:3498,total_revenue:20990,month_revenue:6910,status:"sleeping",addr:""},
-  {name:"Суши цех",orders:20,last_date:"21.01.2025",days_since:28,avg_interval:16.6,avg_qty:56,avg_check:5056,total_revenue:101110,month_revenue:4090,status:"sleeping",addr:""},
-  {name:"Зебруши",orders:3,last_date:"12.01.2025",days_since:37,avg_interval:64.0,avg_qty:1014,avg_check:91297,total_revenue:273890,month_revenue:0,status:"active",addr:""},
-  {name:"Набережная",orders:2,last_date:"03.01.2025",days_since:46,avg_interval:5.0,avg_qty:39,avg_check:3560,total_revenue:7120,month_revenue:0,status:"lost",addr:""},
-  {name:"Суши ням",orders:3,last_date:"19.11.2024",days_since:91,avg_interval:28.0,avg_qty:143,avg_check:12930,total_revenue:38790,month_revenue:0,status:"lost",addr:""},
-  {name:"Hexler",orders:6,last_date:"24.09.2024",days_since:147,avg_interval:28.6,avg_qty:30,avg_check:2708,total_revenue:16250,month_revenue:0,status:"lost",addr:""},
-  {name:"Точка кофе",orders:3,last_date:"08.09.2024",days_since:163,avg_interval:12.5,avg_qty:1436,avg_check:129773,total_revenue:389320,month_revenue:0,status:"lost",addr:""},
-  {name:"Брусена",orders:3,last_date:"28.07.2024",days_since:205,avg_interval:4.5,avg_qty:30,avg_check:2733,total_revenue:8200,month_revenue:0,status:"lost",addr:""},
-  {name:"Император Ролл",orders:10,last_date:"28.06.2024",days_since:235,avg_interval:12.1,avg_qty:105,avg_check:9450,total_revenue:94500,month_revenue:0,status:"lost",addr:""},
-  {name:"NexLer",orders:2,last_date:"09.04.2024",days_since:315,avg_interval:21.0,avg_qty:32,avg_check:2880,total_revenue:5760,month_revenue:0,status:"lost",addr:""},
-];
+// Клиенты загружаются с сервера
+let CD = [];
+
+function loadClients() {
+  fetch(API_B2B, {method:'POST', body:JSON.stringify({action:'get_clients'})})
+    .then(r => r.json())
+    .then(res => {
+      if (res.ok && res.clients && res.clients.length) {
+        CD = res.clients;
+        renderMetrics();
+        renderAlertBlock();
+        renderClients();
+      }
+    })
+    .catch(() => {});
+}
 
 // Контрагенты загружаются с сервера
 let CONTRAGENTS = {};
@@ -527,7 +513,7 @@ function renderAnalytics(){
 
 const API_B2B='https://script.google.com/macros/s/AKfycbxCBgVVyeiJI44vuIYZovFOat7EmdCOl_kryFy4ZeEZ9K4CX3Rx_iIQPNTLJfqqoLZR/exec';
 
-renderMetrics();renderAlertBlock();renderClients();initOrderForm();loadContragents();
+renderMetrics();renderAlertBlock();renderClients();initOrderForm();loadContragents();loadClients();
 </script>
 </body>
 </html>
