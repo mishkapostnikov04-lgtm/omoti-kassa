@@ -296,8 +296,11 @@ const CONTRAGENTS={
 
 const FLAVORS=["Арбуз - Дыня","Бабл Гам","Банан- Нутелла","Вишня-Тонка","Дубайский шоколад","Киви-Алоэ","Клубника","Кокос-Маракуйя","Кокосовый пломбир","Кофе-Карамель","Криспи","Малина-Ваниль","Матча-Манго","Мохито","Мункейки","Печенье с топлёным молоком","Пряник","Сливочный лимон","Смородина","Сникерс","Твикс","Трюфель","Шоколад"];
 const SL={active:'Активный',sleeping:'Засыпает',lost:'Потерян'};
+const ALL_CLIENTS=Object.keys(CONTRAGENTS).sort((a,b)=>a.localeCompare(b,'ru'));
+let selectedClient='';
 let cf='all', fq={};
 let orders=JSON.parse(localStorage.getItem('omoti_b2b_orders')||'[]');
+
 
 // ── AUTOCOMPLETE CLIENT ────────────────────────────────────────────────────────
 function acClientInput(){
