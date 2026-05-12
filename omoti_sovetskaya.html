@@ -391,9 +391,9 @@ function loadStats(){
   const selfPaidCashSum=selfPaidCash.reduce((a,j)=>a+j.sum,0);
   const yaQty=ya.reduce((a,j)=>a+j.items.reduce((s,x)=>s+x.qty,0),0);
   const selfDebtSum=selfDebt.reduce((a,j)=>a+j.sum,0);
-  // «Себе оплачено» не участвует в earn и не вычитается.
-  // «Себе без оплаты» вычитается по внутренней цене.
-  const payout=earn-cashSum-selfDebtSum;
+  // В общем блоке вычитаем все деньги, которые уже есть в кассе.
+  // По сотрудникам «Себе оплачено» не вычитается лично, но из общей суммы к выдаче вычитается.
+  const payout=earn-cashSum-selfPaidCashSum-selfDebtSum;
   document.getElementById('s-qty').textContent=soldQty;
   document.getElementById('s-earn').textContent=money(earn);
   document.getElementById('s-cash').textContent=money(cashSum);
