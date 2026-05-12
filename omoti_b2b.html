@@ -9,7 +9,7 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
-  --bg:#faf7f2;--bg2:#f3efe8;--card:#fff;--border:#e8e0d4;--border2:#d4c9b8;
+  --bg:#faf7f2;--bg2:#f3efe8;--card:#fff;--border:#e8e0d4;
   --text:#1a1714;--text2:#5a5048;--muted:#9a8e82;--muted2:#c4b8aa;
   --accent:#2c2420;--gold:#c9a96e;
   --green:#3a7d44;--green-light:#edf7ef;
@@ -19,584 +19,478 @@
 }
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 .app{max-width:520px;margin:0 auto;padding-bottom:80px}
-.header{background:var(--accent);padding:20px 18px 0;position:sticky;top:0;z-index:20}
-.hbadge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border-radius:999px;padding:4px 10px;margin-bottom:10px}
+
+/* HEADER */
+.header{background:var(--accent);padding:16px 18px 0;position:sticky;top:0;z-index:20}
+.hbadge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border-radius:999px;padding:3px 10px;margin-bottom:8px}
 .hbadge span{font-size:11px;font-weight:700;color:rgba(255,255,255,.6);letter-spacing:.08em;text-transform:uppercase}
-.hdot{width:6px;height:6px;border-radius:999px;background:var(--gold)}
-.htitle{font-size:24px;font-weight:800;color:#fff;line-height:1;letter-spacing:-.3px}
-.hsub{font-size:12px;color:rgba(255,255,255,.4);margin-top:4px;margin-bottom:16px}
-.tab-row{display:flex;gap:2px;background:rgba(0,0,0,.3);border-radius:12px;padding:3px}
-.tab-btn{flex:1;border:none;background:transparent;border-radius:9px;padding:8px 4px;font-size:11px;font-weight:600;font-family:inherit;color:rgba(255,255,255,.4);cursor:pointer;transition:.15s;white-space:nowrap}
+.hdot{width:5px;height:5px;border-radius:999px;background:var(--gold)}
+.htitle{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.3px}
+.tab-row{display:flex;gap:2px;background:rgba(0,0,0,.3);border-radius:12px;padding:3px;margin-top:12px}
+.tab-btn{flex:1;border:none;background:transparent;border-radius:9px;padding:8px 4px;font-size:12px;font-weight:600;font-family:inherit;color:rgba(255,255,255,.45);cursor:pointer;transition:.15s}
 .tab-btn.active{background:#fff;color:var(--accent)}
+
+/* SCREENS */
 .screen{display:none}.screen.active{display:block}
-.metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px 14px 0}
-.mc{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border);padding:14px}
-.mc-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
-.mc-val{font-size:24px;font-weight:800;color:var(--text);line-height:1;letter-spacing:-.5px}
-.mc-sub{font-size:11px;color:var(--muted);margin-top:4px}
-.alert-block{margin:10px 14px 0;background:var(--amber-light);border:1px solid #e8c87a;border-radius:var(--radius);padding:14px}
-.alert-title{font-size:10px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
-.alert-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(193,125,42,.15)}
-.alert-row:last-child{border-bottom:none}
-.alert-name{font-size:13px;font-weight:700;color:var(--text)}
-.alert-days{font-size:12px;color:var(--amber);font-weight:600}
-.filters{display:flex;gap:6px;padding:10px 14px 0;overflow-x:auto;scrollbar-width:none}
-.filters::-webkit-scrollbar{display:none}
-.fc{border:1.5px solid var(--border);background:var(--card);border-radius:999px;padding:6px 14px;font-size:12px;font-weight:600;font-family:inherit;color:var(--text2);cursor:pointer;transition:.15s;white-space:nowrap;flex-shrink:0}
-.fc.active{background:var(--accent);border-color:var(--accent);color:#fff}
-.fc.s-sleeping.active{background:var(--amber);border-color:var(--amber)}
-.fc.s-lost.active{background:var(--red);border-color:var(--red)}
+
+/* CARDS */
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border)}
+.wrap{padding:10px 14px 0}
+.sec-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+
+/* FORM */
+.field{margin-bottom:12px}
+.field-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}
+.inp{width:100%;border:1.5px solid var(--border);background:var(--bg);border-radius:10px;padding:10px 12px;font-size:14px;font-family:inherit;color:var(--text);outline:none;transition:.15s}
+.inp:focus{border-color:var(--accent);background:#fff}
+.inp.sel{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239a8e82' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.inp.readonly{background:var(--bg2);color:var(--text2)}
+.inp.ta{resize:none;min-height:60px;line-height:1.5}
+
+/* AUTOCOMPLETE */
+.ac-wrap{position:relative}
+.ac-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--accent);border-radius:10px;box-shadow:var(--shadow);z-index:50;max-height:220px;overflow-y:auto;margin-top:2px}
+.ac-item{padding:10px 14px;font-size:14px;font-weight:600;cursor:pointer;color:var(--text);border-bottom:1px solid var(--border)}
+.ac-item:last-child{border-bottom:none}
+.ac-item:active{background:var(--bg2)}
+
+/* FLAVORS */
+.flavor-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.fi{border:1.5px solid var(--border);background:var(--bg);border-radius:10px;padding:8px 10px;transition:.1s}
+.fi.has{border-color:var(--accent);background:#fff}
+.fi-name{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px;line-height:1.3;min-height:28px;display:flex;align-items:center}
+.fi-row{display:flex;align-items:center;gap:5px}
+.fi-btn{width:28px;height:28px;border:1.5px solid var(--border);background:var(--card);border-radius:7px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text);font-weight:700;flex-shrink:0;transition:.1s;line-height:1}
+.fi-btn:active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.fi-inp{flex:1;border:none;outline:none;background:transparent;width:100%;text-align:center;font-size:15px;font-weight:800;font-family:inherit;color:var(--muted2)}
+.fi-inp.has{color:var(--accent)}
+
+/* TOTAL BAR */
+.total-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bg2);border-radius:10px;margin-bottom:12px}
+.tb-label{font-size:12px;font-weight:700;color:var(--muted)}
+.tb-val{font-size:20px;font-weight:800;color:var(--text)}
+
+/* SUBMIT */
+.submit-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:15px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;transition:.15s}
+.submit-btn:active{opacity:.85}
+.submit-btn:disabled{opacity:.5;cursor:default}
+
+/* HISTORY */
+.history-list{padding:8px 14px 0;display:flex;flex-direction:column;gap:8px}
+.hc{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:14px}
+.hc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+.hc-name{font-size:15px;font-weight:700;color:var(--text)}
+.hc-date{font-size:11px;color:var(--muted);margin-top:2px}
+.hc-sum{font-size:15px;font-weight:800;color:var(--green);white-space:nowrap;margin-left:8px}
+.hc-flavors{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:6px}
+.hc-meta{display:flex;align-items:center;gap:8px}
+.hc-qty{font-size:12px;font-weight:700;color:var(--muted);background:var(--bg2);border-radius:6px;padding:2px 8px}
+.hc-addr{font-size:12px;color:var(--muted)}
+.hc-comment{font-size:11px;color:var(--amber);margin-top:4px;font-style:italic}
+.status-chip{font-size:10px;font-weight:700;border-radius:6px;padding:2px 7px;cursor:pointer}
+.status-new{background:var(--blue-light,#e3f2fd);color:#1565c0}
+.status-ready{background:var(--amber-light);color:var(--amber)}
+.status-done{background:var(--green-light);color:var(--green)}
+
+/* CLIENTS */
+.client-list{padding:8px 14px 0;display:flex;flex-direction:column;gap:6px}
+.cc{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;cursor:pointer}
+.cc:active{opacity:.85}
+.cc-top{display:flex;align-items:center;gap:10px;padding:13px 14px}
+.cc-name{flex:1;font-size:15px;font-weight:700;color:var(--text)}
+.cc-count{font-size:12px;color:var(--muted)}
+.cc-arrow{font-size:14px;color:var(--muted2)}
+.cp-back{display:flex;align-items:center;gap:8px;padding:12px 14px;cursor:pointer;color:var(--text2);font-size:13px;font-weight:600}
+.cp-header{padding:0 14px 12px}
+.cp-name{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.3px}
+.addr-list{display:flex;flex-direction:column;gap:6px}
+.addr-item{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;display:flex;align-items:center;gap:10px}
+.addr-text{flex:1}
+.addr-name{font-size:13px;font-weight:700;color:var(--text)}
+.addr-entity{font-size:11px;color:var(--muted);margin-top:2px}
+.addr-order-btn{border:none;background:var(--accent);color:#fff;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap;flex-shrink:0}
+
+/* SEARCH */
 .search-wrap{padding:8px 14px 0}
 .search-inp{width:100%;border:1.5px solid var(--border);background:var(--card);border-radius:10px;padding:10px 14px;font-size:14px;font-family:inherit;color:var(--text);outline:none}
 .search-inp:focus{border-color:var(--accent)}
-.client-list{padding:8px 14px 0;display:flex;flex-direction:column;gap:6px}
-.cc{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border);overflow:hidden;cursor:pointer;transition:.1s}
-.cc:active{opacity:.85}
-.cc-top{display:flex;align-items:center;gap:10px;padding:13px 14px}
-.cc-dot{width:8px;height:8px;border-radius:999px;flex-shrink:0}
-.cc-dot.active{background:var(--green)}.cc-dot.sleeping{background:var(--amber)}.cc-dot.lost{background:var(--red)}
-.cc-name{flex:1;font-size:15px;font-weight:700;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cc-tag{font-size:11px;font-weight:700;border-radius:6px;padding:3px 8px;white-space:nowrap}
-.cc-tag.active{background:var(--green-light);color:var(--green)}
-.cc-tag.sleeping{background:var(--amber-light);color:var(--amber)}
-.cc-tag.lost{background:var(--red-light);color:var(--red)}
-.cc-stats{display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid var(--border)}
-.cc-stat{padding:8px 10px;text-align:center;border-right:1px solid var(--border)}
-.cc-stat:last-child{border-right:none}
-.cs-val{font-size:13px;font-weight:700;color:var(--text)}
-.cs-lbl{font-size:10px;color:var(--muted);margin-top:1px}
-.cp-back{display:flex;align-items:center;gap:8px;padding:14px 14px 0;cursor:pointer;color:var(--text2);font-size:13px;font-weight:600}
-.cp-header{padding:14px 14px 0}
-.cp-name{font-size:24px;font-weight:800;color:var(--text);letter-spacing:-.3px}
-.cp-tag{display:inline-block;margin-top:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700}
-.cp-tag.active{background:var(--green-light);color:var(--green)}
-.cp-tag.sleeping{background:var(--amber-light);color:var(--amber)}
-.cp-tag.lost{background:var(--red-light);color:var(--red)}
-.cp-metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 14px 0}
-.cp-mc{background:var(--card);border-radius:12px;border:1px solid var(--border);padding:12px 14px}
-.cp-mc-val{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.3px}
-.cp-mc-lbl{font-size:11px;color:var(--muted);margin-top:3px}
-.cp-section{margin:10px 14px 0}
-.sec-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
-.cp-alert{background:var(--amber-light);border:1px solid #e8c87a;border-radius:12px;padding:12px 14px;font-size:13px;color:var(--text);line-height:1.5}
-.cp-alert.lost{background:var(--red-light);border-color:#e8b0a8}
-.cp-orders{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden}
-.cp-order-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border)}
-.cp-order-row:last-child{border-bottom:none}
-.cor-date{font-size:12px;color:var(--muted);min-width:72px}
-.cor-qty{font-size:13px;font-weight:600;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cor-sum{font-size:13px;font-weight:700;color:var(--green);white-space:nowrap}
-.cp-addr{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px}
-.cp-addr-text{font-size:13px;font-weight:600;color:var(--text2);flex:1}
-.copy-btn{border:none;background:var(--accent);color:#fff;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;flex-shrink:0}
-.no-wrap{padding:12px 14px 0}
-.no-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:16px;margin-bottom:8px}
-.no-field{margin-bottom:14px}
-.no-field:last-child{margin-bottom:0}
-.no-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
-.no-inp{width:100%;border:1.5px solid var(--border);background:var(--bg);border-radius:10px;padding:10px 12px;font-size:14px;font-family:inherit;color:var(--text);outline:none;transition:.15s}
-.no-inp:focus{border-color:var(--accent);background:#fff}
-.no-inp.sel{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239a8e82' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
-.no-inp.ta{resize:vertical;min-height:70px;line-height:1.5}
-.flavor-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
-.fi{border:1.5px solid var(--border);background:var(--bg);border-radius:10px;padding:8px 10px}
-.fi.has{border-color:var(--accent);background:#fff}
-.fi-name{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px;line-height:1.3}
-.fi-row{display:flex;align-items:center;gap:6px}
-.fi-btn{width:26px;height:26px;border:1.5px solid var(--border);background:var(--card);border-radius:6px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text);font-weight:700;flex-shrink:0}
-.fi-btn:active{background:var(--accent);color:#fff;border-color:var(--accent)}
-.fi-num{flex:1;text-align:center;font-size:15px;font-weight:800;color:var(--muted2)}
-.fi-num.has{color:var(--accent)}
-.order-total{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bg2);border-radius:10px;margin-bottom:14px}
-.ot-label{font-size:12px;font-weight:700;color:var(--muted)}
-.ot-val{font-size:20px;font-weight:800;color:var(--text)}
-.submit-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:15px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer}
-.submit-btn:active{opacity:.85}
-.analytics{padding:12px 14px 0;display:flex;flex-direction:column;gap:8px}
-.anal-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:14px}
-.anal-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px}
-.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-.bar-row:last-child{margin-bottom:0}
-.bar-lbl{font-size:12px;font-weight:600;color:var(--text);min-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.bar-bg{flex:1;background:var(--bg2);border-radius:999px;height:6px;overflow:hidden}
-.bar-fill{height:100%;border-radius:999px;background:var(--accent)}
-.bar-fill.green{background:var(--green)}.bar-fill.amber{background:var(--amber)}.bar-fill.red{background:var(--red)}
-.bar-val{font-size:11px;font-weight:700;color:var(--muted);min-width:44px;text-align:right}
-.top-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)}
-.top-row:last-child{border-bottom:none}
-.top-num{font-size:12px;font-weight:700;color:var(--muted2);min-width:18px}
-.top-name{flex:1;font-size:13px;font-weight:600;color:var(--text)}
-.top-val{font-size:13px;font-weight:700;color:var(--accent)}
+
+/* TOAST */
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);color:#fff;padding:10px 20px;border-radius:999px;font-size:13px;font-weight:600;opacity:0;transition:.25s;pointer-events:none;z-index:99}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}.toast.ok{background:var(--green)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{background:var(--green)}
+.toast.err{background:var(--red)}
+
 .empty{padding:40px;text-align:center;color:var(--muted);font-size:14px}
+.divider{height:1px;background:var(--border);margin:0 14px}
 </style>
 </head>
 <body>
 <div class="app">
   <div class="header">
     <div class="hbadge"><div class="hdot"></div><span>OMOTI · B2B</span></div>
-    <div class="htitle">Клиенты опт</div>
-    <div class="hsub">Обновлено: 18.02.2025</div>
+    <div class="htitle">Опт заказы</div>
     <div class="tab-row">
-      <button class="tab-btn active" onclick="switchTab('clients')">Клиенты</button>
-      <button class="tab-btn" onclick="switchTab('order')">+ Заказ</button>
-      <button class="tab-btn" onclick="switchTab('analytics')">Аналитика</button>
+      <button class="tab-btn active" onclick="switchTab('order')">+ Заказ</button>
+      <button class="tab-btn" onclick="switchTab('history')">История</button>
+      <button class="tab-btn" onclick="switchTab('clients')">Клиенты</button>
     </div>
   </div>
 
-  <div class="screen active" id="screen-clients">
-    <div id="client-page" style="display:none"></div>
-    <div id="clients-main">
-      <div class="metrics" id="metrics"></div>
-      <div id="alert-block"></div>
-      <div class="filters">
-        <button class="fc active" onclick="setFilter('all',this)">Все</button>
-        <button class="fc" onclick="setFilter('active',this)">Активные</button>
-        <button class="fc s-sleeping" onclick="setFilter('sleeping',this)">Засыпают</button>
-        <button class="fc s-lost" onclick="setFilter('lost',this)">Потеряны</button>
-      </div>
-      <div class="search-wrap"><input class="search-inp" type="text" placeholder="Поиск..." oninput="renderClients()"></div>
-      <div class="client-list" id="client-list"></div>
-    </div>
-  </div>
-
-  <div class="screen" id="screen-order">
-    <div class="no-wrap">
-      <div class="no-card">
-        <div class="no-field">
-          <div class="no-label">Клиент</div>
-          <div style="position:relative">
-            <input class="no-inp" type="text" id="o-client-inp" placeholder="Начните вводить название..." oninput="acClientInput()" onblur="acClientBlur()" autocomplete="off">
-            <div id="o-client-list" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--accent);border-radius:10px;box-shadow:var(--shadow);z-index:50;max-height:200px;overflow-y:auto;margin-top:2px"></div>
+  <!-- ЗАКАЗ -->
+  <div class="screen active" id="screen-order">
+    <div class="wrap">
+      <div class="card" style="padding:14px;margin-bottom:8px">
+        <div class="field">
+          <div class="field-label">Клиент</div>
+          <div class="ac-wrap">
+            <input class="inp" type="text" id="o-client" placeholder="Начните вводить..." oninput="acInput()" onblur="acBlur()" autocomplete="off">
+            <div id="ac-list" class="ac-list" style="display:none"></div>
           </div>
         </div>
-        <div class="no-field" id="o-addr-field" style="display:none">
-          <div class="no-label">Адрес доставки</div>
-          <select class="no-inp sel" id="o-addr-sel" onchange="onAddrSelect()">
+        <div class="field" id="f-addr" style="display:none">
+          <div class="field-label">Адрес доставки</div>
+          <select class="inp sel" id="o-addr" onchange="onAddrChange()">
             <option value="">— выберите адрес —</option>
           </select>
         </div>
-        <div class="no-field" id="o-entity-field" style="display:none">
-          <div class="no-label">Юр лицо</div>
-          <input class="no-inp" type="text" id="o-entity" readonly style="background:var(--bg2);color:var(--text2)">
+        <div class="field" id="f-entity" style="display:none">
+          <div class="field-label">Юр лицо</div>
+          <input class="inp readonly" type="text" id="o-entity" readonly>
         </div>
-        <div class="no-field">
-          <div class="no-label">Дата доставки</div>
-          <input class="no-inp" type="date" id="o-date">
+        <div class="field">
+          <div class="field-label">Дата доставки</div>
+          <input class="inp" type="date" id="o-date">
         </div>
       </div>
-      <div class="no-card">
-        <div class="no-label">Вкусы и количество</div>
+
+      <div class="card" style="padding:14px;margin-bottom:8px">
+        <div class="field-label" style="margin-bottom:10px">Вкусы</div>
         <div class="flavor-grid" id="flavor-grid"></div>
       </div>
-      <div class="no-card">
-        <div class="order-total">
-          <span class="ot-label">Итого штук</span>
-          <span class="ot-val" id="o-total-qty">0 шт</span>
+
+      <div class="card" style="padding:14px;margin-bottom:8px">
+        <div class="total-bar">
+          <span class="tb-label">Итого штук</span>
+          <span class="tb-val" id="o-total">0 шт</span>
         </div>
-        <div class="no-field">
-          <div class="no-label">Сумма (₽)</div>
-          <input class="no-inp" type="number" id="o-sum" placeholder="0" min="0" step="100">
+        <div class="field">
+          <div class="field-label">Сумма (₽)</div>
+          <input class="inp" type="number" id="o-sum" placeholder="0" min="0" step="100">
         </div>
-        <div class="no-field">
-          <div class="no-label">Комментарий (упаковка, пожелания)</div>
-          <textarea class="no-inp ta" id="o-comment" placeholder="Коробки по 8 шт, без малины..."></textarea>
+        <div class="field" style="margin-bottom:14px">
+          <div class="field-label">Комментарий</div>
+          <textarea class="inp ta" id="o-comment" placeholder="Упаковка, пожелания..."></textarea>
         </div>
-        <button class="submit-btn" onclick="submitOrder()">Сохранить заказ</button>
+        <button class="submit-btn" id="submit-btn" onclick="submitOrder()">Сохранить заказ</button>
       </div>
     </div>
   </div>
 
-  <div class="screen" id="screen-analytics">
-    <div class="analytics" id="analytics-content"></div>
+  <!-- ИСТОРИЯ -->
+  <div class="screen" id="screen-history">
+    <div class="history-list" id="history-list"></div>
+  </div>
+
+  <!-- КЛИЕНТЫ -->
+  <div class="screen" id="screen-clients">
+    <div id="clients-main">
+      <div class="search-wrap">
+        <input class="search-inp" type="text" placeholder="Поиск клиента..." oninput="renderClients()">
+      </div>
+      <div class="client-list" id="client-list"></div>
+    </div>
+    <div id="client-detail" style="display:none"></div>
   </div>
 </div>
+
 <div class="toast" id="toast"></div>
 
 <script>
-// Клиенты загружаются с сервера
-let CD = [];
+const API = 'https://script.google.com/macros/s/AKfycbxCBgVVyeiJI44vuIYZovFOat7EmdCOl_kryFy4ZeEZ9K4CX3Rx_iIQPNTLJfqqoLZR/exec';
 
-function loadClients() {
-  fetch(API_B2B, {method:'POST', body:JSON.stringify({action:'get_clients'})})
-    .then(r => r.json())
-    .then(res => {
-      if (res.ok && res.clients && res.clients.length) {
-        CD = res.clients;
-        renderMetrics();
-        renderAlertBlock();
-        renderClients();
-      }
-    })
-    .catch(() => {});
-}
+const FLAVORS = [
+  'Арбуз - Дыня','Бабл Гам','Банан- Нутелла','Вишня-Тонка','Мандарин',
+  'Дубайский шоколад','Киви-Алоэ','Клубника','Кокос-Маракуйя','Кокосовый пломбир',
+  'Кофе-Карамель','Малина-Ваниль','Матча-Манго','Мохито','Мункейки',
+  'Печенье с топлёным молоком','Сливочный лимон','Смородина','Сникерс',
+  'Твикс','Трюфель','Шоколад','Криспи','Пряник','Грибы',
+  'Новый вкус 3','Новый вкус 4','Новый вкус 5'
+];
 
-// Контрагенты загружаются с сервера
+const STATUS_LABELS = {new:'Новый', ready:'Собран', done:'Отгружен'};
+const STATUS_CLASSES = {new:'status-new', ready:'status-ready', done:'status-done'};
+
 let CONTRAGENTS = {};
 let ALL_CLIENTS = [];
+let selectedClient = '';
+let fq = {};
+let localOrders = JSON.parse(localStorage.getItem('omoti_b2b_v2_orders') || '[]');
 
-function loadContragents() {
-  fetch(API_B2B, {method:'POST', body:JSON.stringify({action:'get_contragents'})})
-    .then(r => r.json())
-    .then(res => {
-      if (res.ok && res.contragents) {
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function fmt(n){return Math.round(n).toLocaleString('ru-RU');}
+function toast(t, type=''){
+  const el=document.getElementById('toast');
+  el.textContent=t;el.className='toast show'+(type?' '+type:'');
+  clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove('show'),2500);
+}
+
+// ── TABS ─────────────────────────────────────────────────────
+function switchTab(tab){
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['order','history','clients'][i]===tab));
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+tab).classList.add('active');
+  if(tab==='history') renderHistory();
+  if(tab==='clients'){showClientsList();renderClients();}
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+function init(){
+  // Дата по умолчанию — сегодня
+  const t = new Date();
+  document.getElementById('o-date').value = t.toISOString().split('T')[0];
+  // Вкусы
+  renderFlavors();
+  // Контрагенты
+  loadContragents();
+}
+
+function loadContragents(){
+  fetch(API, {method:'POST', body:JSON.stringify({action:'get_contragents'})})
+    .then(r=>r.json())
+    .then(res=>{
+      if(res.ok && res.contragents){
         CONTRAGENTS = res.contragents;
-        ALL_CLIENTS = Object.keys(CONTRAGENTS).sort((a,b) => a.localeCompare(b,'ru'));
+        ALL_CLIENTS = Object.keys(CONTRAGENTS).sort((a,b)=>a.localeCompare(b,'ru'));
       }
-    })
-    .catch(() => {});
+    }).catch(()=>{});
 }
 
-const FLAVORS=["Арбуз - Дыня","Бабл Гам","Банан- Нутелла","Вишня-Тонка","Дубайский шоколад","Киви-Алоэ","Клубника","Кокос-Маракуйя","Кокосовый пломбир","Кофе-Карамель","Криспи","Малина-Ваниль","Матча-Манго","Мохито","Мункейки","Печенье с топлёным молоком","Пряник","Сливочный лимон","Смородина","Сникерс","Твикс","Трюфель","Шоколад"];
-const SL={active:'Активный',sleeping:'Засыпает',lost:'Потерян'};
-let selectedClient='';
-let cf='all', fq={};
-let orders=JSON.parse(localStorage.getItem('omoti_b2b_orders')||'[]');
-
-
-// ── AUTOCOMPLETE CLIENT ────────────────────────────────────────────────────────
-function acClientInput(){
-  const val=document.getElementById('o-client-inp').value.trim().toLowerCase();
-  const list=document.getElementById('o-client-list');
+// ── AUTOCOMPLETE ──────────────────────────────────────────────
+function acInput(){
+  const val = document.getElementById('o-client').value.trim().toLowerCase();
+  const list = document.getElementById('ac-list');
   if(!val){list.style.display='none';return;}
-  const matches=ALL_CLIENTS.filter(c=>c.toLowerCase().includes(val)).slice(0,8);
+  const matches = ALL_CLIENTS.filter(c=>c.toLowerCase().includes(val)).slice(0,10);
   if(!matches.length){list.style.display='none';return;}
-  list.innerHTML=matches.map(c=>`<div onclick="acClientSelect('${esc(c)}')" style="padding:10px 14px;font-size:14px;font-weight:600;cursor:pointer;border-bottom:1px solid var(--border);color:var(--text)" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">${esc(c)}</div>`).join('');
-  list.style.display='block';
+  list.innerHTML = matches.map(c=>`<div class="ac-item" onmousedown="acSelect('${esc(c)}')">${esc(c)}</div>`).join('');
+  list.style.display = 'block';
 }
-function acClientSelect(name){
-  selectedClient=name;
-  document.getElementById('o-client-inp').value=name;
-  document.getElementById('o-client-list').style.display='none';
-  // Show address dropdown
-  const points=CONTRAGENTS[name]||[];
-  const addrSel=document.getElementById('o-addr-sel');
-  addrSel.innerHTML='<option value="">— выберите адрес —</option>';
-  points.forEach((p,i)=>addrSel.innerHTML+=`<option value="${i}">${esc(p.addr)}</option>`);
-  if(points.length===1){addrSel.value='0';onAddrSelect();}
-  document.getElementById('o-addr-field').style.display='block';
-  document.getElementById('o-entity-field').style.display='none';
-  document.getElementById('o-entity').value='';
+function acSelect(name){
+  selectedClient = name;
+  document.getElementById('o-client').value = name;
+  document.getElementById('ac-list').style.display = 'none';
+  const pts = CONTRAGENTS[name] || [];
+  const sel = document.getElementById('o-addr');
+  sel.innerHTML = '<option value="">— выберите адрес —</option>';
+  pts.forEach((p,i) => sel.innerHTML += `<option value="${i}">${esc(p.addr)}</option>`);
+  document.getElementById('f-addr').style.display = 'block';
+  document.getElementById('f-entity').style.display = 'none';
+  if(pts.length === 1){sel.value='0'; onAddrChange();}
 }
-function acClientBlur(){setTimeout(()=>{document.getElementById('o-client-list').style.display='none';},150);}
+function acBlur(){setTimeout(()=>{document.getElementById('ac-list').style.display='none';},150);}
 
-function onAddrSelect(){
-  const idx=document.getElementById('o-addr-sel').value;
-  if(idx===''){document.getElementById('o-entity-field').style.display='none';return;}
-  const points=CONTRAGENTS[selectedClient]||[];
-  const p=points[parseInt(idx)];
+function onAddrChange(){
+  const idx = document.getElementById('o-addr').value;
+  if(idx===''){document.getElementById('f-entity').style.display='none';return;}
+  const pts = CONTRAGENTS[selectedClient] || [];
+  const p = pts[parseInt(idx)];
   if(p){
-    document.getElementById('o-entity').value=p.entity||'';
-    document.getElementById('o-entity-field').style.display='block';
+    document.getElementById('o-entity').value = p.entity || '';
+    document.getElementById('f-entity').style.display = 'block';
   }
 }
 
-function initOrderForm(){
-  selectedClient='';
-  document.getElementById('o-client-inp').value='';
-  document.getElementById('o-client-list').style.display='none';
-  document.getElementById('o-addr-field').style.display='none';
-  document.getElementById('o-entity-field').style.display='none';
-  document.getElementById('o-entity').value='';
-  const t=new Date();document.getElementById('o-date').value=t.toISOString().split('T')[0];
-  fq={};renderFlavors();updateTotal();
-}
-
-function orderFor(name){
-  switchTab('order');
-  setTimeout(()=>{
-    document.getElementById('o-client-inp').value=name;
-    acClientSelect(name);
-  },100);
-}
-
-function fmt(n){return Math.round(n).toLocaleString('ru-RU');}
-function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function toast(t,ok){const e=document.getElementById('toast');e.textContent=t;e.className='toast show'+(ok?' ok':'');clearTimeout(toast._t);toast._t=setTimeout(()=>e.classList.remove('show'),2500);}
-
-function switchTab(t){
-  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['clients','order','analytics'][i]===t));
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById('screen-'+t).classList.add('active');
-  if(t==='analytics')renderAnalytics();
-  if(t==='order')initOrderForm();
-  if(t!=='clients')showList();
-}
-
-function setFilter(f,el){cf=f;document.querySelectorAll('.fc').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderClients();}
-
-function renderMetrics(){
-  const a=CD.filter(c=>c.status==='active').length,s=CD.filter(c=>c.status==='sleeping').length,l=CD.filter(c=>c.status==='lost').length;
-  const mr=CD.reduce((a,c)=>a+c.month_revenue,0);
-  document.getElementById('metrics').innerHTML=`
-    <div class="mc"><div class="mc-label">За месяц</div><div class="mc-val">${fmt(mr)} ₽</div><div class="mc-sub">выручка опт</div></div>
-    <div class="mc"><div class="mc-label">Клиенты</div><div class="mc-val">${CD.length}</div><div class="mc-sub"><span style="color:var(--green)">${a} акт</span> · <span style="color:var(--amber)">${s} засып</span> · <span style="color:var(--red)">${l} потер</span></div></div>`;
-}
-
-function renderAlertBlock(){
-  const sl=CD.filter(c=>c.status==='sleeping');
-  if(!sl.length){document.getElementById('alert-block').innerHTML='';return;}
-  document.getElementById('alert-block').innerHTML=`<div class="alert-block"><div class="alert-title">Написать сегодня</div>${sl.map(c=>`<div class="alert-row"><span class="alert-name">${esc(c.name)}</span><span class="alert-days">${c.days_since} дн · ~${Math.round(c.avg_interval)} дн интервал</span></div>`).join('')}</div>`;
-}
-
-function renderClients(){
-  const q=(document.querySelector('.search-inp')||{value:''}).value.trim().toLowerCase();
-  let list=CD;
-  if(cf!=='all')list=list.filter(c=>c.status===cf);
-  if(q)list=list.filter(c=>c.name.toLowerCase().includes(q));
-  const el=document.getElementById('client-list');
-  if(!list.length){el.innerHTML='<div class="empty">Нет клиентов</div>';return;}
-  el.innerHTML=list.map(c=>`<div class="cc" onclick="openClient('${esc(c.name)}')">
-    <div class="cc-top"><div class="cc-dot ${c.status}"></div><span class="cc-name">${esc(c.name)}</span><span class="cc-tag ${c.status}">${SL[c.status]}</span></div>
-    <div class="cc-stats">
-      <div class="cc-stat"><div class="cs-val">${c.days_since===0?'сегодня':c.days_since+' дн'}</div><div class="cs-lbl">посл. заказ</div></div>
-      <div class="cc-stat"><div class="cs-val">${c.avg_qty} шт</div><div class="cs-lbl">ср. заказ</div></div>
-      <div class="cc-stat"><div class="cs-val">${fmt(c.avg_check)} ₽</div><div class="cs-lbl">ср. чек</div></div>
-    </div></div>`).join('');
-}
-
-function openClient(name){
-  const c=CD.find(x=>x.name===name);if(!c)return;
-  document.getElementById('clients-main').style.display='none';
-  const pg=document.getElementById('client-page');
-  pg.style.display='block';
-  const localO=orders.filter(o=>o.client===name).sort((a,b)=>new Date(b.created||0)-new Date(a.created||0));
-  renderClientPage(pg,c,localO,'Загружаю из таблицы...');
-  fetch(API_B2B,{method:'POST',body:JSON.stringify({action:'get_orders',client:name})})
-    .then(r=>r.json())
-    .then(res=>{if(res.ok&&res.orders&&res.orders.length)renderClientPage(pg,c,res.orders,'');})
-    .catch(()=>{});
-}
-
-function renderClientPage(pg,c,myO,loadingMsg){
-  pg.innerHTML=`
-    <div class="cp-back" onclick="showList()">← Назад</div>
-    <div class="cp-header"><div class="cp-name">${esc(c.name)}</div><div class="cp-tag ${c.status}">${SL[c.status]}</div></div>
-    <div class="cp-metrics">
-      <div class="cp-mc"><div class="cp-mc-val">${c.orders}</div><div class="cp-mc-lbl">заказов всего</div></div>
-      <div class="cp-mc"><div class="cp-mc-val">${c.avg_qty} шт</div><div class="cp-mc-lbl">средний заказ</div></div>
-      <div class="cp-mc"><div class="cp-mc-val">${fmt(c.avg_check)} ₽</div><div class="cp-mc-lbl">средний чек</div></div>
-      <div class="cp-mc"><div class="cp-mc-val">${c.days_since===0?'сегодня':c.days_since+' дн'}</div><div class="cp-mc-lbl">последний заказ</div></div>
-      <div class="cp-mc"><div class="cp-mc-val">${fmt(c.month_revenue)} ₽</div><div class="cp-mc-lbl">за месяц</div></div>
-      <div class="cp-mc"><div class="cp-mc-val">${fmt(c.total_revenue)} ₽</div><div class="cp-mc-lbl">за всё время</div></div>
-    </div>
-    ${c.status!=='active'?`<div class="cp-section"><div class="cp-alert ${c.status==='lost'?'lost':''}">${c.status==='sleeping'?`⚠️ Обычно заказывает каждые ~${Math.round(c.avg_interval)} дн. Прошло уже ${c.days_since} дн — пора написать.`:`🔴 Не заказывал ${c.days_since} дн при интервале ~${Math.round(c.avg_interval)} дн.`}</div></div>`:''}
-    <div class="cp-section"><div class="sec-label">Заказы через дашборд</div>
-      ${loadingMsg?`<div style="padding:16px;text-align:center;color:var(--muted);font-size:13px">${loadingMsg}</div>`:
-        myO.length?`<div class="cp-orders">${myO.slice(0,15).map(o=>`<div class="cp-order-row"><span class="cor-date">${o.date}</span><span class="cor-qty">${o.totalQty} шт${o.addr?' · '+esc(o.addr):''}</span><span class="cor-sum">${fmt(o.sum)} ₽</span></div>`).join('')}</div>`:`<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">Нет заказов</div>`}
-    </div>
-    <div class="cp-section" style="margin-bottom:20px"><button class="submit-btn" onclick="orderFor('${esc(c.name)}')">+ Новый заказ</button></div>`;
-}
-
-function showList(){document.getElementById('client-page').style.display='none';document.getElementById('clients-main').style.display='block';}
-
+// ── FLAVORS ───────────────────────────────────────────────────
 function renderFlavors(){
-  document.getElementById('flavor-grid').innerHTML=FLAVORS.map(f=>{
-    const q=fq[f]||0;
-    const id='fq_'+f.replace(/[^а-яёa-z0-9]/gi,'_');
+  document.getElementById('flavor-grid').innerHTML = FLAVORS.map(f=>{
+    const q = fq[f] || 0;
+    const id = 'fq_' + f.replace(/[^а-яёa-z0-9]/gi,'_');
     return `<div class="fi${q>0?' has':''}" id="fi_${id}">
       <div class="fi-name">${esc(f)}</div>
       <div class="fi-row">
         <button class="fi-btn" onclick="chQ('${esc(f)}',-1)">−</button>
-        <input class="fi-num${q>0?' has':''}" id="${id}" type="number" min="0" step="1" value="${q||''}" placeholder="·" oninput="chQDirect('${esc(f)}',this.value)" style="border:none;outline:none;background:transparent;width:100%;text-align:center;font-size:15px;font-weight:800;font-family:inherit">
+        <input class="fi-inp${q>0?' has':''}" id="${id}" type="number" min="0" step="1" value="${q||''}" placeholder="·"
+          oninput="chQD('${esc(f)}',this.value)"
+          style="width:100%;text-align:center;font-size:15px;font-weight:800;font-family:inherit;border:none;outline:none;background:transparent">
         <button class="fi-btn" onclick="chQ('${esc(f)}',1)">+</button>
       </div></div>`;
   }).join('');
 }
 
-function chQ(f,d){
-  fq[f]=Math.max(0,(fq[f]||0)+d);
-  const id='fq_'+f.replace(/[^а-яёa-z0-9]/gi,'_');
-  const el=document.getElementById(id);
-  const fi=document.getElementById('fi_'+id);
-  if(el){el.value=fq[f]||'';el.className='fi-num'+(fq[f]>0?' has':'');}
+function chQ(f, d){
+  fq[f] = Math.max(0, (fq[f]||0) + d);
+  updateFlavor(f);
+}
+function chQD(f, v){
+  fq[f] = Math.max(0, parseInt(v)||0);
+  updateFlavor(f);
+}
+function updateFlavor(f){
+  const id = 'fq_' + f.replace(/[^а-яёa-z0-9]/gi,'_');
+  const el = document.getElementById(id);
+  const fi = document.getElementById('fi_'+id);
+  if(el){el.value=fq[f]||'';el.className='fi-inp'+(fq[f]>0?' has':'');}
   if(fi){fi.className='fi'+(fq[f]>0?' has':'');}
   updateTotal();
 }
-
-function chQDirect(f,val){
-  fq[f]=Math.max(0,parseInt(val)||0);
-  const id='fq_'+f.replace(/[^а-яёa-z0-9]/gi,'_');
-  const el=document.getElementById(id);
-  const fi=document.getElementById('fi_'+id);
-  if(el) el.className='fi-num'+(fq[f]>0?' has':'');
-  if(fi) fi.className='fi'+(fq[f]>0?' has':'');
-  updateTotal();
-}
-
 function updateTotal(){
-  const t=Object.values(fq).reduce((a,b)=>a+b,0);
-  document.getElementById('o-total-qty').textContent=t+' шт';
+  const t = Object.values(fq).reduce((a,b)=>a+b,0);
+  document.getElementById('o-total').textContent = t + ' шт';
 }
 
+// ── SUBMIT ────────────────────────────────────────────────────
 function submitOrder(){
-  const client=document.getElementById('o-client-inp').value.trim();
-  const addrIdx=document.getElementById('o-addr-sel').value;
-  const date=document.getElementById('o-date').value;
-  const entity=document.getElementById('o-entity').value.trim();
-  const sum=parseFloat(document.getElementById('o-sum').value)||0;
-  const comment=document.getElementById('o-comment').value.trim();
-  const totalQty=Object.values(fq).reduce((a,b)=>a+b,0);
-  if(!client){toast('Выберите клиента');return;}
-  if(!date){toast('Укажите дату');return;}
-  if(totalQty===0){toast('Добавьте хотя бы один вкус');return;}
-  const points=CONTRAGENTS[client]||[];
-  const addr=addrIdx!==''&&points[parseInt(addrIdx)]?points[parseInt(addrIdx)].addr:'';
-  // Вкусы как объект {название: количество}
-  const flavorsObj={};
-  Object.entries(fq).filter(([,q])=>q>0).forEach(([f,q])=>flavorsObj[f]=q);
-  const flavorsStr=Object.entries(flavorsObj).map(([f,q])=>f+': '+q).join(', ');
+  const client = document.getElementById('o-client').value.trim();
+  const addrIdx = document.getElementById('o-addr').value;
+  const date = document.getElementById('o-date').value;
+  const entity = document.getElementById('o-entity').value.trim();
+  const sum = parseFloat(document.getElementById('o-sum').value)||0;
+  const comment = document.getElementById('o-comment').value.trim();
+  const totalQty = Object.values(fq).reduce((a,b)=>a+b,0);
 
-  const order={
-    client,addr,entity,
-    date:date.split('-').reverse().join('.'),
-    sum,comment,totalQty,
-    flavors:flavorsObj,  // объект для Apps Script
-    flavorsStr,          // строка для отображения
-    created:new Date().toISOString()
+  if(!client){toast('Выберите клиента','err');return;}
+  if(!date){toast('Укажите дату','err');return;}
+  if(totalQty===0){toast('Добавьте хотя бы один вкус','err');return;}
+
+  const pts = CONTRAGENTS[selectedClient]||[];
+  const addr = addrIdx!==''&&pts[parseInt(addrIdx)] ? pts[parseInt(addrIdx)].addr : '';
+  const flavorsObj = {};
+  Object.entries(fq).filter(([,q])=>q>0).forEach(([f,q])=>flavorsObj[f]=q);
+  const flavorsStr = Object.entries(flavorsObj).map(([f,q])=>f+': '+q).join(', ');
+
+  const order = {
+    client, addr, entity,
+    date: date.split('-').reverse().join('.'),
+    sum, comment, totalQty,
+    flavors: flavorsObj,
+    flavorsStr,
+    status: 'new',
+    created: new Date().toISOString()
   };
 
-  // Сохраняем локально сразу
-  orders.unshift({...order, flavors:flavorsStr});
-  try{localStorage.setItem('omoti_b2b_orders',JSON.stringify(orders));}catch(e){}
+  // Сохраняем локально
+  localOrders.unshift({...order, flavors: flavorsStr});
+  try{localStorage.setItem('omoti_b2b_v2_orders', JSON.stringify(localOrders.slice(0,100)));}catch(e){}
 
   // Отправляем в Google Sheets
-  const btn=document.querySelector('.submit-btn');
-  btn.disabled=true;btn.textContent='Сохраняю...';
+  const btn = document.getElementById('submit-btn');
+  btn.disabled=true; btn.textContent='Сохраняю...';
 
-  fetch(API_B2B,{
-    method:'POST',
-    body:JSON.stringify({action:'add_order',order}),
-  })
-  .then(r=>r.json())
-  .then(res=>{
-    if(res.ok){toast('Заказ сохранён в таблицу ✓',true);}
-    else{toast('Сохранено локально (ошибка сервера)',false);}
-  })
-  .catch(()=>toast('Сохранено локально (нет сети)',false))
-  .finally(()=>{btn.disabled=false;btn.textContent='Сохранить заказ';});
+  fetch(API, {method:'POST', body:JSON.stringify({action:'add_order', order})})
+    .then(r=>r.json())
+    .then(res=>{
+      if(res.ok) toast('Заказ сохранён ✓','ok');
+      else toast('Сохранено локально','');
+    })
+    .catch(()=>toast('Сохранено локально',''))
+    .finally(()=>{btn.disabled=false; btn.textContent='Сохранить заказ';});
 
+  // Сброс формы
   fq={};renderFlavors();
   document.getElementById('o-sum').value='';
   document.getElementById('o-comment').value='';
   updateTotal();
 }
 
-let analyticsData = null;
-let activePeriod = 'month';
-
-function renderAnalytics(){
-  const el = document.getElementById('analytics-content');
-  el.innerHTML = `
-    <div style="display:flex;gap:6px;padding:0 0 0;flex-wrap:wrap">
-      <button class="fc ${activePeriod==='today'?'active':''}" onclick="setPeriod('today')">Сегодня</button>
-      <button class="fc ${activePeriod==='week'?'active':''}" onclick="setPeriod('week')">Неделя</button>
-      <button class="fc ${activePeriod==='month'?'active':''}" onclick="setPeriod('month')">Месяц</button>
-      <button class="fc ${activePeriod==='quarter'?'active':''}" onclick="setPeriod('quarter')">Квартал</button>
-    </div>
-    <div id="anal-body" style="margin-top:0">${analyticsData ? renderAnalBody() : '<div class="empty">Загружаю...</div>'}</div>`;
-
-  if (!analyticsData) {
-    fetch(API_B2B, {method:'POST', body:JSON.stringify({action:'get_analytics'})})
-      .then(r=>r.json())
-      .then(res=>{
-        if(res.ok){
-          // Поддержка обоих форматов ответа
-          if(res.periods) analyticsData = res;
-          else analyticsData = {periods:{today:{totalQty:0,totalOrders:0,topClients:[]},week:{totalQty:0,totalOrders:0,topClients:[]},month:{totalQty:0,totalOrders:0,topClients:[]},quarter:{totalQty:0,totalOrders:0,topClients:[]}},dynamics:[],clientDynamics:[]};
-          const body = document.getElementById('anal-body');
-          if(body) body.innerHTML = renderAnalBody();
-        }
-      })
-      .catch(()=>{ const b=document.getElementById('anal-body'); if(b) b.innerHTML='<div class="empty">Нет данных</div>'; });
-  }
-}
-
-function setPeriod(p){
-  activePeriod=p;
-  if(!analyticsData){renderAnalytics();return;}
-  const body=document.getElementById('anal-body');
-  if(body) body.innerHTML=renderAnalBody();
-  // Обновляем активную кнопку
-  document.querySelectorAll('#analytics-content .fc').forEach(b=>{
-    b.classList.toggle('active', b.textContent.trim()==={today:'Сегодня',week:'Неделя',month:'Месяц',quarter:'Квартал'}[p]);
-  });
-}
-
-function renderAnalBody(){
-  if(!analyticsData || !analyticsData.periods) return '<div class="empty">Нет данных</div>';
-  const p = analyticsData.periods[activePeriod] || {totalQty:0,totalOrders:0,topClients:[]};
-  const dynamics = analyticsData.dynamics||[];
-  const clientDyn = analyticsData.clientDynamics||[];
-  const maxQty = Math.max(...(p.topClients||[]).map(c=>c.qty), 1);
-  const maxDyn = Math.max(...dynamics.map(d=>d.qty), 1);
-  const a=CD.filter(c=>c.status==='active').length;
-  const s=CD.filter(c=>c.status==='sleeping').length;
-  const l=CD.filter(c=>c.status==='lost').length;
-  const tot=CD.length||1;
-
-  return `
-    <div class="anal-card" style="margin-top:8px">
-      <div class="anal-title">Итого за период</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div style="background:var(--bg2);border-radius:10px;padding:10px 12px">
-          <div style="font-size:22px;font-weight:800;color:var(--text)">${fmt(p.totalQty)} шт</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px">продано моти</div>
+// ── HISTORY ───────────────────────────────────────────────────
+function renderHistory(){
+  const el = document.getElementById('history-list');
+  if(!localOrders.length){el.innerHTML='<div class="empty">Нет заказов</div>';return;}
+  el.innerHTML = localOrders.slice(0,50).map((o,i)=>`
+    <div class="hc">
+      <div class="hc-top">
+        <div>
+          <div class="hc-name">${esc(o.client)}</div>
+          <div class="hc-date">${o.date}${o.addr?' · '+esc(o.addr):''}</div>
         </div>
-        <div style="background:var(--bg2);border-radius:10px;padding:10px 12px">
-          <div style="font-size:22px;font-weight:800;color:var(--text)">${p.totalOrders}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px">заказов</div>
+        <div style="text-align:right">
+          <div class="hc-sum">${fmt(o.sum)} ₽</div>
+          <div style="margin-top:4px">
+            <select class="status-chip ${STATUS_CLASSES[o.status||'new']}" onchange="changeStatus(${i},this.value)" style="border:none;font-family:inherit;font-size:10px;font-weight:700;cursor:pointer;appearance:none;padding:2px 7px">
+              <option value="new" ${(o.status||'new')==='new'?'selected':''}>Новый</option>
+              <option value="ready" ${o.status==='ready'?'selected':''}>Собран</option>
+              <option value="done" ${o.status==='done'?'selected':''}>Отгружен</option>
+            </select>
+          </div>
         </div>
       </div>
-    </div>
+      <div class="hc-flavors">${esc(o.flavorsStr||o.flavors||'')}</div>
+      <div class="hc-meta">
+        <span class="hc-qty">${o.totalQty} шт</span>
+        ${o.comment?`<span class="hc-comment">${esc(o.comment)}</span>`:''}
+      </div>
+    </div>`).join('');
+}
 
-    <div class="anal-card">
-      <div class="anal-title">Топ клиентов по штукам</div>
-      ${(p.topClients||[]).map(c=>`
-        <div class="bar-row">
-          <span class="bar-lbl">${esc(c.name)}</span>
-          <div class="bar-bg"><div class="bar-fill" style="width:${c.qty/maxQty*100}%"></div></div>
-          <span class="bar-val">${fmt(c.qty)} шт</span>
-        </div>`).join('')||'<div style="color:var(--muted);font-size:13px">Нет данных за период</div>'}
-    </div>
+function changeStatus(i, status){
+  localOrders[i].status = status;
+  try{localStorage.setItem('omoti_b2b_v2_orders', JSON.stringify(localOrders));}catch(e){}
+  renderHistory();
+}
 
-    <div class="anal-card">
-      <div class="anal-title">Динамика по месяцам (штук)</div>
-      ${dynamics.map(d=>`
-        <div class="bar-row">
-          <span class="bar-lbl">${esc(d.month)}</span>
-          <div class="bar-bg"><div class="bar-fill green" style="width:${d.qty/maxDyn*100}%"></div></div>
-          <span class="bar-val">${fmt(d.qty)}</span>
-        </div>`).join('')}
-    </div>
+// ── CLIENTS ───────────────────────────────────────────────────
+function renderClients(){
+  const q = (document.querySelector('.search-inp')||{value:''}).value.trim().toLowerCase();
+  let list = ALL_CLIENTS;
+  if(q) list = list.filter(c=>c.toLowerCase().includes(q));
+  const el = document.getElementById('client-list');
+  if(!list.length){el.innerHTML='<div class="empty">Нет клиентов</div>';return;}
+  el.innerHTML = list.map(c=>{
+    const pts = CONTRAGENTS[c]||[];
+    return `<div class="cc" onclick="openClient('${esc(c)}')">
+      <div class="cc-top">
+        <span class="cc-name">${esc(c)}</span>
+        <span class="cc-count">${pts.length} ${pts.length===1?'адрес':pts.length<5?'адреса':'адресов'}</span>
+        <span class="cc-arrow">›</span>
+      </div>
+    </div>`;
+  }).join('');
+}
 
-    <div class="anal-card">
-      <div class="anal-title">Клиенты: этот месяц vs прошлый</div>
-      ${clientDyn.map(c=>{
-        const delta = c.delta;
-        const sign = delta>0?'+':'';
-        const col = delta>0?'var(--green)':delta<0?'var(--red)':'var(--muted)';
-        return `<div class="top-row">
-          <span class="top-name">${esc(c.name)}</span>
-          <span style="font-size:12px;color:var(--muted);min-width:50px;text-align:right">${fmt(c.prev)} шт</span>
-          <span style="font-size:13px;font-weight:700;min-width:55px;text-align:right">→ ${fmt(c.cur)}</span>
-          <span style="font-size:12px;font-weight:700;color:${col};min-width:45px;text-align:right">${sign}${fmt(delta)}</span>
-        </div>`;
-      }).join('')||'<div style="color:var(--muted);font-size:13px">Нет данных</div>'}
+function openClient(name){
+  document.getElementById('clients-main').style.display='none';
+  const det = document.getElementById('client-detail');
+  det.style.display='block';
+  const pts = CONTRAGENTS[name]||[];
+  det.innerHTML=`
+    <div class="cp-back" onclick="showClientsList()">← Все клиенты</div>
+    <div class="cp-header">
+      <div class="cp-name">${esc(name)}</div>
     </div>
-
-    <div class="anal-card">
-      <div class="anal-title">Статусы клиентов</div>
-      <div class="bar-row"><span class="bar-lbl" style="color:var(--green)">Активные</span><div class="bar-bg"><div class="bar-fill green" style="width:${a/tot*100}%"></div></div><span class="bar-val">${a} (${Math.round(a/tot*100)}%)</span></div>
-      <div class="bar-row"><span class="bar-lbl" style="color:var(--amber)">Засыпают</span><div class="bar-bg"><div class="bar-fill amber" style="width:${s/tot*100}%"></div></div><span class="bar-val">${s} (${Math.round(s/tot*100)}%)</span></div>
-      <div class="bar-row"><span class="bar-lbl" style="color:var(--red)">Потеряны</span><div class="bar-bg"><div class="bar-fill red" style="width:${l/tot*100}%"></div></div><span class="bar-val">${l} (${Math.round(l/tot*100)}%)</span></div>
+    <div class="wrap">
+      <div class="sec-label">Адреса и юр лица</div>
+      <div class="addr-list">
+        ${pts.map((p,i)=>`
+          <div class="addr-item">
+            <div class="addr-text">
+              <div class="addr-name">${esc(p.addr||'—')}</div>
+              ${p.entity?`<div class="addr-entity">${esc(p.entity)}</div>`:''}
+            </div>
+            <button class="addr-order-btn" onclick="orderFor('${esc(name)}',${i})">+ Заказ</button>
+          </div>`).join('')}
+      </div>
     </div>`;
 }
 
-const API_B2B='https://script.google.com/macros/s/AKfycbxCBgVVyeiJI44vuIYZovFOat7EmdCOl_kryFy4ZeEZ9K4CX3Rx_iIQPNTLJfqqoLZR/exec';
+function showClientsList(){
+  document.getElementById('client-detail').style.display='none';
+  document.getElementById('clients-main').style.display='block';
+}
 
-renderMetrics();renderAlertBlock();renderClients();initOrderForm();loadContragents();loadClients();
+function orderFor(name, addrIdx){
+  switchTab('order');
+  setTimeout(()=>{
+    document.getElementById('o-client').value = name;
+    acSelect(name);
+    setTimeout(()=>{
+      document.getElementById('o-addr').value = addrIdx;
+      onAddrChange();
+    },50);
+  },50);
+}
+
+init();
 </script>
 </body>
 </html>
