@@ -973,6 +973,7 @@ function renderPlan(plan, base, weekDates){
     doneBanner.style.display='none';
   }
 
+  renderPlan._cumulativeByFlavor={};
   content.innerHTML=stockBadge+days.map((dateStr,idx)=>{
     const parts=dateStr.split('.');
     const dayDate=new Date(Number(parts[2]),Number(parts[1])-1,Number(parts[0]),0,0,0,0);
@@ -988,17 +989,21 @@ function renderPlan(plan, base, weekDates){
     const bgColor=isToday?'var(--green-light)':'var(--card)';
     const opacity=isPast&&!isToday?'0.65':'1';
 
-    // Для каждой позиции считаем факт конкретного дня
+    // Для каждой позиции считаем факт за неделю и закрываем план по порядку дней
     let dayFactTotal=0;
     const dayFactByFlavor=fact[dateStr]||{};
+    const cumulativeByFlavor=renderPlan._cumulativeByFlavor||(renderPlan._cumulativeByFlavor={});
     const itemsCalc=planItems.map(([name,planQty])=>{
-      const dayDone=dayFactByFlavor[name]||0;
-      const effectiveFact=Math.min(dayDone, planQty);
-      return {name, planQty, effectiveFact};
+      const prevPlan=cumulativeByFlavor[name]||0;
+      const cumulativePlan=prevPlan+planQty;
+      cumulativeByFlavor[name]=cumulativePlan;
+      const weekDone=(weekTotal[name]||0);
+      const effectiveFact=Math.max(0,Math.min(planQty,weekDone-prevPlan));
+      return {name, planQty, prevPlan, cumulativePlan, effectiveFact, weekDone};
     });
     itemsCalc.forEach(({effectiveFact})=>{ dayFactTotal+=effectiveFact; });
 
-    const itemRows=itemsCalc.map(({name,planQty,effectiveFact})=>{
+    const itemRows=itemsCalc.map(({name,planQty,prevPlan,cumulativePlan,effectiveFact,weekDone})=>{
       const dayDone=dayFactByFlavor[name]||0;
 
       const st=stockData[name]||null;
@@ -1008,18 +1013,20 @@ function renderPlan(plan, base, weekDates){
       let dualStatusHtml='';
 
       if(planWorkType==='Лепка'){
-        // Бейджи: факт начинок и лепки за этот конкретный день
-        const dayNachinka=(factNachinka&&factNachinka[dateStr]||{})[name]||0;
-        const dayLepka=dayDone;
-        const nachinkaOk=dayNachinka>=planQty;
-        const lepkaOk=dayLepka>=planQty;
+        // Бейджи: факт начинок и лепки за неделю, закрытие по порядку дней
+        const weekNachinkaDone=(weekTotalNachinka[name]||0);
+        const weekLepkaDone=weekDone;
+        const nachinkaAllocated=Math.max(0,Math.min(planQty,weekNachinkaDone-prevPlan));
+        const lepkaAllocated=Math.max(0,Math.min(planQty,weekLepkaDone-prevPlan));
+        const nachinkaOk=weekNachinkaDone>=cumulativePlan;
+        const lepkaOk=weekLepkaDone>=cumulativePlan;
 
         const nacBadge=nachinkaOk
           ?`<span style="font-size:11px;font-weight:700;color:var(--green);background:var(--green-light);border-radius:4px;padding:1px 5px">нач ✓</span>`
-          :`<span style="font-size:11px;font-weight:600;color:var(--muted);background:#f0f4f0;border-radius:4px;padding:1px 5px">нач ${dayNachinka>0?dayNachinka:'—'}</span>`;
+          :`<span style="font-size:11px;font-weight:600;color:var(--muted);background:#f0f4f0;border-radius:4px;padding:1px 5px">нач ${nachinkaAllocated>0?nachinkaAllocated:'—'}</span>`;
         const lepBadge=lepkaOk
           ?`<span style="font-size:11px;font-weight:700;color:var(--teal);background:var(--teal-light);border-radius:4px;padding:1px 5px">леп ✓</span>`
-          :`<span style="font-size:11px;font-weight:600;color:var(--muted);background:#f0f4f0;border-radius:4px;padding:1px 5px">леп ${dayLepka>0?dayLepka:'—'}</span>`;
+          :`<span style="font-size:11px;font-weight:600;color:var(--muted);background:#f0f4f0;border-radius:4px;padding:1px 5px">леп ${lepkaAllocated>0?lepkaAllocated:'—'}</span>`;
 
         dualStatusHtml=`<div style="font-size:11px;margin-top:4px;display:flex;gap:5px">${nacBadge}${lepBadge}</div>`;
 
@@ -1031,15 +1038,15 @@ function renderPlan(plan, base, weekDates){
           rowBg='rgba(255,193,7,0.07)';
         }
       } else {
-        // Режим Начинки — факт дня vs план дня
-        const done=dayDone>=planQty;
+        // Режим Начинки — факт за неделю закрывает план по порядку дней
+        const done=weekDone>=cumulativePlan;
         if(done){
           nameStyle='font-size:14px;color:var(--muted);text-decoration:line-through';
           statusHtml='<span style="font-size:12px;color:var(--green);margin-right:6px">✓</span>';
           qtyHtml=`<span style="font-size:14px;font-weight:700;color:var(--muted)">${planQty} шт</span>`;
           rowBg='rgba(45,122,58,0.07)';
-        } else if(dayDone>0){
-          qtyHtml=`<span style="font-size:13px;color:var(--muted);font-style:italic;margin-right:4px">${dayDone}/</span><span style="font-size:14px;font-weight:700;color:${isToday?'var(--green)':'var(--text)'}">${planQty} шт</span>`;
+        } else if(effectiveFact>0){
+          qtyHtml=`<span style="font-size:13px;color:var(--muted);font-style:italic;margin-right:4px">${effectiveFact}/</span><span style="font-size:14px;font-weight:700;color:${isToday?'var(--green)':'var(--text)'}">${planQty} шт</span>`;
         }
       }
 
