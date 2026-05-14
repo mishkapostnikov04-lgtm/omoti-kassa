@@ -1162,27 +1162,37 @@ function renderTable(){
   flavors.forEach(name=>{
     let rowTotal=0;
     let cells='';
+    let cumulativePlan=0;
+
+    // Факт по этому вкусу за всю неделю.
+    // Это позволяет закрывать план заранее: сделал во вторник — закрыл ближайший план в среду.
+    const factWeekQty=(factByType._weekTotal||{})[name]||0;
+
     activeDays.forEach((ds,i)=>{
       const d=parseDate(ds); d.setHours(0,0,0,0);
       const isToday=d.getTime()===today.getTime();
       const planQty=(planData[ds]||{})[name]||0;
-      const factQty=(factByType[ds]||{})[name]||0;
-      const done=planQty>0&&factQty>=planQty;
+
+      if(planQty>0) cumulativePlan+=planQty;
+
+      // Закрываем план по порядку дней.
+      // Если в плане 60 сегодня и 60 завтра, а факт 60 — зачеркнётся только первая ячейка.
+      const done=planQty>0&&factWeekQty>=cumulativePlan;
+
       colTotals[i]+=planQty;
       rowTotal+=planQty;
+
       const cellStyle=done?'color:var(--muted2);text-decoration:line-through':'';
       cells+=`<td class="qty${planQty===0?' empty':''}${isToday?' today-col':''}" style="${cellStyle}">${planQty||'—'}</td>`;
     });
+
     grandTotal+=rowTotal;
-    // Строка зачёркнута только если ВСЕ дни закрыты (все плановые дни выполнены)
-    const allDaysForFlavor=activeDays.every(ds=>{
-      const planQty=(planData[ds]||{})[name]||0;
-      if(planQty===0) return true; // дней без плана не считаем
-      const factQty=(factByType[ds]||{})[name]||0;
-      return factQty>=planQty;
-    });
-    const nameStyle=allDaysForFlavor&&rowTotal>0?'color:var(--muted2);text-decoration:line-through':'';
-    const totalStyle=allDaysForFlavor&&rowTotal>0?'color:var(--muted2);text-decoration:line-through':'';
+
+    // Строка целиком зачёркнута только когда закрыт весь недельный план по вкусу.
+    const allDaysForFlavor=rowTotal>0&&factWeekQty>=rowTotal;
+    const nameStyle=allDaysForFlavor?'color:var(--muted2);text-decoration:line-through':'';
+    const totalStyle=allDaysForFlavor?'color:var(--muted2);text-decoration:line-through':'';
+
     tbody+=`<tr><td style="${nameStyle}">${escHtml(name)}</td>${cells}<td class="total" style="${totalStyle}">${rowTotal||'—'}</td></tr>`;
   });
 
