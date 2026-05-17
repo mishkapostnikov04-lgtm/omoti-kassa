@@ -481,6 +481,7 @@ function clearStock(){
 
 // ── UTILS ───────────────────────────────────────────────────────────────────
 function escHtml(s){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');}
+function escJs(s){return String(s).replaceAll('\\','\\\\').replaceAll("'","\\'").replaceAll('\n',' ');}
 function fmtG(g){if(g>=1000)return (g/1000).toFixed(g>=10000?0:1).replace(/\.0$/,'')+' кг';return Math.round(g)+' г';}
 function fmtPack(pack){if(pack>=1000)return (pack/1000).toFixed(pack%1000===0?0:2).replace(/\.00$/,'')+' кг';return pack+' г';}
 function fmtMoney(v){return Math.round(v).toLocaleString('ru-RU')+' ₽';}
@@ -941,14 +942,15 @@ function parseLocalDate(v){
 }
 function localKey(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function sameLocalDay(a,b){return a&&b&&localKey(a)===localKey(b);}
-function formatShortDate(d){return d?`${DAY_SHORT[d.getDay()]} ${d.getDate()} ${d.toLocaleDateString('ru-RU',{month:'long'})}`:'—';}
+const RU_MONTHS_GEN=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+function formatShortDate(d){return d?`${DAY_SHORT[d.getDay()]} ${d.getDate()} ${RU_MONTHS_GEN[d.getMonth()]}`:'—';}
 function formatRangeDates(dates){
   if(!dates||!dates.length) return 'Период не выбран';
   const a=parseLocalDate(dates[0]),b=parseLocalDate(dates[dates.length-1]);
   if(!a||!b) return 'Период';
   if(sameLocalDay(a,b)) return formatShortDate(a);
   const sameMonth=a.getMonth()===b.getMonth()&&a.getFullYear()===b.getFullYear();
-  return sameMonth?`${a.getDate()}–${b.getDate()} ${b.toLocaleDateString('ru-RU',{month:'long'})}`:`${a.getDate()} ${a.toLocaleDateString('ru-RU',{month:'short'})} – ${b.getDate()} ${b.toLocaleDateString('ru-RU',{month:'short'})}`;
+  return sameMonth?`${a.getDate()}–${b.getDate()} ${RU_MONTHS_GEN[b.getMonth()]}`:`${a.getDate()} ${RU_MONTHS_GEN[a.getMonth()]} – ${b.getDate()} ${RU_MONTHS_GEN[b.getMonth()]}`;
 }
 function sortedPlanDates(){return (PLAN_DATES||[]).slice().sort((a,b)=>parseLocalDate(a)-parseLocalDate(b));}
 function getTodayPlanIndex(){
