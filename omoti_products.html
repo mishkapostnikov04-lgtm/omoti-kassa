@@ -707,35 +707,6 @@ function copySupplier(containerId, supplierKey, btn){
     }
   }).catch(()=>showToast('Не удалось скопировать','err'));
 }
-  // Собираем нужды по контексту
-  let flavors;
-  if(containerId==='wk-content'){
-    flavors={};
-    if(!PLAN_DATA){showToast('План не загружен','err');return;}
-    Object.values(PLAN_DATA).forEach(dp=>Object.entries(dp).forEach(([n,q])=>{flavors[n]=(flavors[n]||0)+q;}));
-  } else if(containerId==='dy-content'){
-    if(!PLAN_DATA){showToast('План не загружен','err');return;}
-    flavors=PLAN_DATA[PLAN_DATES[currentDayIdx]]||{};
-  } else {
-    flavors=lastManualFlavors||{};
-  }
-  const needs=calcNeeds(flavors);
-  const lines=[];
-  let total=0;
-  Object.entries(needs).sort((a,b)=>a[0].localeCompare(b[0],'ru')).forEach(([n,g])=>{
-    const m=packMath(n,g);
-    if(m.covered)return;
-    if(m.packs===null){lines.push(`• ${n} — ${fmtG(m.buyG)}`);}
-    else{lines.push(`• ${n} — ${m.buyPacks} уп ×${m.packLabel} (${fmtG(g)})`);total+=m.cost;}
-  });
-  if(!lines.length){showToast('Закупка не нужна — всё есть','ok');return;}
-  const txt=lines.join('\n')+`\n\nИтого: ${Math.round(total).toLocaleString('ru-RU')} ₽`;
-  navigator.clipboard.writeText(txt).then(()=>{
-    showToast('Список скопирован','ok');
-    const btn=document.getElementById('copy-'+containerId);
-    if(btn){const old=btn.textContent;btn.textContent='✓ Скопировано';btn.classList.add('copied');setTimeout(()=>{btn.textContent=old;btn.classList.remove('copied');},1500);}
-  }).catch(()=>showToast('Не удалось скопировать','err'));
-}
 
 // ── ЗАГРУЗКА ПЛАНА ─────────────────────────────────────────────────────────
 function setPlanStatus(text){
