@@ -4,177 +4,246 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>OMOTI · Расчёт продуктов</title>
-<link rel="icon" type="image/png" href="grin.png">
 <meta name="theme-color" content="#2d7a3a">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
-  --bg:#f0f4f0;
-  --card:#fff;
-  --border:#d6e4d6;
-  --text:#1c2b1c;
-  --muted:#7a967a;
-  --muted2:#b8ccb8;
-  --green:#2d7a3a;
-  --green-light:#e8f5e9;
-  --green-mid:#4caf62;
-  --teal:#1a8c78;
-  --teal-light:#e0f5f1;
-  --amber:#e07c1a;
-  --amber-light:#fff3e0;
-  --red:#c0392b;
-  --red-light:#fdecea;
-  --radius:16px;
-  --shadow:0 2px 12px rgba(0,0,0,.07);
+  --bg:#f0f4f0; --card:#fff; --border:#d6e4d6; --text:#1c2b1c;
+  --muted:#7a967a; --muted2:#b8ccb8;
+  --green:#2d7a3a; --green-light:#e8f5e9; --green-mid:#4caf62;
+  --teal:#1a8c78; --teal-light:#e0f5f1;
+  --amber:#e07c1a; --amber-light:#fff3e0;
+  --red:#c0392b; --red-light:#fdecea;
+  --radius:16px; --shadow:0 2px 12px rgba(0,0,0,.07);
 }
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 .app{max-width:520px;margin:0 auto;padding-bottom:60px}
 
 /* HEADER */
-.header{background:var(--green);padding:20px 18px 0;position:sticky;top:0;z-index:20}
+.header{background:var(--green);padding:18px 18px 0;position:sticky;top:0;z-index:20}
 .header-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.18);border-radius:999px;padding:4px 10px;margin-bottom:8px}
 .header-badge span{font-size:11px;font-weight:800;color:#fff;letter-spacing:.06em;text-transform:uppercase}
 .header-dot{width:6px;height:6px;border-radius:999px;background:#7dff9a}
 .header-title{font-size:22px;font-weight:700;color:#fff;line-height:1}
 .header-sub{font-size:12px;color:rgba(255,255,255,.65);margin-top:4px;margin-bottom:14px}
 .tab-row{display:flex;gap:4px;background:rgba(0,0,0,.18);border-radius:12px;padding:3px}
-.tab-btn{flex:1;border:none;background:transparent;border-radius:10px;padding:8px 6px;font-size:13px;font-weight:600;font-family:inherit;color:rgba(255,255,255,.6);cursor:pointer;transition:.15s}
+.tab-btn{flex:1;border:none;background:transparent;border-radius:10px;padding:9px 6px;font-size:13px;font-weight:600;font-family:inherit;color:rgba(255,255,255,.6);cursor:pointer;transition:.15s}
 .tab-btn.active{background:#fff;color:var(--green)}
 
 /* SCREENS */
 .screen{display:none}.screen.active{display:block}
 
-/* CARDS */
-.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);margin:12px 14px 0;padding:16px}
-.sec-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px}
+/* SUMMARY-BAR */
+.summary-bar{margin:12px 14px 0;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.sb-left{flex:1;min-width:0}
+.sb-period{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.sb-total{font-size:18px;font-weight:800;color:var(--text);margin-top:2px}
+.sb-cost{text-align:right}
+.sb-cost-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.sb-cost-val{font-size:17px;font-weight:800;color:var(--green);margin-top:2px;white-space:nowrap}
 
-/* SPINNER */
-.spinner{text-align:center;padding:28px;font-size:13px;color:var(--muted)}
+/* DAYS PICKER */
+.days-row{display:flex;gap:6px;padding:12px 14px 0;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.day-pill{flex-shrink:0;min-width:62px;border:1.5px solid var(--border);background:#fff;border-radius:12px;padding:8px 4px;font-family:inherit;cursor:pointer;text-align:center;transition:.15s}
+.day-pill.active{background:var(--green);border-color:var(--green)}
+.day-pill.empty{opacity:.45}
+.dp-name{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.day-pill.active .dp-name{color:rgba(255,255,255,.8)}
+.dp-date{font-size:15px;font-weight:800;color:var(--text);margin-top:2px}
+.day-pill.active .dp-date{color:#fff}
+.dp-qty{font-size:10px;font-weight:600;color:var(--muted);margin-top:2px}
+.day-pill.active .dp-qty{color:rgba(255,255,255,.85)}
+
+/* SECTION */
+.section{margin:14px 14px 0}
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;padding:0 4px;margin-bottom:8px}
+.sec-title{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.sec-meta{font-size:11px;font-weight:600;color:var(--muted2)}
+
+/* BASE/INGREDIENT ROW */
+.ing-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.ing-row{padding:11px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px}
+.ing-row:last-child{border-bottom:none}
+.ing-left{flex:1;min-width:0}
+.ing-name{font-size:14px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ing-grams{font-size:12px;font-weight:600;color:var(--muted);margin-top:2px}
+.ing-right{text-align:right;flex-shrink:0}
+.ing-packs{font-size:15px;font-weight:800;color:var(--green);white-space:nowrap}
+.ing-pack-meta{font-size:11px;color:var(--muted2);margin-top:1px;white-space:nowrap}
+.ing-row.has-stock .ing-packs{color:var(--text)}
+.ing-row.covered{background:var(--green-light)}
+.ing-row.covered .ing-packs{color:var(--green)}
+
+/* FLAVOR ACCORDION */
+.flav-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-bottom:8px}
+.flav-head{padding:13px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer;-webkit-user-select:none;user-select:none}
+.flav-head:active{background:#f7faf7}
+.flav-name{font-size:15px;font-weight:700;color:var(--text);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.flav-name.premium{color:var(--amber)}
+.flav-tag{display:inline-block;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:2px 6px;border-radius:4px;margin-left:6px;vertical-align:1px}
+.flav-tag.mono{background:var(--teal-light);color:var(--teal)}
+.flav-tag.dual{background:#fef3e8;color:var(--amber)}
+
+/* OVERPAY WARNING */
+.ing-row.overpay .ing-grams::after{content:" ⚠";color:var(--amber);font-weight:700}
+.ing-overpay-note{font-size:10px;color:var(--amber);font-weight:600;margin-top:1px;white-space:nowrap}
+
+/* SUMMARY EXTRA */
+.sb-cost-sub{font-size:10px;color:var(--muted);font-weight:600;margin-top:2px;white-space:nowrap}
+.sb-stat{font-size:11px;font-weight:600;color:var(--muted);margin-top:3px}
+.sb-stat .prem{color:var(--amber);font-weight:700}
+.flav-meta{font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap}
+.flav-chev{color:var(--muted2);font-size:14px;flex-shrink:0;transition:transform .2s}
+.flav-card.open .flav-chev{transform:rotate(180deg)}
+.flav-body{display:none;border-top:1px solid var(--border);background:#fafdfa}
+.flav-card.open .flav-body{display:block}
+.flav-body .ing-row{padding:9px 14px 9px 22px;background:transparent}
+.flav-body .ing-row:last-child{border-bottom:none}
+.flav-body .ing-name{font-size:13px;font-weight:600}
+.flav-body .ing-packs{font-size:14px}
+
+/* COPY BTN */
+.copy-btn{width:calc(100% - 28px);margin:18px 14px 0;background:var(--text);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.copy-btn:active{opacity:.85}
+.copy-btn.copied{background:var(--green)}
+
+/* STOCK PANEL */
+.stock-panel{margin:14px 14px 0;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.stock-head{padding:13px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;-webkit-user-select:none;user-select:none}
+.stock-head:active{background:#f7faf7}
+.stock-title{font-size:13px;font-weight:700;color:var(--text)}
+.stock-title-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.stock-chev{color:var(--muted2);font-size:14px;transition:transform .2s}
+.stock-panel.open .stock-chev{transform:rotate(180deg)}
+.stock-body{display:none;border-top:1px solid var(--border);padding:10px 12px}
+.stock-panel.open .stock-body{display:block}
+.stock-list{display:flex;flex-direction:column;gap:6px}
+.stock-item{display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid var(--border)}
+.stock-item:last-child{border-bottom:none}
+.si-name{flex:1;font-size:12px;font-weight:600;color:var(--text);min-width:0}
+.si-name-sub{font-size:10px;color:var(--muted);font-weight:500}
+.si-inp{width:64px;border:1.5px solid var(--border);background:#fff;border-radius:6px;padding:5px 6px;font-size:13px;font-weight:700;font-family:inherit;color:var(--text);outline:none;text-align:center}
+.si-inp:focus{border-color:var(--green)}
+.si-unit{font-size:10px;color:var(--muted2);font-weight:600;min-width:18px}
+
+/* MANUAL */
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);margin:12px 14px 0;padding:14px 14px 10px}
+.card .sec-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px}
+.manual-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
+.manual-row:last-child{border-bottom:none}
+.manual-num{font-size:12px;font-weight:700;color:var(--muted2);min-width:18px}
+.ac-wrap{position:relative;flex:2}
+.manual-name-inp{width:100%;border:1.5px solid var(--border);background:#fff;border-radius:8px;padding:7px 10px;font-size:13px;font-weight:600;font-family:inherit;color:var(--text);outline:none}
+.manual-name-inp:focus{border-color:var(--green)}
+.manual-qty-inp{width:72px;border:1.5px solid var(--border);background:#fff;border-radius:8px;padding:7px 8px;font-size:13px;font-weight:700;font-family:inherit;color:var(--text);outline:none;text-align:center}
+.manual-qty-inp:focus{border-color:var(--green)}
+.manual-del{width:28px;height:28px;border:none;background:none;color:var(--muted2);cursor:pointer;font-size:16px;border-radius:6px;display:flex;align-items:center;justify-content:center}
+.manual-del:active{background:var(--red-light);color:var(--red)}
+.add-row-btn{width:100%;border:1.5px dashed var(--border);background:transparent;border-radius:10px;padding:10px;font-size:13px;font-weight:600;font-family:inherit;color:var(--green);cursor:pointer;margin-top:8px}
+.add-row-btn:active{background:var(--green-light)}
+.ac-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--green);border-radius:8px;box-shadow:var(--shadow);z-index:50;max-height:180px;overflow-y:auto;margin-top:2px}
+.ac-item{padding:8px 12px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text);border-bottom:1px solid var(--border)}
+.ac-item:last-child{border-bottom:none}
+.ac-item:hover,.ac-item.selected{background:var(--green-light);color:var(--green)}
+.calc-btn{width:calc(100% - 28px);margin:12px 14px 0;background:var(--green);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer}
+.calc-btn:active{opacity:.85}
+
+.empty-msg{padding:32px 16px;text-align:center;color:var(--muted);font-size:14px}
 
 /* TOAST */
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#1c2b1c;color:#fff;padding:10px 20px;border-radius:999px;font-size:13px;font-weight:600;opacity:0;transition:.25s;pointer-events:none;z-index:99;white-space:nowrap}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast.err{background:var(--red)}
-
-/* PLAN MODE */
-.plan-flavor-list{display:flex;flex-direction:column;gap:4px}
-.pf-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:14px}
-.pf-row:last-child{border-bottom:none}
-.pf-name{font-weight:600;color:var(--text)}
-.pf-qty{font-weight:700;color:var(--green)}
-
-/* MANUAL MODE */
-.manual-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
-.manual-row:last-child{border-bottom:none}
-.manual-num{font-size:12px;font-weight:700;color:var(--muted2);min-width:18px}
-.manual-name-inp{flex:2;border:1.5px solid var(--border);background:#fff;border-radius:8px;padding:7px 10px;font-size:13px;font-weight:600;font-family:inherit;color:var(--text);outline:none}
-.manual-name-inp:focus{border-color:var(--green)}
-.manual-qty-inp{width:72px;border:1.5px solid var(--border);background:#fff;border-radius:8px;padding:7px 8px;font-size:13px;font-weight:700;font-family:inherit;color:var(--text);outline:none;text-align:center}
-.manual-qty-inp:focus{border-color:var(--green)}
-.manual-del{width:28px;height:28px;border:none;background:none;color:var(--muted2);cursor:pointer;font-size:16px;flex-shrink:0;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:.12s}
-.manual-del:active{background:var(--red-light);color:var(--red)}
-.add-row-btn{width:100%;border:1.5px dashed var(--border);background:transparent;border-radius:10px;padding:10px;font-size:13px;font-weight:600;font-family:inherit;color:var(--green);cursor:pointer;margin-top:8px;transition:.15s}
-.add-row-btn:active{background:var(--green-light)}
-
-/* AUTOCOMPLETE */
-.ac-wrap{position:relative;flex:2}
-.ac-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--green);border-radius:8px;box-shadow:var(--shadow);z-index:50;max-height:180px;overflow-y:auto;margin-top:2px}
-.ac-item{padding:8px 12px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text);border-bottom:1px solid var(--border)}
-.ac-item:last-child{border-bottom:none}
-.ac-item:hover,.ac-item.selected{background:var(--green-light);color:var(--green)}
-
-/* ОСТАТКИ */
-.stock-toggle{display:flex;align-items:center;gap:10px;cursor:pointer;padding:2px 0}
-.stock-toggle input[type=checkbox]{width:18px;height:18px;accent-color:var(--green);cursor:pointer}
-.stock-toggle span{font-size:13px;font-weight:600;color:var(--muted)}
-.stock-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px}
-.stock-item{background:#f7faf7;border:1.5px solid var(--border);border-radius:10px;padding:8px 10px}
-.stock-item-name{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.stock-inp-row{display:flex;align-items:center;gap:6px}
-.stock-inp{flex:1;border:1.5px solid var(--border);background:#fff;border-radius:6px;padding:5px 7px;font-size:13px;font-weight:700;font-family:inherit;color:var(--text);outline:none;text-align:center;min-width:0}
-.stock-inp:focus{border-color:var(--green)}
-.stock-unit{font-size:11px;color:var(--muted2);font-weight:600;white-space:nowrap}
-
-/* РЕЗУЛЬТАТ */
-.calc-btn{width:calc(100% - 28px);margin:12px 14px 0;background:var(--green);color:#fff;border:none;border-radius:12px;padding:15px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;transition:.15s}
-.calc-btn:active{opacity:.85}
-.calc-btn:disabled{opacity:.5;cursor:default}
-
-.result-section{margin:12px 14px 0}
-.result-group{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:8px;overflow:hidden}
-.result-group-header{padding:10px 14px;background:var(--green);color:#fff;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
-.result-row{display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border)}
-.result-row:last-child{border-bottom:none}
-.result-row.need{background:var(--red-light)}
-.result-row.ok{background:var(--green-light)}
-.rr-name{font-size:13px;font-weight:600;color:var(--text);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rr-need{font-size:12px;color:var(--muted);text-align:right;white-space:nowrap}
-.rr-stock-wrap{display:flex;align-items:center;gap:3px}
-.rr-stock-inp{width:48px;border:1.5px solid var(--border);background:#fff;border-radius:6px;padding:3px 5px;font-size:12px;font-weight:700;font-family:inherit;color:var(--text);outline:none;text-align:center}
-.rr-stock-inp:focus{border-color:var(--green)}
-.rr-stock-lbl{font-size:10px;color:var(--muted2);white-space:nowrap}
-.rr-buy{font-size:13px;font-weight:700;text-align:right;white-space:nowrap;min-width:56px}
-.rr-buy.none{color:var(--green)}
-.rr-buy.buy{color:var(--red)}
-
-.result-summary{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);margin:8px 0;padding:14px 16px}
-.sum-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:13px}
-.sum-row:last-child{border-bottom:none}
-.sum-label{color:var(--muted);font-weight:600}
-.sum-val{font-weight:700;color:var(--text)}
-.sum-val.red{color:var(--red)}
-.sum-val.green{color:var(--green)}
-
-.col-headers{display:grid;grid-template-columns:1fr auto auto auto;gap:8px;padding:4px 12px;margin-bottom:2px}
-.ch{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
-.ch.have{width:68px;text-align:center}
-.ch.buy{min-width:56px;text-align:right}
-
-.empty-result{padding:32px;text-align:center;color:var(--muted);font-size:14px}
+.toast.ok{background:var(--green)}
 </style>
 </head>
 <body>
 <div class="app">
   <div class="header">
     <div class="header-badge"><div class="header-dot"></div><span>OMOTI · Продукты</span></div>
-    <div class="header-title">Расчёт продуктов</div>
-    <div class="header-sub">Сколько нужно закупить под план</div>
+    <div class="header-title">Расчёт закупки</div>
+    <div class="header-sub">Сколько продуктов нужно под план</div>
     <div class="tab-row">
-      <button class="tab-btn active" onclick="switchTab('plan')">По плану</button>
-      <button class="tab-btn" onclick="switchTab('manual')">Вручную</button>
+      <button class="tab-btn active" data-tab="week" onclick="switchTab('week')">Неделя</button>
+      <button class="tab-btn" data-tab="day" onclick="switchTab('day')">По дням</button>
+      <button class="tab-btn" data-tab="manual" onclick="switchTab('manual')">Вручную</button>
     </div>
   </div>
 
-  <!-- ПО ПЛАНУ -->
-  <div class="screen active" id="screen-plan">
-    <div class="spinner" id="plan-spinner">Загружаю план...</div>
-    <div id="plan-flavor-card" style="display:none">
-      <div class="card">
-        <div class="sec-label">Вкусы из плана на неделю</div>
-        <div class="plan-flavor-list" id="plan-flavor-list"></div>
+  <!-- WEEK -->
+  <div class="screen active" id="screen-week">
+    <div class="summary-bar">
+      <div class="sb-left">
+        <div class="sb-period" id="wk-period">Неделя</div>
+        <div class="sb-total" id="wk-total">— шт</div>
+      </div>
+      <div class="sb-cost">
+        <div class="sb-cost-label">Закупка</div>
+        <div class="sb-cost-val" id="wk-cost">— ₽</div>
       </div>
     </div>
-    <button class="calc-btn" id="plan-calc-btn" onclick="calcPlan()" disabled>Рассчитать</button>
-    <div id="plan-result"></div>
+    <div id="wk-content"></div>
   </div>
 
-  <!-- ВРУЧНУЮ -->
+  <!-- DAY -->
+  <div class="screen" id="screen-day">
+    <div class="days-row" id="days-row"></div>
+    <div class="summary-bar" style="margin-top:10px">
+      <div class="sb-left">
+        <div class="sb-period" id="dy-period">День</div>
+        <div class="sb-total" id="dy-total">— шт</div>
+      </div>
+      <div class="sb-cost">
+        <div class="sb-cost-label">Закупка</div>
+        <div class="sb-cost-val" id="dy-cost">— ₽</div>
+      </div>
+    </div>
+    <div id="dy-content"></div>
+  </div>
+
+  <!-- MANUAL -->
   <div class="screen" id="screen-manual">
     <div class="card">
       <div class="sec-label">Вкусы и количество</div>
       <div id="manual-rows"></div>
       <button class="add-row-btn" onclick="addManualRow()">+ Добавить вкус</button>
     </div>
-    <button class="calc-btn" id="manual-calc-btn" onclick="calcManual()">Рассчитать</button>
-    <div id="manual-result"></div>
+    <button class="calc-btn" onclick="calcManual()">Рассчитать</button>
+    <div id="manual-content"></div>
   </div>
 </div>
 <div class="toast" id="toast"></div>
 
 <script>
-const API='https://script.google.com/macros/s/AKfycbyItLqVWxgGSYuWXc4HT6qtaSeDwSeRqv67dJBFBPaLWFbXxKSIyl9jq_q4i3WT4IPC/exec';
+// ── ТЕСТОВЫЕ ДАННЫЕ ─────────────────────────────────────────────────────────
+// Имитируем ответ /get_plan: { plan: { 'YYYY-MM-DD': { 'Вкус': qty, ... }, ... } }
+const TODAY=new Date('2026-05-18'); // понедельник, демо-неделя
+function dateStr(d){return d.toISOString().slice(0,10);}
+function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
+const WEEK_DATES=[0,1,2,3,4,5,6].map(i=>dateStr(addDays(TODAY,i)));
 
-// ── РЕЦЕПТУРЫ (граммы на 1 шт) ───────────────────────────────────────────────
+const DEMO_PLAN={
+  [WEEK_DATES[0]]:{ 'Дубайский шоколад':240, 'Бабл Гам':120 }, // Пн
+  [WEEK_DATES[1]]:{ 'Клубника':180, 'Малина-Ваниль':180 },     // Вт
+  [WEEK_DATES[2]]:{ 'Сникерс':150, 'Кокос-Маракуйя':150, 'Шоколад':60 }, // Ср
+  [WEEK_DATES[3]]:{ 'Дубайский шоколад':180, 'Смородина':180 }, // Чт
+  [WEEK_DATES[4]]:{ 'Банан- Нутелла':240, 'Кофе-Карамель':120 }, // Пт
+  [WEEK_DATES[5]]:{},                                            // Сб
+  [WEEK_DATES[6]]:{}                                             // Вс
+};
+
+const PREMIUM=new Set(['Дубайский шоколад','Криспи','Мандарин','Пряник']);
+
+// Моно-начинка (только однослойная, без сердцевины)
+const MONO=new Set(['Кокосовый пломбир','Смородина','Шоколад']);
+
+// «Основа» — фикс-список ингредиентов, что в почти каждой моти
+const BASE_INGREDIENTS=new Set([
+  'Творожный сыр','Мука рисовая','Сахар','Сливки',
+  'Крахмал кукурузный','Масло растительное','Инв. сироп'
+]);
+
+// ── РЕЦЕПТУРЫ (граммы на 1 шт) — берём как есть из текущего файла ───────────
 const RECIPES={
   'Арбуз - Дыня':[{g:'1. Молочные',n:'Сливки',w:1.6667},{g:'1. Молочные',n:'Творожный сыр',w:11},{g:'2. Пюре',n:'Дыня пюре',w:5},{g:'2. Пюре',n:'Яблочное пюре',w:3.4667},{g:'3. Сиропы',n:'Арбуз сироп',w:3},{g:'3. Сиропы',n:'Инв. сироп',w:1},{g:'8. Подсластители',n:'Сахар',w:8.3333},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'9. Основа',n:'Пектин',w:0.2},{g:'Прочее',n:'Масло растительное',w:0.8}],
   'Бабл Гам':[{g:'1. Молочные',n:'Сливки',w:3.3333},{g:'1. Молочные',n:'Творожный сыр',w:13.3333},{g:'3. Сиропы',n:'Бабл Гам сироп',w:2.6667},{g:'8. Подсластители',n:'Маршмелоу',w:2},{g:'8. Подсластители',n:'Сахар',w:8.2},{g:'8. Подсластители',n:'Тримолин',w:1.3333},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'Прочее',n:'Желатин',w:1.16},{g:'Прочее',n:'Масло растительное',w:0.8}],
@@ -191,7 +260,6 @@ const RECIPES={
   'Мандарин':[{g:'1. Молочные',n:'Сливки',w:5.3333},{g:'1. Молочные',n:'Творожный сыр',w:14.6667},{g:'3. Сиропы',n:'Инв. сироп',w:1.3333},{g:'4. Ягоды',n:'Авокадо',w:6.6667},{g:'4. Ягоды',n:'Лайм',w:2.3333},{g:'8. Подсластители',n:'Сахар',w:6.8667},{g:'8. Подсластители',n:'Сахарная пудра',w:2.6667},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'Прочее',n:'Масло растительное',w:0.8}],
   'Матча-Манго':[{g:'1. Молочные',n:'Сливки',w:4},{g:'1. Молочные',n:'Творожный сыр',w:11},{g:'2. Пюре',n:'Манго пюре',w:8},{g:'3. Сиропы',n:'Инв. сироп',w:1},{g:'8. Подсластители',n:'Сахар',w:9.8},{g:'8. Подсластители',n:'Сахарная пудра',w:2.3333},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'9. Основа',n:'Пектин',w:0.2},{g:'Прочее',n:'Масло растительное',w:0.8},{g:'Прочее',n:'Матча',w:0.4}],
   'Мохито':[{g:'1. Молочные',n:'Сливки',w:3},{g:'1. Молочные',n:'Творожный сыр',w:16.3333},{g:'2. Пюре',n:'Лайм пюре',w:6.6667},{g:'3. Сиропы',n:'Инв. сироп',w:1.3333},{g:'3. Сиропы',n:'Лайм сироп',w:3.33},{g:'3. Сиропы',n:'Мята сироп',w:0.66},{g:'4. Ягоды',n:'Мята листья',w:0.6667},{g:'8. Подсластители',n:'Сахар',w:8.2},{g:'8. Подсластители',n:'Сахарная пудра',w:3.3333},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'9. Основа',n:'Пектин',w:0.1333},{g:'Прочее',n:'Масло растительное',w:0.8}],
-  'Мункейки':[{g:'1. Молочные',n:'Творожный сыр',w:12},{g:'8. Подсластители',n:'Сахар',w:7},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'Прочее',n:'Масло растительное',w:0.8}],
   'Печенье с топлёным молоком':[{g:'1. Молочные',n:'Масло сливочное',w:1.3333},{g:'1. Молочные',n:'Сливки',w:7.2},{g:'1. Молочные',n:'Сухое молоко',w:1.4667},{g:'1. Молочные',n:'Творожный сыр',w:13.3333},{g:'3. Сиропы',n:'Инв. сироп',w:1.0667},{g:'8. Подсластители',n:'Сахар',w:8.2},{g:'8. Подсластители',n:'Сахарная пудра',w:1.0667},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'9. Основа',n:'Мука пшеничная',w:1.3333},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'Прочее',n:'Масло растительное',w:0.8}],
   'Пряник':[{g:'1. Молочные',n:'Творожный сыр',w:12},{g:'8. Подсластители',n:'Сахар',w:7},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'Прочее',n:'Масло растительное',w:0.8}],
   'Сливочный лимон':[{g:'1. Молочные',n:'Масло сливочное',w:2.1333},{g:'1. Молочные',n:'Сливки',w:4},{g:'1. Молочные',n:'Творожный сыр',w:11},{g:'3. Сиропы',n:'Инв. сироп',w:1},{g:'4. Ягоды',n:'Лимон',w:6.6667},{g:'5. Варенье',n:'Лимон варенье',w:1.3333},{g:'8. Подсластители',n:'Сахар',w:8.4667},{g:'8. Подсластители',n:'Сахарная пудра',w:2},{g:'9. Основа',n:'Желток',w:2.5333},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'Прочее',n:'Масло растительное',w:0.8}],
@@ -202,7 +270,7 @@ const RECIPES={
   'Шоколад':[{g:'1. Молочные',n:'Сливки',w:5},{g:'1. Молочные',n:'Творожный сыр',w:11.4667},{g:'6. Шоколад',n:'Кокао',w:2.2},{g:'6. Шоколад',n:'Молочный шоколад',w:4},{g:'6. Шоколад',n:'Темный шоколад',w:1.3333},{g:'8. Подсластители',n:'Сахар',w:6.8667},{g:'8. Подсластители',n:'Сахарная пудра',w:4},{g:'9. Основа',n:'Крахмал кукурузный',w:0.6667},{g:'9. Основа',n:'Мука рисовая',w:6.8667},{g:'Прочее',n:'Карамель',w:5},{g:'Прочее',n:'Масло растительное',w:0.8}],
 };
 
-// ── ЦЕНЫ за 1 г ──────────────────────────────────────────────────────────────
+// ── ЦЕНЫ ────────────────────────────────────────────────────────────────────
 const PRICES={
   'Масло сливочное':{p:1.3,pack:1000},'Сгущёнка':{p:0.4444,pack:270},'Сливки':{p:0.499,pack:1000},
   'Сухое молоко':{p:1.2667,pack:150},'Сыр белый (бри)':{p:2,pack:125},'Сыр голубой (блю)':{p:2.3,pack:100},
@@ -230,50 +298,312 @@ const PRICES={
 };
 
 const FLAVORS=Object.keys(RECIPES).sort((a,b)=>a.localeCompare(b,'ru'));
+const DAY_SHORT=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
 
-let planData=null;
-let manualRowCount=0;
+// Остатки в памяти (синхронизируем с localStorage)
+let stockMap=loadStock();
+let currentTab='week';
+let currentDayIdx=0;
 
-// ── TABS ─────────────────────────────────────────────────────────────────────
-function switchTab(tab){
-  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['plan','manual'][i]===tab));
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById('screen-'+tab).classList.add('active');
+function loadStock(){
+  try{const x=JSON.parse(localStorage.getItem('omoti_prod_stock')||'null');return (x&&typeof x==='object')?x:{};}
+  catch(e){return {};}
+}
+function saveStock(){
+  try{localStorage.setItem('omoti_prod_stock',JSON.stringify(stockMap));}catch(e){}
+}
+function clearStock(){
+  stockMap={};saveStock();
+  if(currentTab==='week') renderWeek();
+  else if(currentTab==='day') renderDay();
+  showToast('Остатки сброшены','ok');
 }
 
-// ── UTILS ────────────────────────────────────────────────────────────────────
+// ── UTILS ───────────────────────────────────────────────────────────────────
 function escHtml(s){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');}
-function showToast(txt,isErr){const el=document.getElementById('toast');el.textContent=txt;el.className='toast show'+(isErr?' err':'');clearTimeout(showToast._t);showToast._t=setTimeout(()=>el.classList.remove('show'),2500);}
+function fmtG(g){if(g>=1000)return (g/1000).toFixed(g>=10000?0:1).replace(/\.0$/,'')+' кг';return Math.round(g)+' г';}
+function fmtPack(pack){if(pack>=1000)return (pack/1000).toFixed(pack%1000===0?0:2).replace(/\.00$/,'')+' кг';return pack+' г';}
+function showToast(txt,kind){const el=document.getElementById('toast');el.textContent=txt;el.className='toast show'+(kind==='err'?' err':kind==='ok'?' ok':'');clearTimeout(showToast._t);showToast._t=setTimeout(()=>el.classList.remove('show'),2200);}
 
-// ── PLAN TAB ─────────────────────────────────────────────────────────────────
-(function loadPlan(){
-  fetch(API+'?action=get_plan',{cache:'no-store'})
-    .then(r=>r.json())
-    .then(json=>{
-      document.getElementById('plan-spinner').style.display='none';
-      if(!json.ok||!json.plan){showToast('Не удалось загрузить план',true);return;}
-      // Суммируем план за неделю по вкусам
-      const totals={};
-      Object.values(json.plan).forEach(dayPlan=>{
-        Object.entries(dayPlan).forEach(([name,qty])=>{
-          totals[name]=(totals[name]||0)+qty;
-        });
-      });
-      planData=totals;
-      const entries=Object.entries(totals).filter(([,q])=>q>0).sort((a,b)=>a[0].localeCompare(b[0],'ru'));
-      if(!entries.length){document.getElementById('plan-flavor-card').innerHTML='<div class="card"><div class="empty-result">План на текущую неделю пуст</div></div>';document.getElementById('plan-flavor-card').style.display='block';return;}
-      document.getElementById('plan-flavor-list').innerHTML=entries.map(([name,qty])=>
-        `<div class="pf-row"><span class="pf-name">${escHtml(name)}</span><span class="pf-qty">${qty} шт</span></div>`
-      ).join('');
-      document.getElementById('plan-flavor-card').style.display='block';
-      document.getElementById('plan-calc-btn').disabled=false;
-    })
-    .catch(()=>{
-      document.getElementById('plan-spinner').textContent='Нет связи — план недоступен';
+// ── РАСЧЁТ ─────────────────────────────────────────────────────────────────
+function calcNeeds(flavors){
+  // { 'Творожный сыр': 22050, ... }
+  const needs={};
+  Object.entries(flavors).forEach(([fname,qty])=>{
+    if(qty<=0)return;
+    const r=RECIPES[fname];if(!r)return;
+    r.forEach(({n,w})=>{needs[n]=(needs[n]||0)+w*qty;});
+  });
+  return needs;
+}
+
+function calcByFlavor(flavors){
+  // { 'Дубайский шоколад': [{name, grams}, ...], ... }
+  const out={};
+  Object.entries(flavors).forEach(([fname,qty])=>{
+    if(qty<=0)return;
+    const r=RECIPES[fname];if(!r)return;
+    out[fname]={qty, items: r.map(({n,w})=>({name:n,grams:w*qty})).filter(x=>x.grams>0.01)};
+  });
+  return out;
+}
+
+function packMath(name,grams){
+  // Учитываем остатки
+  const pr=PRICES[name];
+  const stockPacks=stockMap[name]||0;
+  const stockG=pr?stockPacks*pr.pack:stockPacks;
+  const remG=Math.max(0,grams-stockG);
+  if(!pr) return {grams,packs:null,packLabel:null,buyG:remG,buyPacks:null,cost:0,actualCost:remG,leftover:0,weeksLeft:0,covered:remG<=0,overpay:false};
+  const buyPacks=Math.ceil(remG/pr.pack);
+  const cost=buyPacks*pr.pack*pr.p;            // во что обойдётся закупка
+  const actualCost=remG*pr.p;                   // фактически уйдёт на этот план
+  const leftover=Math.max(0,buyPacks*pr.pack-remG); // остаток на склад в граммах
+  // На сколько недель хватит этой закупки (включая текущую)
+  const weeksLeft=remG>0 ? (buyPacks*pr.pack)/remG : 0;
+  const overpay = weeksLeft >= 2.5; // подсветка, если закупка покрывает 2.5+ недель
+  return {grams,packs:Math.ceil(grams/pr.pack),packLabel:fmtPack(pr.pack),buyG:remG,buyPacks,cost,actualCost,leftover,weeksLeft,covered:remG<=0,overpay};
+}
+
+// ── РЕНДЕР ─────────────────────────────────────────────────────────────────
+function renderIngredientRow(name,grams,opts={}){
+  const m=packMath(name,grams);
+  const hasStock=(stockMap[name]||0)>0;
+  const cls=`ing-row${m.covered?' covered':''}${hasStock?' has-stock':''}${m.overpay&&!m.covered?' overpay':''}`;
+  let right;
+  if(m.packs===null){
+    right=`<div class="ing-packs">${fmtG(m.buyG)}</div><div class="ing-pack-meta">россыпь</div>`;
+  } else if(m.covered){
+    right=`<div class="ing-packs">✓ есть</div><div class="ing-pack-meta">${m.packs} уп нужно</div>`;
+  } else {
+    let meta=`×${m.packLabel}`;
+    if(m.overpay) meta+=` · хватит на ~${m.weeksLeft.toFixed(1).replace('.0','')} нед`;
+    right=`<div class="ing-packs">${m.buyPacks} уп</div><div class="ing-pack-meta">${meta}</div>`;
+  }
+  return `<div class="${cls}">
+    <div class="ing-left">
+      <div class="ing-name">${escHtml(name)}</div>
+      <div class="ing-grams">${fmtG(m.grams)}${hasStock?` · есть ${stockMap[name]} уп`:''}</div>
+    </div>
+    <div class="ing-right">${right}</div>
+  </div>`;
+}
+
+function renderPlanContent(flavors, containerId, totalQty, periodLabel){
+  const needs=calcNeeds(flavors);
+  const byFlavor=calcByFlavor(flavors);
+
+  // Разделяем основу и вкусовые
+  const baseItems=[],flavorOnlyNeeds={};
+  Object.entries(needs).forEach(([n,g])=>{
+    if(BASE_INGREDIENTS.has(n)) baseItems.push({name:n,grams:g});
+    else flavorOnlyNeeds[n]=g;
+  });
+  baseItems.sort((a,b)=>a.name.localeCompare(b.name,'ru'));
+
+  // Считаем суммы и стат
+  let totalCost=0,actualCost=0,buyCount=0;
+  Object.entries(needs).forEach(([n,g])=>{
+    const m=packMath(n,g);
+    if(!m.covered){totalCost+=m.cost;actualCost+=m.actualCost;buyCount++;}
+  });
+  const leftover=totalCost-actualCost;
+  const perPiece = totalQty>0 ? actualCost/totalQty : 0;
+  const premQty=Object.entries(flavors).filter(([n])=>PREMIUM.has(n)).reduce((s,[,q])=>s+q,0);
+
+  // Обновляем summary-bar
+  const setSummary=(periodEl,totalEl,costEl)=>{
+    document.getElementById(periodEl).textContent=periodLabel;
+    document.getElementById(totalEl).innerHTML=`${totalQty} шт · ${Object.keys(flavors).length} вкус(ов)
+      <div class="sb-stat">~${perPiece.toFixed(1)} ₽/моти${premQty?` · <span class="prem">${premQty} премиум</span>`:''}</div>`;
+    document.getElementById(costEl).innerHTML=`${Math.round(totalCost).toLocaleString('ru-RU')} ₽
+      ${leftover>500?`<div class="sb-cost-sub">в запас ~${Math.round(leftover).toLocaleString('ru-RU')} ₽</div>`:''}`;
+  };
+  if(containerId==='wk-content') setSummary('wk-period','wk-total','wk-cost');
+  else if(containerId==='dy-content') setSummary('dy-period','dy-total','dy-cost');
+
+  let html='';
+
+  // Основа
+  if(baseItems.length){
+    html+=`<div class="section">
+      <div class="sec-head"><span class="sec-title">Основа</span><span class="sec-meta">${baseItems.length} позиций · в каждом замесе</span></div>
+      <div class="ing-card">${baseItems.map(({name,grams})=>renderIngredientRow(name,grams)).join('')}</div>
+    </div>`;
+  }
+
+  // Вкусы (аккордеон)
+  const flavorEntries=Object.entries(byFlavor);
+  if(flavorEntries.length){
+    html+=`<div class="section">
+      <div class="sec-head"><span class="sec-title">По вкусам</span><span class="sec-meta">нажми, чтобы раскрыть</span></div>
+      <div>`;
+    flavorEntries.sort((a,b)=>a[0].localeCompare(b[0],'ru')).forEach(([fname,{qty,items}],idx)=>{
+      const specific=items.filter(it=>!BASE_INGREDIENTS.has(it.name));
+      const isPrem=PREMIUM.has(fname);
+      const isMono=MONO.has(fname);
+      const tag=isMono?'<span class="flav-tag mono">моно</span>':'<span class="flav-tag dual">двойная</span>';
+      html+=`<div class="flav-card" id="flav-${containerId}-${idx}">
+        <div class="flav-head" onclick="toggleFlav('flav-${containerId}-${idx}')">
+          <div class="flav-name${isPrem?' premium':''}">${escHtml(fname)}${tag}</div>
+          <div class="flav-meta">${qty} шт · ${specific.length} ингр.</div>
+          <div class="flav-chev">▾</div>
+        </div>
+        <div class="flav-body">${
+          specific.length
+            ? specific.map(({name,grams})=>renderIngredientRow(name,grams)).join('')
+            : '<div style="padding:14px;font-size:12px;color:var(--muted);text-align:center">Только основа</div>'
+        }</div>
+      </div>`;
     });
-})();
+    html+=`</div></div>`;
+  }
 
-// ── MANUAL TAB ───────────────────────────────────────────────────────────────
+  // Кнопка копирования
+  html+=`<button class="copy-btn" onclick="copyShoppingList('${containerId}')" id="copy-${containerId}">📋 Скопировать список к закупке (${buyCount})</button>`;
+
+  // Остатки (свёрнуто)
+  html+=renderStockPanel(needs, containerId);
+
+  document.getElementById(containerId).innerHTML=html;
+
+  if(!flavorEntries.length){
+    document.getElementById(containerId).innerHTML='<div class="empty-msg">План на этот период пуст</div>';
+  }
+}
+
+function renderStockPanel(needs, containerId){
+  const allItems=Object.entries(needs).filter(([,g])=>g>0).sort((a,b)=>a[0].localeCompare(b[0],'ru'));
+  const hasAny=Object.keys(stockMap).length>0;
+  let body=`<div class="stock-list">`;
+  allItems.forEach(([name,grams])=>{
+    const pr=PRICES[name];
+    const sid=`stk-${containerId}-${name.replace(/[^a-zA-Zа-яА-ЯёЁ0-9]/g,'_')}`;
+    const val=stockMap[name]||'';
+    body+=`<div class="stock-item">
+      <div class="si-name">${escHtml(name)}<div class="si-name-sub">нужно ${fmtG(grams)}</div></div>
+      <input class="si-inp" id="${sid}" type="number" min="0" step="0.5" placeholder="0" value="${val}"
+        oninput="onStockInput('${escHtml(name).replace(/'/g,"\\'")}', this.value, '${containerId}')">
+      <span class="si-unit">${pr?'уп':'г'}</span>
+    </div>`;
+  });
+  body+=`</div>`;
+  if(hasAny){
+    body+=`<button class="add-row-btn" style="margin-top:10px;color:var(--red);border-color:var(--red-light)" onclick="clearStock()">✕ Сбросить все остатки</button>`;
+  }
+
+  return `<div class="stock-panel${hasAny?' open':''}" id="stock-${containerId}">
+    <div class="stock-head" onclick="toggleStock('stock-${containerId}')">
+      <div>
+        <div class="stock-title">Учесть остатки на складе${hasAny?` · ${Object.keys(stockMap).length} поз.`:''}</div>
+        <div class="stock-title-sub">${hasAny?'сохранено на этом устройстве':'необязательно — пересчитает что купить'}</div>
+      </div>
+      <div class="stock-chev">▾</div>
+    </div>
+    <div class="stock-body">${body}</div>
+  </div>`;
+}
+
+function toggleFlav(id){
+  document.getElementById(id).classList.toggle('open');
+}
+function toggleStock(id){
+  document.getElementById(id).classList.toggle('open');
+}
+
+function onStockInput(name,val,containerId){
+  const v=parseFloat(val)||0;
+  if(v>0) stockMap[name]=v; else delete stockMap[name];
+  saveStock();
+  // Перерисовываем активный экран (но сохраняем состояние свёрнутости)
+  const openFlavs=new Set([...document.querySelectorAll('.flav-card.open')].map(el=>el.id));
+  const openStock=document.getElementById('stock-'+containerId)?.classList.contains('open');
+  // Перерисовка
+  if(currentTab==='week') renderWeek();
+  else if(currentTab==='day') renderDay();
+  // Восстановить состояния
+  openFlavs.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('open');});
+  if(openStock) document.getElementById('stock-'+containerId)?.classList.add('open');
+  // Вернуть фокус в инпут
+  const sid=`stk-${containerId}-${name.replace(/[^a-zA-Zа-яА-ЯёЁ0-9]/g,'_')}`;
+  const inp=document.getElementById(sid);
+  if(inp){inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);}
+}
+
+function copyShoppingList(containerId){
+  // Собираем нужды по контексту
+  let flavors;
+  if(containerId==='wk-content'){
+    flavors={};
+    Object.values(DEMO_PLAN).forEach(dp=>Object.entries(dp).forEach(([n,q])=>{flavors[n]=(flavors[n]||0)+q;}));
+  } else if(containerId==='dy-content'){
+    flavors=DEMO_PLAN[WEEK_DATES[currentDayIdx]]||{};
+  } else {
+    flavors=lastManualFlavors||{};
+  }
+  const needs=calcNeeds(flavors);
+  const lines=[];
+  let total=0;
+  Object.entries(needs).sort((a,b)=>a[0].localeCompare(b[0],'ru')).forEach(([n,g])=>{
+    const m=packMath(n,g);
+    if(m.covered)return;
+    if(m.packs===null){lines.push(`• ${n} — ${fmtG(m.buyG)}`);}
+    else{lines.push(`• ${n} — ${m.buyPacks} уп ×${m.packLabel} (${fmtG(g)})`);total+=m.cost;}
+  });
+  if(!lines.length){showToast('Закупка не нужна — всё есть','ok');return;}
+  const txt=lines.join('\n')+`\n\nИтого: ${Math.round(total).toLocaleString('ru-RU')} ₽`;
+  navigator.clipboard.writeText(txt).then(()=>{
+    showToast('Список скопирован','ok');
+    const btn=document.getElementById('copy-'+containerId);
+    if(btn){const old=btn.textContent;btn.textContent='✓ Скопировано';btn.classList.add('copied');setTimeout(()=>{btn.textContent=old;btn.classList.remove('copied');},1500);}
+  }).catch(()=>showToast('Не удалось скопировать','err'));
+}
+
+// ── РЕНДЕРИНГ ВКЛАДОК ──────────────────────────────────────────────────────
+function renderWeek(){
+  const flavors={};
+  Object.values(DEMO_PLAN).forEach(dp=>Object.entries(dp).forEach(([n,q])=>{flavors[n]=(flavors[n]||0)+q;}));
+  const total=Object.values(flavors).reduce((s,q)=>s+q,0);
+  const start=new Date(WEEK_DATES[0]),end=new Date(WEEK_DATES[6]);
+  const label=`${start.getDate()}–${end.getDate()} ${end.toLocaleDateString('ru-RU',{month:'long'})}`;
+  renderPlanContent(flavors,'wk-content',total,label);
+}
+
+function renderDay(){
+  // Day pills
+  const pills=WEEK_DATES.map((ds,i)=>{
+    const d=new Date(ds);
+    const dayPlan=DEMO_PLAN[ds]||{};
+    const qty=Object.values(dayPlan).reduce((s,q)=>s+q,0);
+    return `<div class="day-pill${i===currentDayIdx?' active':''}${qty===0?' empty':''}" onclick="selectDay(${i})">
+      <div class="dp-name">${DAY_SHORT[d.getDay()]}</div>
+      <div class="dp-date">${d.getDate()}</div>
+      <div class="dp-qty">${qty?qty+' шт':'—'}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('days-row').innerHTML=pills;
+
+  const ds=WEEK_DATES[currentDayIdx];
+  const dayPlan=DEMO_PLAN[ds]||{};
+  const total=Object.values(dayPlan).reduce((s,q)=>s+q,0);
+  const d=new Date(ds);
+  const label=`${DAY_SHORT[d.getDay()]} ${d.getDate()} ${d.toLocaleDateString('ru-RU',{month:'long'})}`;
+  renderPlanContent(dayPlan,'dy-content',total,label);
+}
+
+function selectDay(i){currentDayIdx=i;renderDay();}
+
+function switchTab(tab){
+  currentTab=tab;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+tab).classList.add('active');
+  if(tab==='week') renderWeek();
+  else if(tab==='day') renderDay();
+}
+
+// ── MANUAL ─────────────────────────────────────────────────────────────────
+let manualRowCount=0,lastManualFlavors=null;
 function addManualRow(){
   manualRowCount++;
   const n=manualRowCount;
@@ -291,9 +621,6 @@ function addManualRow(){
   document.getElementById('manual-rows').appendChild(div);
 }
 function delManualRow(n){const el=document.getElementById('mr-'+n);if(el)el.remove();}
-
-// Autocomplete
-let acActive=-1;
 function acInput(n){
   const val=document.getElementById('mn-'+n).value.trim().toLowerCase();
   const list=document.getElementById('ac-'+n);
@@ -310,157 +637,71 @@ function acSelect(n,val){
   document.getElementById('mq-'+n)&&document.getElementById('mq-'+n).focus();
 }
 function acBlur(n){setTimeout(()=>{const l=document.getElementById('ac-'+n);if(l)l.style.display='none';},150);}
-
-// Инициализируем 3 строки
-addManualRow();addManualRow();addManualRow();
-
-// ── РАСЧЁТ ────────────────────────────────────────────────────────────────────
-function calcIngredients(flavors){
-  const needs={};
-  Object.entries(flavors).forEach(([fname,qty])=>{
-    if(qty<=0) return;
-    const recipe=RECIPES[fname];
-    if(!recipe) return;
-    recipe.forEach(({n,w})=>{ needs[n]=(needs[n]||0)+w*qty; });
-  });
-  return needs;
-}
-
-function getManualFlavors(){
+function calcManual(){
   const flavors={};
   document.querySelectorAll('.manual-row').forEach(row=>{
     const id=row.id.replace('mr-','');
-    const nameEl=document.getElementById('mn-'+id);
-    const qtyEl=document.getElementById('mq-'+id);
-    if(!nameEl||!qtyEl) return;
-    const name=nameEl.value.trim();
-    const qty=parseInt(qtyEl.value)||0;
-    if(name&&qty>0) flavors[name]=(flavors[name]||0)+qty;
+    const name=document.getElementById('mn-'+id)?.value.trim();
+    const qty=parseInt(document.getElementById('mq-'+id)?.value)||0;
+    if(name&&qty>0&&RECIPES[name]) flavors[name]=(flavors[name]||0)+qty;
   });
-  return flavors;
+  if(!Object.keys(flavors).length){showToast('Добавь хотя бы один вкус',true);return;}
+  lastManualFlavors=flavors;
+  const total=Object.values(flavors).reduce((s,q)=>s+q,0);
+  renderPlanContentManual(flavors,'manual-content',total,'Ручной расчёт');
 }
-
-// currentNeeds хранит последний расчёт для пересчёта при вводе остатков
-let currentNeeds={};
-let currentResultId='';
-
-function renderResult(needs, containerId){
-  currentNeeds=needs;
-  currentResultId=containerId;
-
-  const groupOrder=['1. Молочные','2. Пюре','3. Сиропы','4. Ягоды','5. Варенье','6. Шоколад','7. Орехи и пасты','8. Подсластители','9. Основа','Прочее'];
-
-  // Группируем
-  const groups={};
-  Object.entries(needs).forEach(([name,totalG])=>{
-    const group=findGroup(name);
-    if(!groups[group]) groups[group]=[];
-    groups[group].push({name,totalG});
-  });
-
-  let html='<div class="result-section">';
-  html+=`<div class="col-headers">
-    <span class="ch">Продукт</span>
-    <span class="ch" style="text-align:right;font-size:10px">Нужно</span>
-    <span class="ch have">Есть, уп</span>
-    <span class="ch buy">Купить</span>
-  </div>`;
-
-  groupOrder.forEach(g=>{
-    const items=groups[g];
-    if(!items||!items.length) return;
-    html+=`<div class="result-group"><div class="result-group-header">${escHtml(g)}</div>`;
-    items.sort((a,b)=>a.name.localeCompare(b.name,'ru')).forEach(({name,totalG})=>{
-      const pr=PRICES[name];
-      const needPacks=pr?Math.ceil(totalG/pr.pack):Math.round(totalG);
-      const sid='si-'+name.replace(/[^a-zA-Zа-яА-ЯёЁ0-9]/g,'_');
-      html+=`<div class="result-row" id="row-${sid}" data-name="${escHtml(name)}" data-total="${totalG}">
-        <span class="rr-name" title="${escHtml(name)}">${escHtml(name)}</span>
-        <span class="rr-need">${needPacks} ${pr?'уп':'г'}</span>
-        <div class="rr-stock-wrap">
-          <input class="rr-stock-inp" type="number" min="0" step="0.5" placeholder="0" id="${sid}"
-            oninput="recalcRow('${sid}','${name.replace(/'/g,"\\'")}',${totalG})">
-        </div>
-        <span class="rr-buy buy" id="buy-${sid}">${needPacks} ${pr?'уп':'г'}</span>
+function renderPlanContentManual(flavors, containerId, totalQty, periodLabel){
+  // Аналог renderPlanContent, но без summary-bar над контентом
+  const needs=calcNeeds(flavors);
+  const byFlavor=calcByFlavor(flavors);
+  const baseItems=[],flavorOnlyNeeds={};
+  Object.entries(needs).forEach(([n,g])=>{if(BASE_INGREDIENTS.has(n))baseItems.push({name:n,grams:g});else flavorOnlyNeeds[n]=g;});
+  baseItems.sort((a,b)=>a.name.localeCompare(b.name,'ru'));
+  let totalCost=0,actualCost=0,buyCount=0;
+  Object.entries(needs).forEach(([n,g])=>{const m=packMath(n,g);if(!m.covered){totalCost+=m.cost;actualCost+=m.actualCost;buyCount++;}});
+  const leftover=totalCost-actualCost;
+  const perPiece = totalQty>0 ? actualCost/totalQty : 0;
+  const premQty=Object.entries(flavors).filter(([n])=>PREMIUM.has(n)).reduce((s,[,q])=>s+q,0);
+  let html='';
+  html+=`<div class="summary-bar" style="margin-top:14px"><div class="sb-left">
+    <div class="sb-period">${escHtml(periodLabel)}</div>
+    <div class="sb-total">${totalQty} шт · ${Object.keys(flavors).length} вкус(ов)
+      <div class="sb-stat">~${perPiece.toFixed(1)} ₽/моти${premQty?` · <span class="prem">${premQty} премиум</span>`:''}</div>
+    </div>
+  </div><div class="sb-cost"><div class="sb-cost-label">Закупка</div>
+    <div class="sb-cost-val">${Math.round(totalCost).toLocaleString('ru-RU')} ₽
+      ${leftover>500?`<div class="sb-cost-sub">в запас ~${Math.round(leftover).toLocaleString('ru-RU')} ₽</div>`:''}
+    </div>
+  </div></div>`;
+  if(baseItems.length){
+    html+=`<div class="section"><div class="sec-head"><span class="sec-title">Основа</span><span class="sec-meta">${baseItems.length} позиций · в каждом замесе</span></div>
+      <div class="ing-card">${baseItems.map(({name,grams})=>renderIngredientRow(name,grams)).join('')}</div></div>`;
+  }
+  const flavorEntries=Object.entries(byFlavor);
+  if(flavorEntries.length){
+    html+=`<div class="section"><div class="sec-head"><span class="sec-title">По вкусам</span><span class="sec-meta">нажми, чтобы раскрыть</span></div><div>`;
+    flavorEntries.sort((a,b)=>a[0].localeCompare(b[0],'ru')).forEach(([fname,{qty,items}],idx)=>{
+      const specific=items.filter(it=>!BASE_INGREDIENTS.has(it.name));
+      const isPrem=PREMIUM.has(fname);
+      const isMono=MONO.has(fname);
+      const tag=isMono?'<span class="flav-tag mono">моно</span>':'<span class="flav-tag dual">двойная</span>';
+      html+=`<div class="flav-card" id="flav-${containerId}-${idx}">
+        <div class="flav-head" onclick="toggleFlav('flav-${containerId}-${idx}')">
+          <div class="flav-name${isPrem?' premium':''}">${escHtml(fname)}${tag}</div>
+          <div class="flav-meta">${qty} шт · ${specific.length} ингр.</div><div class="flav-chev">▾</div></div>
+        <div class="flav-body">${specific.length?specific.map(({name,grams})=>renderIngredientRow(name,grams)).join(''):'<div style="padding:14px;font-size:12px;color:var(--muted);text-align:center">Только основа</div>'}</div>
       </div>`;
     });
-    html+='</div>';
-  });
-
-  html+=`<div class="result-summary" id="result-summary-${containerId}">
-    <div class="sum-row"><span class="sum-label">Позиций к закупке</span><span class="sum-val red" id="sum-count-${containerId}">—</span></div>
-    <div class="sum-row"><span class="sum-label">Итого закупка</span><span class="sum-val red" id="sum-cost-${containerId}">—</span></div>
-  </div>`;
-  html+='</div>';
+    html+=`</div></div>`;
+  }
+  html+=`<button class="copy-btn" onclick="copyShoppingList('${containerId}')" id="copy-${containerId}">📋 Скопировать список к закупке (${buyCount})</button>`;
+  html+=renderStockPanel(needs, containerId);
   document.getElementById(containerId).innerHTML=html;
-  updateSummary(containerId);
 }
 
-function recalcRow(sid, name, totalG){
-  const pr=PRICES[name];
-  const inp=document.getElementById(sid);
-  const haveUnits=parseFloat(inp?.value)||0;
-  const haveG=pr?haveUnits*pr.pack:haveUnits;
-  const needG=Math.max(0,totalG-haveG);
-  const buyPacks=pr?Math.ceil(needG/pr.pack):Math.round(needG);
-  const unit=pr?'уп':'г';
-  const buyEl=document.getElementById('buy-'+sid);
-  const rowEl=document.getElementById('row-'+sid);
-  if(!buyEl||!rowEl) return;
-  if(needG<=0){
-    buyEl.textContent='✓';
-    buyEl.className='rr-buy none';
-    rowEl.className='result-row ok';
-  } else {
-    buyEl.textContent=`${buyPacks} ${unit}`;
-    buyEl.className='rr-buy buy';
-    rowEl.className='result-row need';
-  }
-  updateSummary(currentResultId);
-}
-
-function updateSummary(containerId){
-  let count=0, cost=0;
-  document.querySelectorAll(`#${containerId} .result-row`).forEach(row=>{
-    const name=row.dataset.name;
-    const totalG=parseFloat(row.dataset.total)||0;
-    const pr=PRICES[name];
-    const sid='si-'+name.replace(/[^a-zA-Zа-яА-ЯёЁ0-9]/g,'_');
-    const inp=document.getElementById(sid);
-    const haveUnits=parseFloat(inp?.value)||0;
-    const haveG=pr?haveUnits*pr.pack:haveUnits;
-    const needG=Math.max(0,totalG-haveG);
-    if(needG>0){
-      count++;
-      if(pr) cost+=needG*pr.p;
-    }
-  });
-  const cEl=document.getElementById('sum-count-'+containerId);
-  const costEl=document.getElementById('sum-cost-'+containerId);
-  if(cEl) cEl.textContent=count;
-  if(costEl) costEl.textContent=Math.round(cost).toLocaleString('ru-RU')+' ₽';
-}
-
-function findGroup(name){
-  for(const recipe of Object.values(RECIPES)){
-    const ing=recipe.find(i=>i.n===name);
-    if(ing) return ing.g;
-  }
-  return 'Прочее';
-}
-
-function calcPlan(){
-  if(!planData) return;
-  const needs=calcIngredients(planData);
-  renderResult(needs,'plan-result');
-}
-
-function calcManual(){
-  const flavors=getManualFlavors();
-  if(!Object.keys(flavors).length){showToast('Добавьте хотя бы один вкус',true);return;}
-  const needs=calcIngredients(flavors);
-  renderResult(needs,'manual-result');
-}
+// ── INIT ───────────────────────────────────────────────────────────────────
+addManualRow();addManualRow();addManualRow();
+renderWeek();
 </script>
 </body>
 </html>
