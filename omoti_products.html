@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>OMOTI · Расчёт продуктов</title>
+<title>OMOTI · Умная закупка</title>
 <meta name="theme-color" content="#2d7a3a">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -124,6 +124,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 .sup-toggle:active{background:#f7faf7}
 .sup-toggle-info{flex:1;min-width:0}
 .sup-name{font-size:14px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:6px}
+.sup-total{margin-left:auto;font-size:12px;font-weight:800;color:var(--text);background:#f5f8f5;padding:2px 7px;border-radius:999px;white-space:nowrap}
 .sup-meta{font-size:11px;font-weight:600;color:var(--muted);margin-top:2px}
 .sup-chev{color:var(--muted2);font-size:12px;flex-shrink:0;transition:transform .2s}
 .sup-card.open .sup-chev{transform:rotate(180deg)}
@@ -137,6 +138,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 .sup-card.open .sup-body{display:block}
 .sup-item{display:flex;justify-content:space-between;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border);font-size:13px}
 .sup-item:last-child{border-bottom:none}
+.sup-item.total{background:#fafdfa}
+.sup-item.total .sup-item-name,.sup-item.total .sup-item-pack{font-weight:800;color:var(--text)}
 .sup-item-name{flex:1;color:var(--text);font-weight:600;min-width:0}
 .sup-item-pack{color:var(--muted);font-weight:700;white-space:nowrap;flex-shrink:0}
 
@@ -188,13 +191,62 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast.err{background:var(--red)}
 .toast.ok{background:var(--green)}
+
+
+/* SMART PURCHASE */
+.smart-tabs .tab-btn{font-size:12px;padding:9px 4px}
+.period-chips{display:flex;gap:6px;padding:12px 14px 0;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.period-chip{flex-shrink:0;border:1.5px solid var(--border);background:#fff;border-radius:999px;padding:8px 12px;font-size:12px;font-weight:800;font-family:inherit;color:var(--muted);cursor:pointer;white-space:nowrap}
+.period-chip.active{background:var(--green);border-color:var(--green);color:#fff}
+.now-hero{margin:12px 14px 0;background:linear-gradient(135deg,#fff,#f6fbf6);border-radius:20px;box-shadow:var(--shadow);padding:15px 15px 13px;border:1px solid rgba(45,122,58,.08)}
+.now-label{font-size:10px;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px}
+.now-title{font-size:20px;font-weight:900;color:var(--text);line-height:1.1}
+.now-sub{font-size:12px;font-weight:650;color:var(--muted);margin-top:5px;line-height:1.35}
+.now-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.now-mini{background:#fff;border:1px solid var(--border);border-radius:14px;padding:10px}
+.now-mini .n{font-size:19px;font-weight:950;color:var(--green);line-height:1}
+.now-mini .t{font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:4px}
+.alert-box{margin:10px 14px 0;border-radius:16px;padding:12px 14px;border:1.5px solid var(--amber);background:var(--amber-light)}
+.alert-title{font-size:11px;font-weight:900;color:var(--amber);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+.alert-line{font-size:12px;font-weight:650;color:#7a4b12;line-height:1.55}
+.smart-section{margin:14px 14px 0}
+.smart-head{display:flex;justify-content:space-between;align-items:baseline;margin:0 4px 8px}
+.smart-title{font-size:11px;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.09em}
+.smart-meta{font-size:11px;font-weight:700;color:var(--muted2)}
+.action-card{background:#fff;border-radius:16px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:8px;border-left:4px solid var(--border)}
+.action-card.urgent{border-left-color:var(--red)}
+.action-card.later{border-left-color:var(--amber)}
+.action-card.closed{border-left-color:var(--green)}
+.action-row{padding:11px 12px;border-bottom:1px solid var(--border)}
+.action-row:last-child{border-bottom:none}
+.action-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.action-name{font-size:14px;font-weight:850;color:var(--text);line-height:1.2;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.action-pack{font-size:14px;font-weight:950;color:var(--green);white-space:nowrap;text-align:right;flex-shrink:0}
+.action-sub{font-size:11px;font-weight:650;color:var(--muted);margin-top:3px;line-height:1.35}
+.action-status{font-size:10px;font-weight:850;color:var(--amber);margin-top:4px;line-height:1.35}
+.action-btns{display:flex;gap:5px;margin-top:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:1px}
+.action-btn{flex-shrink:0;border:none;background:#f2f7f2;color:var(--text);border-radius:9px;padding:7px 9px;font-size:11px;font-weight:850;font-family:inherit;cursor:pointer;white-space:nowrap}
+.action-btn.green{background:var(--green-light);color:var(--green)}
+.action-btn.amber{background:var(--amber-light);color:var(--amber)}
+.action-btn.red{background:var(--red-light);color:var(--red)}
+.supplier-actions{display:flex;gap:6px;padding:8px 10px 10px;border-top:1px solid var(--border);overflow-x:auto}
+.supplier-actions button{flex-shrink:0;border:none;border-radius:10px;padding:8px 10px;font-size:11px;font-weight:850;font-family:inherit;cursor:pointer;background:#f3f7f3;color:var(--text);white-space:nowrap}
+.supplier-actions button.primary{background:var(--text);color:#fff}
+.supplier-actions button.green{background:var(--green-light);color:var(--green)}
+.supplier-actions button.amber{background:var(--amber-light);color:var(--amber)}
+.day-status{font-size:9px;font-weight:800;margin-top:2px;color:var(--muted2)}
+.day-pill.ready{border-color:var(--green);background:var(--green-light)}
+.day-pill.need{border-color:var(--amber);background:var(--amber-light)}
+.check-note{font-size:12px;color:var(--muted);line-height:1.5;margin:0 14px 8px;background:#fff;border-radius:14px;padding:11px 12px;box-shadow:var(--shadow)}
+.danger-reset{width:calc(100% - 28px);margin:14px 14px 0;border:1.5px solid var(--red-light);background:#fff;color:var(--red);border-radius:12px;padding:12px;font-family:inherit;font-size:13px;font-weight:800;cursor:pointer}
+
 </style>
 </head>
 <body>
 <div class="app">
   <div class="header">
     <div class="header-badge"><div class="header-dot"></div><span>OMOTI · Продукты</span></div>
-    <div class="header-title">Расчёт закупки</div>
+    <div class="header-title">Умная закупка</div>
     <div class="header-sub">
       <span class="plan-status" id="plan-status">Загружаю план...</span>
       <button class="refresh-btn" id="refresh-btn" onclick="loadPlan(true)">
@@ -202,18 +254,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
         Обновить
       </button>
     </div>
-    <div class="tab-row">
-      <button class="tab-btn active" data-tab="week" onclick="switchTab('week')">Неделя</button>
-      <button class="tab-btn" data-tab="day" onclick="switchTab('day')">По дням</button>
+    <div class="tab-row smart-tabs">
+      <button class="tab-btn active" data-tab="now" onclick="switchTab('now')">Сейчас</button>
+      <button class="tab-btn" data-tab="week" onclick="switchTab('week')">Закупка</button>
+      <button class="tab-btn" data-tab="day" onclick="switchTab('day')">Дни</button>
+      <button class="tab-btn" data-tab="check" onclick="switchTab('check')">Проверка</button>
       <button class="tab-btn" data-tab="manual" onclick="switchTab('manual')">Вручную</button>
     </div>
   </div>
 
+  <!-- NOW -->
+  <div class="screen active" id="screen-now">
+    <div id="now-content"></div>
+  </div>
+
   <!-- WEEK -->
-  <div class="screen active" id="screen-week">
+  <div class="screen" id="screen-week">
     <div class="summary-bar">
       <div class="sb-left">
-        <div class="sb-period" id="wk-period">Неделя</div>
+        <div class="sb-period" id="wk-period">Закупка</div>
         <div class="sb-total" id="wk-total">— шт</div>
       </div>
       <div class="sb-cost">
@@ -240,6 +299,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
     <div id="dy-content"></div>
   </div>
 
+  <!-- CHECK -->
+  <div class="screen" id="screen-check">
+    <div id="chk-content"></div>
+  </div>
+
   <!-- MANUAL -->
   <div class="screen" id="screen-manual">
     <div class="card">
@@ -262,7 +326,20 @@ let PLAN_DATA = null;  // заполнится после fetch
 let PLAN_DATES = [];   // массив дат недели
 let PLAN_LOADED_AT = null;
 
-function dateStr(d){return d.toISOString().slice(0,10);}
+function dateStr(d){
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,'0');
+  const day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function parsePlanDate(ds){
+  const parts=String(ds).split('-').map(Number);
+  if(parts.length===3 && parts.every(Number.isFinite)){
+    return new Date(parts[0], parts[1]-1, parts[2]);
+  }
+  const d=new Date(ds);
+  return Number.isNaN(d.getTime()) ? new Date() : d;
+}
 function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
 
 const PREMIUM=new Set(['Дубайский шоколад','Криспи','Мандарин','Пряник']);
@@ -371,7 +448,7 @@ const DAY_SHORT=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
 
 // Остатки в памяти (синхронизируем с localStorage)
 let stockMap=loadStock();
-let currentTab='week';
+let currentTab='now';
 let currentDayIdx=0;
 
 function loadStock(){
@@ -392,6 +469,7 @@ function clearStock(){
 function escHtml(s){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');}
 function fmtG(g){if(g>=1000)return (g/1000).toFixed(g>=10000?0:1).replace(/\.0$/,'')+' кг';return Math.round(g)+' г';}
 function fmtPack(pack){if(pack>=1000)return (pack/1000).toFixed(pack%1000===0?0:2).replace(/\.00$/,'')+' кг';return pack+' г';}
+function fmtMoney(v){return Math.round(v).toLocaleString('ru-RU')+' ₽';}
 function showToast(txt,kind){const el=document.getElementById('toast');el.textContent=txt;el.className='toast show'+(kind==='err'?' err':kind==='ok'?' ok':'');clearTimeout(showToast._t);showToast._t=setTimeout(()=>el.classList.remove('show'),2200);}
 
 // ── РАСЧЁТ ─────────────────────────────────────────────────────────────────
@@ -485,8 +563,8 @@ function renderPlanContent(flavors, containerId, totalQty, periodLabel){
     document.getElementById(periodEl).textContent=periodLabel;
     document.getElementById(totalEl).innerHTML=`${totalQty} шт · ${Object.keys(flavors).length} вкус(ов)
       <div class="sb-stat">~${perPiece.toFixed(1)} ₽/моти${premQty?` · <span class="prem">${premQty} премиум</span>`:''}</div>`;
-    document.getElementById(costEl).innerHTML=`${Math.round(totalCost).toLocaleString('ru-RU')} ₽
-      ${leftover>500?`<div class="sb-cost-sub">в запас ~${Math.round(leftover).toLocaleString('ru-RU')} ₽</div>`:''}`;
+    document.getElementById(costEl).innerHTML=`${fmtMoney(totalCost)}
+      ${leftover>500?`<div class="sb-cost-sub">в запас ~${fmtMoney(leftover)}</div>`:''}`;
   };
   if(containerId==='wk-content') setSummary('wk-period','wk-total','wk-cost');
   else if(containerId==='dy-content') setSummary('dy-period','dy-total','dy-cost');
@@ -501,11 +579,21 @@ function renderPlanContent(flavors, containerId, totalQty, periodLabel){
     </div>`;
   }
 
+  // На неделе главный блок — закупка по поставщикам. Его ставим выше вкусов.
+  if(containerId==='wk-content'){
+    const blocks=renderSupplierBlocks(needs, containerId);
+    if(blocks){
+      html+=`<div class="section">
+        <div class="sec-head"><span class="sec-title">Что заказать</span><span class="sec-meta">${buyCount} ${buyCount===1?'позиция':buyCount<5?'позиции':'позиций'} по поставщикам</span></div>
+      </div>`+blocks;
+    }
+  }
+
   // Вкусы (аккордеон)
   const flavorEntries=Object.entries(byFlavor);
   if(flavorEntries.length){
     html+=`<div class="section">
-      <div class="sec-head"><span class="sec-title">По вкусам</span><span class="sec-meta">нажми, чтобы раскрыть</span></div>
+      <div class="sec-head"><span class="sec-title">По вкусам</span><span class="sec-meta">ниже, если нужно проверить состав</span></div>
       <div>`;
     flavorEntries.sort((a,b)=>a[0].localeCompare(b[0],'ru')).forEach(([fname,{qty,items}],idx)=>{
       const specific=items.filter(it=>!BASE_INGREDIENTS.has(it.name));
@@ -528,16 +616,6 @@ function renderPlanContent(flavors, containerId, totalQty, periodLabel){
     html+=`</div></div>`;
   }
 
-  // Блоки поставщиков (только на вкладке Неделя)
-  if(containerId==='wk-content'){
-    const blocks=renderSupplierBlocks(needs, containerId);
-    if(blocks){
-      html+=`<div class="section">
-        <div class="sec-head"><span class="sec-title">К закупке</span><span class="sec-meta">${buyCount} ${buyCount===1?'позиция':buyCount<5?'позиции':'позиций'} по поставщикам</span></div>
-      </div>`+blocks;
-    }
-  }
-
   // Остатки (свёрнуто)
   html+=renderStockPanel(needs, containerId);
 
@@ -547,7 +625,6 @@ function renderPlanContent(flavors, containerId, totalQty, periodLabel){
     document.getElementById(containerId).innerHTML='<div class="empty-msg">План на этот период пуст</div>';
   }
 }
-
 function renderStockPanel(needs, containerId){
   const allItems=Object.entries(needs).filter(([,g])=>g>0).sort((a,b)=>a[0].localeCompare(b[0],'ru'));
   const hasAny=Object.keys(stockMap).length>0;
@@ -622,6 +699,10 @@ function buildSupplierGroups(needs){
   return groups;
 }
 
+function supplierCost(items){
+  return items.reduce((sum,it)=>sum+(it.m?.cost||0),0);
+}
+
 function fmtSupplierLine(item){
   const {name,grams,m}=item;
   if(m.packs===null){
@@ -632,7 +713,7 @@ function fmtSupplierLine(item){
 
 function getPeriodLabel(containerId){
   if(containerId==='wk-content'&&PLAN_DATES.length){
-    const s=new Date(PLAN_DATES[0]),e=new Date(PLAN_DATES[PLAN_DATES.length-1]);
+    const s=parsePlanDate(PLAN_DATES[0]),e=parsePlanDate(PLAN_DATES[PLAN_DATES.length-1]);
     return `${s.getDate()}–${e.getDate()} ${e.toLocaleDateString('ru-RU',{month:'long'})}`;
   }
   if(containerId==='manual-content') return 'Ручной расчёт';
@@ -648,11 +729,12 @@ function renderSupplierBlocks(needs, containerId){
   blocks.forEach(key=>{
     const items=groups[key];
     const sup=SUPPLIERS[key];
+    const total=supplierCost(items);
     html+=`<div class="sup-card ${key}" id="sup-${containerId}-${key}">
       <div class="sup-head">
         <button class="sup-toggle" onclick="toggleSupplier('sup-${containerId}-${key}')">
           <div class="sup-toggle-info">
-            <div class="sup-name">${sup.label}</div>
+            <div class="sup-name">${sup.label}<span class="sup-total">${fmtMoney(total)}</span></div>
             <div class="sup-meta">${items.length} ${items.length===1?'позиция':items.length<5?'позиции':'позиций'} · посмотреть состав</div>
           </div>
           <div class="sup-chev">▾</div>
@@ -664,13 +746,16 @@ function renderSupplierBlocks(needs, containerId){
           <div class="sup-item-name">${escHtml(it.name)}</div>
           <div class="sup-item-pack">${it.m.packs===null?fmtG(it.m.buyG):it.m.buyPacks+' уп ×'+it.m.packLabel}</div>
         </div>`).join('')}
+        <div class="sup-item total">
+          <div class="sup-item-name">Итого</div>
+          <div class="sup-item-pack">${fmtMoney(total)}</div>
+        </div>
       </div>
     </div>`;
   });
   html+=`</div>`;
   return html;
 }
-
 function toggleSupplier(id){
   document.getElementById(id)?.classList.toggle('open');
 }
@@ -695,7 +780,8 @@ function copySupplier(containerId, supplierKey, btn){
   const period=getPeriodLabel(containerId);
   const header=`OMOTI · Заказ ${sup.label}${period?`\n${period}`:''}`;
   const lines=items.map(fmtSupplierLine);
-  const txt=header+'\n\n'+lines.join('\n');
+  const total=supplierCost(items);
+  const txt=header+'\n\n'+lines.join('\n')+'\n\nИтого: '+fmtMoney(total);
 
   navigator.clipboard.writeText(txt).then(()=>{
     showToast(`Список для ${sup.label} скопирован`,'ok');
@@ -730,7 +816,7 @@ async function loadPlan(isManual){
     const json=await r.json();
     if(!json.ok||!json.plan) throw new Error('Не удалось получить план');
     PLAN_DATA=json.plan;
-    PLAN_DATES=Object.keys(PLAN_DATA).sort();
+    PLAN_DATES=Object.keys(PLAN_DATA).sort((a,b)=>parsePlanDate(a)-parsePlanDate(b));
     PLAN_LOADED_AT=new Date();
     // Если currentDayIdx за пределами — сбрасываем
     if(currentDayIdx>=PLAN_DATES.length) currentDayIdx=0;
@@ -757,7 +843,7 @@ function renderWeek(){
   const flavors={};
   Object.values(PLAN_DATA).forEach(dp=>Object.entries(dp).forEach(([n,q])=>{flavors[n]=(flavors[n]||0)+q;}));
   const total=Object.values(flavors).reduce((s,q)=>s+q,0);
-  const start=new Date(PLAN_DATES[0]),end=new Date(PLAN_DATES[PLAN_DATES.length-1]);
+  const start=parsePlanDate(PLAN_DATES[0]),end=parsePlanDate(PLAN_DATES[PLAN_DATES.length-1]);
   const label=`${start.getDate()}–${end.getDate()} ${end.toLocaleDateString('ru-RU',{month:'long'})}`;
   renderPlanContent(flavors,'wk-content',total,label);
 }
@@ -770,7 +856,7 @@ function renderDay(){
   }
   // Day pills
   const pills=PLAN_DATES.map((ds,i)=>{
-    const d=new Date(ds);
+    const d=parsePlanDate(ds);
     const dayPlan=PLAN_DATA[ds]||{};
     const qty=Object.values(dayPlan).reduce((s,q)=>s+q,0);
     return `<div class="day-pill${i===currentDayIdx?' active':''}${qty===0?' empty':''}" onclick="selectDay(${i})">
@@ -784,7 +870,7 @@ function renderDay(){
   const ds=PLAN_DATES[currentDayIdx];
   const dayPlan=PLAN_DATA[ds]||{};
   const total=Object.values(dayPlan).reduce((s,q)=>s+q,0);
-  const d=new Date(ds);
+  const d=parsePlanDate(ds);
   const label=`${DAY_SHORT[d.getDay()]} ${d.getDate()} ${d.toLocaleDateString('ru-RU',{month:'long'})}`;
   renderPlanContent(dayPlan,'dy-content',total,label);
 }
@@ -798,6 +884,399 @@ function switchTab(tab){
   document.getElementById('screen-'+tab).classList.add('active');
   if(tab==='week') renderWeek();
   else if(tab==='day') renderDay();
+}
+
+
+// ── SMART LOGIC: план + факт производства + статусы закупки ────────────────
+let PLAN_BASE = null;
+let PROD_RECORDS = [];
+let PURCHASE_STATE = loadPurchaseState();
+let purchaseRangeMode = 'rest';
+let currentSmartDayIdx = 0;
+let LAST_SCOPES = {};
+
+const DOUGH_INGREDIENTS = new Set(['Мука рисовая','Крахмал кукурузный','Масло растительное','Сахар']);
+const FRESH_INGREDIENTS = new Set(['Банан','Авокадо','Лимон','Лайм','Мята листья','Киви','Клубника ягода','Вишня ягода','Грепфрут']);
+const OZON_KEYS = new Set(['ozon']);
+const RANGE_LABELS = {today:'Сегодня',tomorrow:'Завтра',rest:'До конца недели',week:'Вся неделя'};
+
+function loadPurchaseState(){
+  try{const x=JSON.parse(localStorage.getItem('omoti_purchase_state_v1')||'null');return (x&&typeof x==='object')?x:{};}catch(e){return {};}
+}
+function savePurchaseState(){try{localStorage.setItem('omoti_purchase_state_v1',JSON.stringify(PURCHASE_STATE));}catch(e){}}
+function getPurchase(name){return PURCHASE_STATE[name]||{};}
+function setPurchase(name, patch){
+  const cur=PURCHASE_STATE[name]||{};
+  PURCHASE_STATE[name]={...cur,...patch,updatedAt:Date.now()};
+  Object.keys(PURCHASE_STATE[name]).forEach(k=>{if((k==='ordered'||k==='bought')&&Number(PURCHASE_STATE[name][k]||0)<=0) delete PURCHASE_STATE[name][k];});
+  if(!PURCHASE_STATE[name].ordered&&!PURCHASE_STATE[name].bought&&!PURCHASE_STATE[name].skip) delete PURCHASE_STATE[name];
+  savePurchaseState();
+}
+function resetPurchaseState(){
+  if(!confirm('Сбросить статусы заказано/куплено/не брать? Остатки не сбрасываются.')) return;
+  PURCHASE_STATE={}; savePurchaseState(); renderActiveSmart(); showToast('Статусы сброшены','ok');
+}
+function parseLocalDate(v){
+  const s=String(v||'').trim();
+  let m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m) return new Date(Number(m[1]),Number(m[2])-1,Number(m[3]),0,0,0,0);
+  m=s.match(/^(\d{2})\.(\d{2})\.(\d{4})/);
+  if(m) return new Date(Number(m[3]),Number(m[2])-1,Number(m[1]),0,0,0,0);
+  const d=new Date(s); if(!isNaN(d)){d.setHours(0,0,0,0);return d;}
+  return null;
+}
+function localKey(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function sameLocalDay(a,b){return a&&b&&localKey(a)===localKey(b);}
+function formatShortDate(d){return d?`${DAY_SHORT[d.getDay()]} ${d.getDate()} ${d.toLocaleDateString('ru-RU',{month:'long'})}`:'—';}
+function formatRangeDates(dates){
+  if(!dates||!dates.length) return 'Период не выбран';
+  const a=parseLocalDate(dates[0]),b=parseLocalDate(dates[dates.length-1]);
+  if(!a||!b) return 'Период';
+  if(sameLocalDay(a,b)) return formatShortDate(a);
+  const sameMonth=a.getMonth()===b.getMonth()&&a.getFullYear()===b.getFullYear();
+  return sameMonth?`${a.getDate()}–${b.getDate()} ${b.toLocaleDateString('ru-RU',{month:'long'})}`:`${a.getDate()} ${a.toLocaleDateString('ru-RU',{month:'short'})} – ${b.getDate()} ${b.toLocaleDateString('ru-RU',{month:'short'})}`;
+}
+function sortedPlanDates(){return (PLAN_DATES||[]).slice().sort((a,b)=>parseLocalDate(a)-parseLocalDate(b));}
+function getTodayPlanIndex(){
+  const dates=sortedPlanDates(); if(!dates.length) return 0;
+  const today=new Date(); today.setHours(0,0,0,0);
+  let idx=dates.findIndex(ds=>sameLocalDay(parseLocalDate(ds),today));
+  if(idx>=0) return idx;
+  idx=dates.findIndex(ds=>parseLocalDate(ds)>=today);
+  return idx>=0?idx:0;
+}
+function getRangeDates(mode){
+  const dates=sortedPlanDates(); if(!dates.length) return [];
+  const todayIdx=getTodayPlanIndex();
+  if(mode==='today') return [dates[todayIdx]].filter(Boolean);
+  if(mode==='tomorrow') return [dates[Math.min(todayIdx+1,dates.length-1)]].filter(Boolean);
+  if(mode==='rest') return dates.slice(todayIdx);
+  return dates;
+}
+function normProdDate(v){
+  const d=parseLocalDate(v); if(!d) return String(v||'');
+  return String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+d.getFullYear();
+}
+function safeJsonSmart(v){try{return typeof v==='object'&&v!==null?v:JSON.parse(v||'{}');}catch(e){return {};}}
+function parseProductionRows(rows){
+  return (rows||[]).filter(r=>r&&r[0]).map(r=>({
+    id:String(r[0]), person:String(r[1]||''), workType:String(r[2]||''), date:normProdDate(r[3]), dateObj:parseLocalDate(r[3]),
+    flavors:safeJsonSmart(r[4]), newFlavors:Array.isArray(safeJsonSmart(r[5]))?safeJsonSmart(r[5]):[], total:Number(r[7]||0)
+  })).filter(r=>r.dateObj).sort((a,b)=>b.dateObj-a.dateObj);
+}
+function ingredientStage(item){return DOUGH_INGREDIENTS.has(item.n)?'dough':'filling';}
+function getWeekBounds(){
+  const dates=sortedPlanDates(); if(!dates.length) return null;
+  const start=parseLocalDate(dates[0]),end=parseLocalDate(dates[dates.length-1]);
+  if(!start||!end) return null;
+  start.setHours(0,0,0,0); end.setHours(23,59,59,999);
+  return {start,end};
+}
+function getFactTotals(workType){
+  const bounds=getWeekBounds(); const out={}; if(!bounds) return out;
+  PROD_RECORDS.forEach(r=>{
+    if(r.workType!==workType) return;
+    if(r.dateObj<bounds.start||r.dateObj>bounds.end) return;
+    Object.entries(r.flavors||{}).forEach(([name,qty])=>{out[name]=(out[name]||0)+Number(qty||0);});
+    (r.newFlavors||[]).forEach(nf=>{if(nf&&nf.name)out[nf.name]=(out[nf.name]||0)+Number(nf.qty||0);});
+  });
+  return out;
+}
+function buildRemainingMap(){
+  const dates=sortedPlanDates();
+  const map={}; dates.forEach(ds=>map[ds]={});
+  const planByFlavor={};
+  dates.forEach(ds=>{
+    const day=PLAN_DATA?.[ds]||{};
+    Object.entries(day).forEach(([flavor,qty])=>{
+      if(!planByFlavor[flavor]) planByFlavor[flavor]=[];
+      planByFlavor[flavor].push({ds,qty:Number(qty||0)});
+    });
+  });
+  const lepkaFact=getFactTotals('Лепка');
+  const nachinkaFact=getFactTotals('Начинки');
+  Object.entries(planByFlavor).forEach(([flavor,entries])=>{
+    let lep=Number(lepkaFact[flavor]||0);
+    entries.forEach(e=>{
+      const used=Math.min(e.qty,lep); lep-=used;
+      map[e.ds][flavor]={planQty:e.qty,lepkaDone:used,nachinkaDone:0,doughQty:e.qty-used,fillingQty:e.qty-used};
+    });
+    let nac=Number(nachinkaFact[flavor]||0);
+    entries.forEach(e=>{
+      const rec=map[e.ds][flavor];
+      const available=Math.max(0,rec.planQty-rec.lepkaDone);
+      const used=Math.min(available,nac); nac-=used;
+      rec.nachinkaDone=used;
+      rec.fillingQty=Math.max(0,available-used);
+    });
+  });
+  return map;
+}
+function calcStageNeedsForDates(dates){
+  const remaining=buildRemainingMap();
+  const needs={},flavors={},stageStats={plan:0,dough:0,filling:0,lepkaDone:0,nachinkaDone:0};
+  dates.forEach(ds=>{
+    const day=remaining[ds]||{};
+    Object.entries(day).forEach(([flavor,rec])=>{
+      const r=RECIPES[flavor]; if(!r) return;
+      stageStats.plan+=rec.planQty; stageStats.dough+=rec.doughQty; stageStats.filling+=rec.fillingQty; stageStats.lepkaDone+=rec.lepkaDone; stageStats.nachinkaDone+=rec.nachinkaDone;
+      flavors[flavor]=(flavors[flavor]||0)+Math.max(rec.doughQty,rec.fillingQty);
+      r.forEach(item=>{
+        const qty=ingredientStage(item)==='dough'?rec.doughQty:rec.fillingQty;
+        if(qty>0) needs[item.n]=(needs[item.n]||0)+item.w*qty;
+      });
+    });
+  });
+  return {needs,flavors,stageStats,dates};
+}
+function packLeftMath(name,grams,mode){
+  const m=packMath(name,grams);
+  const st=getPurchase(name);
+  if(m.packs===null){
+    const boughtG=Number(st.boughtG||0), orderedG=Number(st.orderedG||0);
+    const closed=boughtG+(mode==='order'?orderedG:0)+(st.skip?m.buyG:0);
+    const leftG=Math.max(0,m.buyG-closed);
+    return {...m,leftG,leftPacks:null,closed:leftG<=0,ordered:orderedG,bought:boughtG,skip:!!st.skip,leftCost:0};
+  }
+  const ordered=Number(st.ordered||0), bought=Number(st.bought||0);
+  const closed=bought+(mode==='order'?ordered:0)+(st.skip?m.buyPacks:0);
+  const leftPacks=Math.max(0,m.buyPacks-closed);
+  return {...m,leftPacks,leftG:leftPacks*m.packLabel,leftCost:leftPacks*(PRICES[name]?PRICES[name].pack*PRICES[name].p:0),closed:leftPacks<=0,ordered,bought,skip:!!st.skip};
+}
+function buildSmartItems(needs,mode){
+  return Object.entries(needs).map(([name,grams])=>{
+    const m=packLeftMath(name,grams,mode);
+    const pr=PRICES[name];
+    const supplier=supplierOf(name);
+    const leftQty=m.packs===null?m.leftG:m.leftPacks;
+    const qtyLabel=m.packs===null?fmtG(m.leftG):`${m.leftPacks} уп ×${m.packLabel}`;
+    const needLabel=m.packs===null?fmtG(m.buyG):`${m.buyPacks} уп ×${m.packLabel}`;
+    const cost=m.packs===null?0:m.leftPacks*pr.pack*pr.p;
+    return {name,grams,m,supplier,leftQty,qtyLabel,needLabel,cost,critical:BASE_INGREDIENTS.has(name)||DOUGH_INGREDIENTS.has(name),fresh:FRESH_INGREDIENTS.has(name),ozon:supplier==='ozon'};
+  }).filter(it=>it.leftQty>0.0001).sort((a,b)=>{
+    if(a.critical!==b.critical) return a.critical?-1:1;
+    if(a.supplier!==b.supplier) return a.supplier.localeCompare(b.supplier);
+    return a.name.localeCompare(b.name,'ru');
+  });
+}
+function groupSmartItems(items){
+  const groups={sasha:[],ashan:[],ozon:[],other:[]};
+  items.forEach(it=>groups[it.supplier||'other'].push(it));
+  return groups;
+}
+function itemStatusText(it,mode){
+  const parts=[]; const st=getPurchase(it.name); const stock=stockMap[it.name]||0;
+  if(stock>0) parts.push(`остаток ${stock} уп`);
+  if(it.m.bought>0) parts.push(`куплено ${it.m.bought} уп`);
+  if(it.m.ordered>0) parts.push(`заказано ${it.m.ordered} уп${mode==='physical'?' · проверь приезд':''}`);
+  if(st.skip) parts.push('помечено не брать');
+  if(it.fresh) parts.push('свежее · лучше ближе к дню');
+  if(it.ozon && mode==='physical') parts.push('Озон не для срочно');
+  return parts.join(' · ');
+}
+function escArg(s){return escJs(s);}
+function renderActionRows(items,scopeId,mode,cls){
+  if(!items.length) return '<div class="empty-msg">Ничего не нужно закрывать</div>';
+  return `<div class="action-card ${cls||''}">`+items.map(it=>{
+    const st=itemStatusText(it,mode);
+    const packs=it.m.packs===null?0:it.leftPacks;
+    return `<div class="action-row">
+      <div class="action-top">
+        <div class="action-name">${escHtml(it.name)}</div>
+        <div class="action-pack">${it.qtyLabel}</div>
+      </div>
+      <div class="action-sub">нужно всего ${it.needLabel} · ${fmtG(it.grams)}</div>
+      ${st?`<div class="action-status">${escHtml(st)}</div>`:''}
+      <div class="action-btns">
+        ${it.m.packs!==null?`<button class="action-btn green" onclick="quickStock('${escArg(it.name)}',1)">есть 1</button><button class="action-btn green" onclick="quickStock('${escArg(it.name)}',${Math.max(1,packs)})">есть всё</button>`:''}
+        ${it.m.packs!==null?`<button class="action-btn amber" onclick="markItem('${escArg(it.name)}','ordered',${Math.max(1,packs)})">заказано</button><button class="action-btn green" onclick="markItem('${escArg(it.name)}','bought',${Math.max(1,packs)})">куплено</button>`:''}
+        <button class="action-btn red" onclick="markItem('${escArg(it.name)}','skip',1)">не брать</button>
+      </div>
+    </div>`;
+  }).join('')+'</div>';
+}
+function renderSmartSupplierBlocks(needs,scopeId,mode){
+  const items=buildSmartItems(needs,mode);
+  const groups=groupSmartItems(items); LAST_SCOPES[scopeId]=groups;
+  const order=['sasha','ashan','ozon','other'];
+  const blocks=order.filter(k=>groups[k].length);
+  if(!blocks.length) return '<div class="empty-msg">Закупка закрыта</div>';
+  let html='<div class="suppliers-wrap">';
+  blocks.forEach(key=>{
+    const sup=SUPPLIERS[key]; const arr=groups[key]; const total=arr.reduce((s,it)=>s+it.cost,0);
+    html+=`<div class="sup-card ${key} open" id="sup-smart-${scopeId}-${key}">
+      <div class="sup-head">
+        <button class="sup-toggle" onclick="toggleSupplier('sup-smart-${scopeId}-${key}')">
+          <div class="sup-toggle-info">
+            <div class="sup-name">${sup.label}<span class="sup-total">${fmtMoney(total)}</span></div>
+            <div class="sup-meta">${arr.length} ${arr.length===1?'позиция':arr.length<5?'позиции':'позиций'} · только незакрытое</div>
+          </div><div class="sup-chev">▾</div>
+        </button>
+        <button class="sup-copy" onclick="copySmartSupplier('${scopeId}','${key}',this)">📋</button>
+      </div>
+      <div class="sup-body">
+        ${arr.map(it=>`<div class="sup-item"><div class="sup-item-name">${escHtml(it.name)}<div style="font-size:10px;color:var(--muted);font-weight:600;margin-top:2px">${escHtml(itemStatusText(it,mode)||fmtG(it.grams))}</div></div><div class="sup-item-pack">${it.qtyLabel}</div></div>`).join('')}
+        <div class="sup-item total"><div class="sup-item-name">Итого примерно</div><div class="sup-item-pack">${fmtMoney(total)}</div></div>
+        <div class="supplier-actions">
+          <button class="primary" onclick="copySmartSupplier('${scopeId}','${key}',this)">Скопировать</button>
+          <button class="amber" onclick="markSupplierItems('${scopeId}','${key}','ordered')">Отметить заказанным</button>
+          <button class="green" onclick="markSupplierItems('${scopeId}','${key}','bought')">Отметить купленным</button>
+        </div>
+      </div>
+    </div>`;
+  });
+  html+='</div>';
+  return html;
+}
+function copySmartSupplier(scopeId,key,btn){
+  const items=(LAST_SCOPES[scopeId]&&LAST_SCOPES[scopeId][key])||[];
+  if(!items.length){showToast('Список пуст','err');return;}
+  const sup=SUPPLIERS[key];
+  const lines=items.map(it=>`• ${it.name} — ${it.qtyLabel}`);
+  const total=items.reduce((s,it)=>s+it.cost,0);
+  const label=document.querySelector(`[data-scope-label="${scopeId}"]`)?.textContent||'';
+  const txt=`OMOTI · ${sup.label}${label?'\n'+label:''}\n\n${lines.join('\n')}\n\nИтого примерно: ${fmtMoney(total)}`;
+  navigator.clipboard.writeText(txt).then(()=>{showToast(`Список ${sup.label} скопирован`,'ok'); if(btn){const old=btn.innerHTML;btn.innerHTML='✓';setTimeout(()=>btn.innerHTML=old,1300);}}).catch(()=>showToast('Не удалось скопировать','err'));
+}
+function markSupplierItems(scopeId,key,kind){
+  const items=(LAST_SCOPES[scopeId]&&LAST_SCOPES[scopeId][key])||[];
+  items.forEach(it=>{if(it.m.packs!==null){setPurchase(it.name,{[kind]:Math.max(Number(getPurchase(it.name)[kind]||0),it.leftPacks)});}});
+  renderActiveSmart(); showToast(kind==='ordered'?'Отмечено заказанным':'Отмечено купленным','ok');
+}
+function markItem(name,kind,packs){
+  if(kind==='skip') setPurchase(name,{skip:true});
+  else setPurchase(name,{[kind]:Math.max(Number(getPurchase(name)[kind]||0),Number(packs||1))});
+  renderActiveSmart();
+}
+function quickStock(name,packs){
+  stockMap[name]=Number(stockMap[name]||0)+Number(packs||1); saveStock(); renderActiveSmart(); showToast('Остаток учтён','ok');
+}
+function getPlanChangeHtml(){
+  if(!PLAN_BASE||!Object.keys(PLAN_BASE).length||!PLAN_DATA) return '';
+  const changes=[];
+  sortedPlanDates().forEach(ds=>{
+    const p=PLAN_DATA[ds]||{},b=PLAN_BASE[ds]||{};
+    const all=new Set([...Object.keys(p),...Object.keys(b)]);
+    all.forEach(f=>{const pq=Number(p[f]||0),bq=Number(b[f]||0); if(pq===bq)return; const d=parseLocalDate(ds); const dd=d?`${d.getDate()}.${String(d.getMonth()+1).padStart(2,'0')}`:ds; if(!bq)changes.push(`${dd}: добавили ${f} ${pq} шт`); else if(!pq)changes.push(`${dd}: убрали ${f}`); else changes.push(`${dd}: ${f} ${bq}→${pq} шт`);});
+  });
+  if(!changes.length) return '';
+  return `<div class="alert-box"><div class="alert-title">План изменился</div><div class="alert-line">${changes.slice(0,5).map(escHtml).join('<br>')}${changes.length>5?'<br>…':''}</div></div>`;
+}
+function renderNow(){
+  const el=document.getElementById('now-content');
+  if(!PLAN_DATA||!PLAN_DATES.length){el.innerHTML='<div class="empty-msg">План пока не загружен</div>';return;}
+  const todayDates=getRangeDates('today'); const laterDates=getRangeDates('rest').filter(ds=>ds!==todayDates[0]);
+  const today=calcStageNeedsForDates(todayDates); const later=calcStageNeedsForDates(laterDates);
+  const urgentItems=buildSmartItems(today.needs,'physical');
+  const laterItems=buildSmartItems(later.needs,'order');
+  const dayObj=parseLocalDate(todayDates[0]);
+  const totalCost=urgentItems.reduce((s,it)=>s+it.cost,0);
+  const closed = Object.keys(today.needs).length-urgentItems.length;
+  let html=`<div class="now-hero">
+    <div class="now-label" data-scope-label="now">${formatShortDate(dayObj)}</div>
+    <div class="now-title">${urgentItems.length?`Нужно закрыть ${urgentItems.length} поз.`:'На сегодня закупка закрыта'}</div>
+    <div class="now-sub">План ${today.stageStats.plan} шт · лепка осталось ${today.stageStats.dough} · начинки осталось ${today.stageStats.filling}</div>
+    <div class="now-grid"><div class="now-mini"><div class="n">${fmtMoney(totalCost)}</div><div class="t">примерно сейчас</div></div><div class="now-mini"><div class="n">${closed}</div><div class="t">позиций закрыто</div></div></div>
+  </div>`;
+  html+=getPlanChangeHtml();
+  html+=`<div class="smart-section"><div class="smart-head"><span class="smart-title">Нужно сейчас</span><span class="smart-meta">без этого день может встать</span></div>${renderActionRows(urgentItems,'now','physical','urgent')}</div>`;
+  html+=`<div class="smart-section"><div class="smart-head"><span class="smart-title">Можно позже</span><span class="smart-meta">остаток недели</span></div>${renderActionRows(laterItems.slice(0,12),'later','order','later')}${laterItems.length>12?'<div class="empty-msg" style="padding:12px">Ещё '+(laterItems.length-12)+' поз. во вкладке Закупка</div>':''}</div>`;
+  html+=`<button class="danger-reset" onclick="resetPurchaseState()">Сбросить статусы заказано/куплено</button>`;
+  el.innerHTML=html;
+}
+function renderWeek(){
+  if(!PLAN_DATA||!PLAN_DATES.length){document.getElementById('wk-content').innerHTML='<div class="empty-msg">План пока не загружен</div>';return;}
+  const dates=getRangeDates(purchaseRangeMode); const calc=calcStageNeedsForDates(dates);
+  const items=buildSmartItems(calc.needs,'order'); const totalCost=items.reduce((s,it)=>s+it.cost,0);
+  document.getElementById('wk-period').textContent=RANGE_LABELS[purchaseRangeMode]||'Закупка';
+  document.getElementById('wk-total').innerHTML=`${calc.stageStats.plan} шт · осталось лепка ${calc.stageStats.dough}<div class="sb-stat">начинки осталось ${calc.stageStats.filling} · факт уже учтён</div>`;
+  document.getElementById('wk-cost').innerHTML=`${fmtMoney(totalCost)}<div class="sb-cost-sub">только незакрытое</div>`;
+  let html=`<div class="period-chips">${Object.entries(RANGE_LABELS).map(([k,l])=>`<button class="period-chip${purchaseRangeMode===k?' active':''}" onclick="setPurchaseRange('${k}')">${l}</button>`).join('')}</div>`;
+  html+=getPlanChangeHtml();
+  html+=`<div class="smart-section"><div class="smart-head"><span class="smart-title" data-scope-label="week">Что заказать / купить</span><span class="smart-meta">${formatRangeDates(dates)}</span></div></div>`;
+  html+=renderSmartSupplierBlocks(calc.needs,'week','order');
+  html+=renderStockPanel(calc.needs,'wk-content');
+  document.getElementById('wk-content').innerHTML=html;
+}
+function setPurchaseRange(mode){purchaseRangeMode=mode;renderWeek();}
+function renderDay(){
+  const dates=sortedPlanDates();
+  if(!PLAN_DATA||!dates.length){document.getElementById('days-row').innerHTML='';document.getElementById('dy-content').innerHTML='<div class="empty-msg">План пока не загружен</div>';return;}
+  if(currentSmartDayIdx>=dates.length) currentSmartDayIdx=getTodayPlanIndex();
+  const remaining=buildRemainingMap();
+  document.getElementById('days-row').innerHTML=dates.map((ds,i)=>{
+    const d=parseLocalDate(ds),dayPlan=PLAN_DATA[ds]||{}; const qty=Object.values(dayPlan).reduce((s,q)=>s+Number(q||0),0);
+    const calc=calcStageNeedsForDates([ds]); const open=buildSmartItems(calc.needs,'physical').length;
+    const cls=open===0&&qty>0?' ready':open>0?' need':'';
+    return `<div class="day-pill${i===currentSmartDayIdx?' active':''}${qty===0?' empty':''}${cls}" onclick="selectDay(${i})"><div class="dp-name">${DAY_SHORT[d.getDay()]}</div><div class="dp-date">${d.getDate()}</div><div class="dp-qty">${qty?qty+' шт':'—'}</div><div class="day-status">${qty?open?open+' поз.':'готово':''}</div></div>`;
+  }).join('');
+  const ds=dates[currentSmartDayIdx]; const calc=calcStageNeedsForDates([ds]); const items=buildSmartItems(calc.needs,'physical');
+  const d=parseLocalDate(ds); const totalCost=items.reduce((s,it)=>s+it.cost,0);
+  document.getElementById('dy-period').textContent=formatShortDate(d);
+  document.getElementById('dy-total').innerHTML=`${calc.stageStats.plan} шт<div class="sb-stat">лепка ост. ${calc.stageStats.dough} · начинки ост. ${calc.stageStats.filling}</div>`;
+  document.getElementById('dy-cost').innerHTML=`${fmtMoney(totalCost)}<div class="sb-cost-sub">нужно физически</div>`;
+  let html=`<div class="smart-section"><div class="smart-head"><span class="smart-title" data-scope-label="day">День</span><span class="smart-meta">${formatShortDate(d)}</span></div>${renderActionRows(items,'day','physical','urgent')}</div>`;
+  html+=`<div class="smart-section"><div class="smart-head"><span class="smart-title">По поставщикам</span><span class="smart-meta">только этот день</span></div></div>`+renderSmartSupplierBlocks(calc.needs,'day','physical');
+  html+=renderDayFlavorInfo(ds,remaining[ds]||{});
+  document.getElementById('dy-content').innerHTML=html;
+}
+function selectDay(i){currentSmartDayIdx=i;renderDay();}
+function renderDayFlavorInfo(ds,dayRemain){
+  const entries=Object.entries(PLAN_DATA[ds]||{}).sort((a,b)=>a[0].localeCompare(b[0],'ru'));
+  if(!entries.length) return '<div class="empty-msg">В этот день плана нет</div>';
+  return `<div class="smart-section"><div class="smart-head"><span class="smart-title">Вкусы дня</span><span class="smart-meta">план / остаток</span></div><div class="ing-card">${entries.map(([f,q])=>{const r=dayRemain[f]||{};return `<div class="ing-row"><div class="ing-left"><div class="ing-name">${escHtml(f)}</div><div class="ing-grams">план ${q} · лепка ост. ${r.doughQty||0} · начинки ост. ${r.fillingQty||0}</div></div><div class="ing-right"><div class="ing-packs">${Math.max(r.doughQty||0,r.fillingQty||0)} шт</div></div></div>`}).join('')}</div></div>`;
+}
+function renderCheck(){
+  const el=document.getElementById('chk-content');
+  if(!PLAN_DATA||!PLAN_DATES.length){el.innerHTML='<div class="empty-msg">План пока не загружен</div>';return;}
+  const dates=getRangeDates('rest'); const calc=calcStageNeedsForDates(dates);
+  let html=`<div class="check-note">Проверка показывает остаток после факта производства. Начинки убирают только продукты начинки. Лепка убирает вкус полностью.</div>`;
+  html+=`<div class="summary-bar"><div class="sb-left"><div class="sb-period">Остаток недели</div><div class="sb-total">${calc.stageStats.plan} шт<div class="sb-stat">лепка ост. ${calc.stageStats.dough} · начинки ост. ${calc.stageStats.filling}</div></div></div><div class="sb-cost"><div class="sb-cost-label">Период</div><div class="sb-cost-val">${formatRangeDates(dates)}</div></div></div>`;
+  const baseItems=[],otherItems=[];
+  Object.entries(calc.needs).forEach(([n,g])=>{(BASE_INGREDIENTS.has(n)?baseItems:otherItems).push({name:n,grams:g});});
+  baseItems.sort((a,b)=>a.name.localeCompare(b.name,'ru')); otherItems.sort((a,b)=>a.name.localeCompare(b.name,'ru'));
+  if(baseItems.length) html+=`<div class="section"><div class="sec-head"><span class="sec-title">Основа</span><span class="sec-meta">с учётом факта</span></div><div class="ing-card">${baseItems.map(({name,grams})=>renderIngredientRow(name,grams)).join('')}</div></div>`;
+  if(otherItems.length) html+=`<div class="section"><div class="sec-head"><span class="sec-title">Остальные продукты</span><span class="sec-meta">точные граммы и упаковки</span></div><div class="ing-card">${otherItems.map(({name,grams})=>renderIngredientRow(name,grams)).join('')}</div></div>`;
+  html+=renderFlavorStageCards(dates);
+  el.innerHTML=html;
+}
+function renderFlavorStageCards(dates){
+  const remaining=buildRemainingMap(); const totals={};
+  dates.forEach(ds=>Object.entries(remaining[ds]||{}).forEach(([f,r])=>{if(!totals[f])totals[f]={plan:0,dough:0,filling:0};totals[f].plan+=r.planQty;totals[f].dough+=r.doughQty;totals[f].filling+=r.fillingQty;}));
+  const entries=Object.entries(totals).filter(([,r])=>r.plan>0).sort((a,b)=>a[0].localeCompare(b[0],'ru'));
+  if(!entries.length) return '';
+  return `<div class="section"><div class="sec-head"><span class="sec-title">По вкусам</span><span class="sec-meta">что осталось</span></div><div>${entries.map(([f,r],i)=>`<div class="flav-card" id="chk-flav-${i}"><div class="flav-head" onclick="toggleFlav('chk-flav-${i}')"><div class="flav-name${PREMIUM.has(f)?' premium':''}">${escHtml(f)}</div><div class="flav-meta">лепка ${r.dough} · начинка ${r.filling}</div><div class="flav-chev">▾</div></div><div class="flav-body"><div class="ing-row"><div class="ing-left"><div class="ing-name">План</div><div class="ing-grams">${r.plan} шт</div></div><div class="ing-right"><div class="ing-packs">${Math.max(r.dough,r.filling)} шт</div><div class="ing-pack-meta">остаток</div></div></div></div></div>`).join('')}</div></div>`;
+}
+function renderActiveSmart(){
+  if(currentTab==='now') renderNow();
+  else if(currentTab==='week') renderWeek();
+  else if(currentTab==='day') renderDay();
+  else if(currentTab==='check') renderCheck();
+  else if(currentTab==='manual'&&lastManualFlavors) calcManual();
+}
+async function loadPlan(isManual){
+  const btn=document.getElementById('refresh-btn'); if(btn) btn.classList.add('loading');
+  setPlanStatus(isManual?'Обновляю план и факт...':'Загружаю план и факт...');
+  try{
+    const [planResp,prodResp]=await Promise.all([
+      fetch(API+'?action=get_plan',{cache:'no-store'}).then(r=>r.json()),
+      fetch(API+'?action=get_production&limit=300',{cache:'no-store'}).then(r=>r.json()).catch(()=>null)
+    ]);
+    if(!planResp.ok||!planResp.plan) throw new Error('Не удалось получить план');
+    PLAN_DATA=planResp.plan; PLAN_BASE=planResp.base||null; PLAN_DATES=Object.keys(PLAN_DATA).sort((a,b)=>parseLocalDate(a)-parseLocalDate(b)); PLAN_LOADED_AT=new Date();
+    if(prodResp&&prodResp.ok) PROD_RECORDS=parseProductionRows(prodResp.rows||[]);
+    currentSmartDayIdx=getTodayPlanIndex(); currentDayIdx=currentSmartDayIdx;
+    setPlanStatus(`План ${PLAN_DATES.length} дн. · факт ${PROD_RECORDS.length} зап. · ${fmtRelativeTime(PLAN_LOADED_AT)}`);
+    renderActiveSmart(); if(isManual) showToast('Обновлено','ok');
+  }catch(e){setPlanStatus('Нет связи с планом'); showToast('Не удалось загрузить план','err');}
+  finally{if(btn) btn.classList.remove('loading');}
+}
+function switchTab(tab){
+  currentTab=tab;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const screen=document.getElementById('screen-'+tab); if(screen) screen.classList.add('active');
+  renderActiveSmart();
 }
 
 // ── MANUAL ─────────────────────────────────────────────────────────────────
