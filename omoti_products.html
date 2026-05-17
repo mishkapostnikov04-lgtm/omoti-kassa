@@ -342,21 +342,13 @@ function copyMode(mode){
     const items=groups[k]||[];
     if(!items.length)return;
     const ui=SUP_UI[k];
-    const sum=items.reduce((s,x)=>s+x.cost,0);total+=sum;
-    parts.push(`${ui.short}
-`+items.map(it=>`• ${it.name} — ${it.action} ${it.unit}${it.unit==='уп'?' × '+it.packLabel:''}`).join('
-')+`
-Примерно: ${fmtMoney(sum)}`);
+    const sum=items.reduce((s,x)=>s+x.cost,0);
+    total+=sum;
+    const lines=items.map(it=>`• ${it.name} — ${it.action} ${it.unit}${it.unit==='уп'?' × '+it.packLabel:''}`).join('\n');
+    parts.push(`${ui.short}\n${lines}\nПримерно: ${fmtMoney(sum)}`);
   });
   if(!parts.length){showToast('На неделю всё закрыто');return;}
-  const txt=`OMOTI · вся неделя
-${formatRange(dates)}
-
-`+parts.join('
-
-')+`
-
-Итого примерно: ${fmtMoney(total)}`;
+  const txt=`OMOTI · вся неделя\n${formatRange(dates)}\n\n${parts.join('\n\n')}\n\nИтого примерно: ${fmtMoney(total)}`;
   navigator.clipboard.writeText(txt).then(()=>showToast('Неделя скопирована')).catch(()=>showToast('Не получилось скопировать',true));
 }
 
