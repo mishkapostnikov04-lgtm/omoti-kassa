@@ -234,6 +234,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 .supplier-actions button.primary{background:var(--text);color:#fff}
 .supplier-actions button.green{background:var(--green-light);color:var(--green)}
 .supplier-actions button.amber{background:var(--amber-light);color:var(--amber)}
+.state-box{margin:12px 14px 0;background:#fff;border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+.state-head{display:flex;justify-content:space-between;align-items:center;padding:11px 13px;border-bottom:1px solid var(--border)}
+.state-title{font-size:12px;font-weight:900;color:var(--text)}
+.state-sub{font-size:10px;color:var(--muted);font-weight:650;margin-top:1px}
+.state-add{border:none;background:var(--green-light);color:var(--green);border-radius:10px;padding:8px 10px;font-size:11px;font-weight:900;font-family:inherit;cursor:pointer;white-space:nowrap}
+.state-list{padding:5px 0}.state-row{display:flex;justify-content:space-between;gap:8px;padding:7px 13px;border-bottom:1px solid var(--border);font-size:12px}.state-row:last-child{border-bottom:none}.state-name{font-weight:800;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.state-val{font-weight:800;color:var(--muted);text-align:right;white-space:nowrap}.state-empty{font-size:12px;color:var(--muted);padding:10px 13px}
+.item-actions{display:flex;gap:5px;margin-top:7px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:1px}
+.item-actions button{flex-shrink:0;border:none;border-radius:8px;padding:6px 8px;font-size:10px;font-weight:900;font-family:inherit;cursor:pointer;white-space:nowrap;background:#f2f7f2;color:var(--text)}
+.item-actions button.green{background:var(--green-light);color:var(--green)}
+.item-actions button.amber{background:var(--amber-light);color:var(--amber)}
+.item-actions button.red{background:var(--red-light);color:var(--red)}
+.item-actions button.dark{background:var(--text);color:#fff}
+.need-note{font-size:10px;color:var(--muted);font-weight:650;margin-top:3px;line-height:1.35}
+
 .day-status{font-size:9px;font-weight:800;margin-top:2px;color:var(--muted2)}
 .day-pill.ready{border-color:var(--green);background:var(--green-light)}
 .day-pill.need{border-color:var(--amber);background:var(--amber-light)}
@@ -258,7 +272,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
       <button class="tab-btn active" data-tab="now" onclick="switchTab('now')">Сейчас</button>
       <button class="tab-btn" data-tab="week" onclick="switchTab('week')">Закупка</button>
       <button class="tab-btn" data-tab="day" onclick="switchTab('day')">Дни</button>
-      <button class="tab-btn" data-tab="check" onclick="switchTab('check')">Проверка</button>
+      <button class="tab-btn" data-tab="check" onclick="switchTab('check')">Подробно</button>
       <button class="tab-btn" data-tab="manual" onclick="switchTab('manual')">Вручную</button>
     </div>
   </div>
@@ -1041,7 +1055,9 @@ function packLeftMath(name,grams,mode){
   const ordered=Number(st.ordered||0), bought=Number(st.bought||0);
   const closed=bought+(mode==='order'?ordered:0)+(st.skip?m.buyPacks:0);
   const leftPacks=Math.max(0,m.buyPacks-closed);
-  return {...m,leftPacks,leftG:leftPacks*m.packLabel,leftCost:leftPacks*(PRICES[name]?PRICES[name].pack*PRICES[name].p:0),closed:leftPacks<=0,ordered,bought,skip:!!st.skip};
+  const packG=PRICES[name]?.pack||0;
+  const leftG=leftPacks*packG;
+  return {...m,leftPacks,leftG,leftCost:leftPacks*(PRICES[name]?PRICES[name].pack*PRICES[name].p:0),closed:leftPacks<=0,ordered,bought,skip:!!st.skip};
 }
 function buildSmartItems(needs,mode){
   return Object.entries(needs).map(([name,grams])=>{
@@ -1064,36 +1080,93 @@ function groupSmartItems(items){
   items.forEach(it=>groups[it.supplier||'other'].push(it));
   return groups;
 }
+function qtyWord(v){return Number(v||0).toLocaleString('ru-RU',{maximumFractionDigits:2}).replace(',', '.');}
 function itemStatusText(it,mode){
   const parts=[]; const st=getPurchase(it.name); const stock=stockMap[it.name]||0;
-  if(stock>0) parts.push(`остаток ${stock} уп`);
-  if(it.m.bought>0) parts.push(`куплено ${it.m.bought} уп`);
-  if(it.m.ordered>0) parts.push(`заказано ${it.m.ordered} уп${mode==='physical'?' · проверь приезд':''}`);
+  if(stock>0) parts.push(`остаток ${qtyWord(stock)} уп`);
+  if(it.m.bought>0) parts.push(`куплено ${qtyWord(it.m.bought)} уп`);
+  if(it.m.ordered>0) parts.push(`заказано ${qtyWord(it.m.ordered)} уп${mode==='physical'?' · ещё не в руках':''}`);
   if(st.skip) parts.push('помечено не брать');
   if(it.fresh) parts.push('свежее · лучше ближе к дню');
   if(it.ozon && mode==='physical') parts.push('Озон не для срочно');
   return parts.join(' · ');
+}
+function itemNeedNote(it){
+  const st=getPurchase(it.name), stock=Number(stockMap[it.name]||0);
+  if(it.m.packs===null) return `нужно всего ${it.needLabel} · ${fmtG(it.grams)}`;
+  const parts=[`нужно ${it.m.buyPacks} уп`];
+  if(stock>0) parts.push(`остаток ${qtyWord(stock)}`);
+  if(Number(st.bought||0)>0) parts.push(`куплено ${qtyWord(st.bought)}`);
+  if(Number(st.ordered||0)>0) parts.push(`заказано ${qtyWord(st.ordered)}`);
+  parts.push(`осталось ${qtyWord(it.leftQty)} уп`);
+  return parts.join(' · ');
+}
+function addPurchaseAmount(name,kind,amount){
+  const qty=Number(amount||0); if(!qty||qty<0) return;
+  const cur=getPurchase(name);
+  setPurchase(name,{[kind]:Number(cur[kind]||0)+qty});
+}
+function setPurchaseAmount(name,kind,amount){
+  const qty=Math.max(0,Number(amount||0));
+  setPurchase(name,{[kind]:qty});
+}
+function receiveOrdered(name){
+  const cur=getPurchase(name); const ordered=Number(cur.ordered||0);
+  if(ordered<=0){showToast('Заказанного нет','err');return;}
+  setPurchase(name,{ordered:0,bought:Number(cur.bought||0)+ordered});
+  renderActiveSmart(); showToast('Перенесено в куплено','ok');
+}
+function customItemAmount(name){
+  const cur=getPurchase(name); const stock=Number(stockMap[name]||0);
+  const kind=(prompt(`Что меняем для «${name}»?\n\n1 - остаток\n2 - куплено\n3 - заказано\n4 - сбросить товар`, '1')||'').trim();
+  if(!kind) return;
+  if(kind==='4' || kind.toLowerCase()==='сбросить'){
+    delete PURCHASE_STATE[name]; delete stockMap[name]; savePurchaseState(); saveStock(); renderActiveSmart(); showToast('Товар сброшен','ok'); return;
+  }
+  const field=kind==='1'?'stock':kind==='2'?'bought':kind==='3'?'ordered':kind.toLowerCase();
+  if(!['stock','остаток','bought','куплено','ordered','заказано'].includes(field)){showToast('Не понял действие','err');return;}
+  const current = (field==='stock'||field==='остаток') ? stock : Number(cur[field]||0);
+  const amount=prompt('Сколько упаковок указать всего?', String(current||''));
+  if(amount===null) return;
+  const qty=Math.max(0,Number(String(amount).replace(',','.'))||0);
+  if(field==='stock'||field==='остаток'){ if(qty>0) stockMap[name]=qty; else delete stockMap[name]; saveStock(); }
+  else setPurchaseAmount(name,field,qty);
+  renderActiveSmart(); showToast('Количество обновлено','ok');
 }
 function escArg(s){return escJs(s);}
 function renderActionRows(items,scopeId,mode,cls){
   if(!items.length) return '<div class="empty-msg">Ничего не нужно закрывать</div>';
   return `<div class="action-card ${cls||''}">`+items.map(it=>{
     const st=itemStatusText(it,mode);
-    const packs=it.m.packs===null?0:it.leftPacks;
+    const packs=Math.max(1,Number(it.leftQty||1));
     return `<div class="action-row">
       <div class="action-top">
         <div class="action-name">${escHtml(it.name)}</div>
         <div class="action-pack">${it.qtyLabel}</div>
       </div>
-      <div class="action-sub">нужно всего ${it.needLabel} · ${fmtG(it.grams)}</div>
+      <div class="action-sub">${itemNeedNote(it)}</div>
       ${st?`<div class="action-status">${escHtml(st)}</div>`:''}
-      <div class="action-btns">
-        ${it.m.packs!==null?`<button class="action-btn green" onclick="quickStock('${escArg(it.name)}',1)">есть 1</button><button class="action-btn green" onclick="quickStock('${escArg(it.name)}',${Math.max(1,packs)})">есть всё</button>`:''}
-        ${it.m.packs!==null?`<button class="action-btn amber" onclick="markItem('${escArg(it.name)}','ordered',${Math.max(1,packs)})">заказано</button><button class="action-btn green" onclick="markItem('${escArg(it.name)}','bought',${Math.max(1,packs)})">куплено</button>`:''}
+      ${it.m.packs!==null?`<div class="action-btns">
+        <button class="action-btn green" onclick="quickStock('${escArg(it.name)}',1)">+ остаток</button>
+        <button class="action-btn green" onclick="markItemAdd('${escArg(it.name)}','bought',1)">+ куплено</button>
+        <button class="action-btn amber" onclick="markItemAdd('${escArg(it.name)}','ordered',1)">+ заказано</button>
+        ${it.m.ordered>0?`<button class="action-btn green" onclick="receiveOrdered('${escArg(it.name)}')">приехало</button>`:''}
+        <button class="action-btn" onclick="customItemAmount('${escArg(it.name)}')">кол-во</button>
         <button class="action-btn red" onclick="markItem('${escArg(it.name)}','skip',1)">не брать</button>
-      </div>
+      </div>`:''}
     </div>`;
   }).join('')+'</div>';
+}
+function renderMiniItemActions(it,scopeId,mode){
+  if(it.m.packs===null) return '';
+  return `<div class="item-actions">
+    <button class="green" onclick="quickStock('${escArg(it.name)}',1)">+ остаток</button>
+    <button class="green" onclick="markItemAdd('${escArg(it.name)}','bought',1)">+ куплено</button>
+    <button class="amber" onclick="markItemAdd('${escArg(it.name)}','ordered',1)">+ заказано</button>
+    ${it.m.ordered>0?`<button class="green" onclick="receiveOrdered('${escArg(it.name)}')">приехало</button>`:''}
+    <button onclick="customItemAmount('${escArg(it.name)}')">кол-во</button>
+    <button class="red" onclick="markItem('${escArg(it.name)}','skip',1)">не брать</button>
+  </div>`;
 }
 function renderSmartSupplierBlocks(needs,scopeId,mode){
   const items=buildSmartItems(needs,mode);
@@ -1109,18 +1182,18 @@ function renderSmartSupplierBlocks(needs,scopeId,mode){
         <button class="sup-toggle" onclick="toggleSupplier('sup-smart-${scopeId}-${key}')">
           <div class="sup-toggle-info">
             <div class="sup-name">${sup.label}<span class="sup-total">${fmtMoney(total)}</span></div>
-            <div class="sup-meta">${arr.length} ${arr.length===1?'позиция':arr.length<5?'позиции':'позиций'} · только незакрытое</div>
+            <div class="sup-meta">${arr.length} ${arr.length===1?'позиция':arr.length<5?'позиции':'позиций'} · можно закрывать частями</div>
           </div><div class="sup-chev">▾</div>
         </button>
         <button class="sup-copy" onclick="copySmartSupplier('${scopeId}','${key}',this)">📋</button>
       </div>
       <div class="sup-body">
-        ${arr.map(it=>`<div class="sup-item"><div class="sup-item-name">${escHtml(it.name)}<div style="font-size:10px;color:var(--muted);font-weight:600;margin-top:2px">${escHtml(itemStatusText(it,mode)||fmtG(it.grams))}</div></div><div class="sup-item-pack">${it.qtyLabel}</div></div>`).join('')}
+        ${arr.map(it=>`<div class="sup-item"><div class="sup-item-name">${escHtml(it.name)}<div class="need-note">${escHtml(itemNeedNote(it))}</div><div style="font-size:10px;color:var(--muted);font-weight:600;margin-top:2px">${escHtml(itemStatusText(it,mode)||fmtG(it.grams))}</div>${renderMiniItemActions(it,scopeId,mode)}</div><div class="sup-item-pack">${it.qtyLabel}</div></div>`).join('')}
         <div class="sup-item total"><div class="sup-item-name">Итого примерно</div><div class="sup-item-pack">${fmtMoney(total)}</div></div>
         <div class="supplier-actions">
-          <button class="primary" onclick="copySmartSupplier('${scopeId}','${key}',this)">Скопировать</button>
-          <button class="amber" onclick="markSupplierItems('${scopeId}','${key}','ordered')">Отметить заказанным</button>
-          <button class="green" onclick="markSupplierItems('${scopeId}','${key}','bought')">Отметить купленным</button>
+          <button class="primary" onclick="copySmartSupplier('${scopeId}','${key}',this)">Скопировать остаток</button>
+          <button class="amber" onclick="markSupplierItems('${scopeId}','${key}','ordered')">Всё в заказано</button>
+          <button class="green" onclick="markSupplierItems('${scopeId}','${key}','bought')">Всё в куплено</button>
         </div>
       </div>
     </div>`;
@@ -1140,16 +1213,61 @@ function copySmartSupplier(scopeId,key,btn){
 }
 function markSupplierItems(scopeId,key,kind){
   const items=(LAST_SCOPES[scopeId]&&LAST_SCOPES[scopeId][key])||[];
-  items.forEach(it=>{if(it.m.packs!==null){setPurchase(it.name,{[kind]:Math.max(Number(getPurchase(it.name)[kind]||0),it.leftPacks)});}});
-  renderActiveSmart(); showToast(kind==='ordered'?'Отмечено заказанным':'Отмечено купленным','ok');
+  items.forEach(it=>{if(it.m.packs!==null){addPurchaseAmount(it.name,kind,it.leftPacks);}});
+  renderActiveSmart(); showToast(kind==='ordered'?'Добавлено в заказанное':'Добавлено в купленное','ok');
+}
+function markItemAdd(name,kind,packs){
+  addPurchaseAmount(name,kind,Number(packs||1));
+  renderActiveSmart(); showToast(kind==='ordered'?'+1 к заказанному':'+1 к купленному','ok');
 }
 function markItem(name,kind,packs){
   if(kind==='skip') setPurchase(name,{skip:true});
-  else setPurchase(name,{[kind]:Math.max(Number(getPurchase(name)[kind]||0),Number(packs||1))});
+  else addPurchaseAmount(name,kind,Number(packs||1));
   renderActiveSmart();
 }
 function quickStock(name,packs){
-  stockMap[name]=Number(stockMap[name]||0)+Number(packs||1); saveStock(); renderActiveSmart(); showToast('Остаток учтён','ok');
+  stockMap[name]=Number(stockMap[name]||0)+Number(packs||1); saveStock(); renderActiveSmart(); showToast('+ остаток учтён','ok');
+}
+function collectStateRows(){
+  const names=new Set([...Object.keys(stockMap||{}),...Object.keys(PURCHASE_STATE||{})]);
+  return [...names].sort((a,b)=>a.localeCompare(b,'ru')).map(name=>{
+    const st=getPurchase(name), stock=Number(stockMap[name]||0);
+    const parts=[];
+    if(stock>0) parts.push(`остаток ${qtyWord(stock)}`);
+    if(Number(st.bought||0)>0) parts.push(`куплено ${qtyWord(st.bought)}`);
+    if(Number(st.ordered||0)>0) parts.push(`заказано ${qtyWord(st.ordered)}`);
+    if(st.skip) parts.push('не брать');
+    return {name,parts};
+  }).filter(r=>r.parts.length);
+}
+function renderStateBox(){
+  const rows=collectStateRows();
+  return `<div class="state-box">
+    <div class="state-head"><div><div class="state-title">Что уже учтено</div><div class="state-sub">остатки, куплено, заказано</div></div><button class="state-add" onclick="addStockPrompt()">+ Добавить</button></div>
+    <div class="state-list">${rows.length?rows.slice(0,10).map(r=>`<div class="state-row"><div class="state-name">${escHtml(r.name)}</div><div class="state-val">${escHtml(r.parts.join(' · '))}</div></div>`).join(''):'<div class="state-empty">Пока ничего не отмечено</div>'}${rows.length>10?`<div class="state-empty">Ещё ${rows.length-10} позиций</div>`:''}</div>
+  </div>`;
+}
+function findIngredientByInput(input){
+  const q=String(input||'').trim().toLowerCase(); if(!q) return null;
+  const names=Object.keys(PRICES).sort((a,b)=>a.localeCompare(b,'ru'));
+  let exact=names.find(n=>n.toLowerCase()===q); if(exact) return exact;
+  const matches=names.filter(n=>n.toLowerCase().includes(q));
+  return matches.length?matches[0]:null;
+}
+function addStockPrompt(){
+  const raw=prompt('Какой продукт есть или купили?\nМожно писать часть названия: сыр, сливки, малина', '');
+  if(raw===null) return;
+  const name=findIngredientByInput(raw);
+  if(!name){showToast('Продукт не найден','err');return;}
+  const kind=(prompt(`Что указать для «${name}»?\n\n1 - остаток\n2 - куплено\n3 - заказано`, '1')||'').trim();
+  if(!kind) return;
+  const amount=prompt('Сколько упаковок?', '1'); if(amount===null) return;
+  const qty=Math.max(0,Number(String(amount).replace(',','.'))||0); if(!qty){showToast('Количество не указано','err');return;}
+  if(kind==='1') stockMap[name]=Number(stockMap[name]||0)+qty;
+  else if(kind==='2') addPurchaseAmount(name,'bought',qty);
+  else if(kind==='3') addPurchaseAmount(name,'ordered',qty);
+  else {showToast('Не понял действие','err');return;}
+  saveStock(); savePurchaseState(); renderActiveSmart(); showToast('Добавлено','ok');
 }
 function getPlanChangeHtml(){
   if(!PLAN_BASE||!Object.keys(PLAN_BASE).length||!PLAN_DATA) return '';
@@ -1164,22 +1282,31 @@ function getPlanChangeHtml(){
 }
 function renderNow(){
   const el=document.getElementById('now-content');
-  if(!PLAN_DATA||!PLAN_DATES.length){el.innerHTML='<div class="empty-msg">План пока не загружен</div>';return;}
-  const todayDates=getRangeDates('today'); const laterDates=getRangeDates('rest').filter(ds=>ds!==todayDates[0]);
+  if(!PLAN_DATA||!PLAN_DATES.length){
+    el.innerHTML='<div class="empty-msg">План ещё загружается. Нажми «Обновить», если сообщение висит долго.</div>';
+    return;
+  }
+  const todayDates=getRangeDates('today');
+  if(!todayDates.length){el.innerHTML='<div class="empty-msg">В плане нет ближайших дней</div>';return;}
+  const laterDates=getRangeDates('rest').filter(ds=>ds!==todayDates[0]);
   const today=calcStageNeedsForDates(todayDates); const later=calcStageNeedsForDates(laterDates);
   const urgentItems=buildSmartItems(today.needs,'physical');
   const laterItems=buildSmartItems(later.needs,'order');
   const dayObj=parseLocalDate(todayDates[0]);
+  const realToday=new Date(); realToday.setHours(0,0,0,0);
+  const isToday=sameLocalDay(dayObj,realToday);
+  const dayLabel=isToday?formatShortDate(dayObj):`Ближайший план: ${formatShortDate(dayObj)}`;
   const totalCost=urgentItems.reduce((s,it)=>s+it.cost,0);
-  const closed = Object.keys(today.needs).length-urgentItems.length;
+  const closed = Math.max(0,Object.keys(today.needs).length-urgentItems.length);
   let html=`<div class="now-hero">
-    <div class="now-label" data-scope-label="now">${formatShortDate(dayObj)}</div>
-    <div class="now-title">${urgentItems.length?`Нужно закрыть ${urgentItems.length} поз.`:'На сегодня закупка закрыта'}</div>
+    <div class="now-label" data-scope-label="now">${dayLabel}</div>
+    <div class="now-title">${urgentItems.length?`Нужно закрыть ${urgentItems.length} поз.`:'Закупка на этот день закрыта'}</div>
     <div class="now-sub">План ${today.stageStats.plan} шт · лепка осталось ${today.stageStats.dough} · начинки осталось ${today.stageStats.filling}</div>
     <div class="now-grid"><div class="now-mini"><div class="n">${fmtMoney(totalCost)}</div><div class="t">примерно сейчас</div></div><div class="now-mini"><div class="n">${closed}</div><div class="t">позиций закрыто</div></div></div>
   </div>`;
   html+=getPlanChangeHtml();
-  html+=`<div class="smart-section"><div class="smart-head"><span class="smart-title">Нужно сейчас</span><span class="smart-meta">без этого день может встать</span></div>${renderActionRows(urgentItems,'now','physical','urgent')}</div>`;
+  html+=renderStateBox();
+  html+=`<div class="smart-section"><div class="smart-head"><span class="smart-title">Нужно сейчас</span><span class="smart-meta">можно закрывать частями</span></div>${renderActionRows(urgentItems,'now','physical','urgent')}</div>`;
   html+=`<div class="smart-section"><div class="smart-head"><span class="smart-title">Можно позже</span><span class="smart-meta">остаток недели</span></div>${renderActionRows(laterItems.slice(0,12),'later','order','later')}${laterItems.length>12?'<div class="empty-msg" style="padding:12px">Ещё '+(laterItems.length-12)+' поз. во вкладке Закупка</div>':''}</div>`;
   html+=`<button class="danger-reset" onclick="resetPurchaseState()">Сбросить статусы заказано/куплено</button>`;
   el.innerHTML=html;
@@ -1193,6 +1320,7 @@ function renderWeek(){
   document.getElementById('wk-cost').innerHTML=`${fmtMoney(totalCost)}<div class="sb-cost-sub">только незакрытое</div>`;
   let html=`<div class="period-chips">${Object.entries(RANGE_LABELS).map(([k,l])=>`<button class="period-chip${purchaseRangeMode===k?' active':''}" onclick="setPurchaseRange('${k}')">${l}</button>`).join('')}</div>`;
   html+=getPlanChangeHtml();
+  html+=renderStateBox();
   html+=`<div class="smart-section"><div class="smart-head"><span class="smart-title" data-scope-label="week">Что заказать / купить</span><span class="smart-meta">${formatRangeDates(dates)}</span></div></div>`;
   html+=renderSmartSupplierBlocks(calc.needs,'week','order');
   html+=renderStockPanel(calc.needs,'wk-content');
@@ -1230,8 +1358,8 @@ function renderCheck(){
   const el=document.getElementById('chk-content');
   if(!PLAN_DATA||!PLAN_DATES.length){el.innerHTML='<div class="empty-msg">План пока не загружен</div>';return;}
   const dates=getRangeDates('rest'); const calc=calcStageNeedsForDates(dates);
-  let html=`<div class="check-note">Проверка показывает остаток после факта производства. Начинки убирают только продукты начинки. Лепка убирает вкус полностью.</div>`;
-  html+=`<div class="summary-bar"><div class="sb-left"><div class="sb-period">Остаток недели</div><div class="sb-total">${calc.stageStats.plan} шт<div class="sb-stat">лепка ост. ${calc.stageStats.dough} · начинки ост. ${calc.stageStats.filling}</div></div></div><div class="sb-cost"><div class="sb-cost-label">Период</div><div class="sb-cost-val">${formatRangeDates(dates)}</div></div></div>`;
+  let html=`<div class="check-note">Подробно показывает, откуда взялся расчёт. Начинки закрывают только продукты начинки. Лепка закрывает вкус полностью.</div>`;
+  html+=`<div class="summary-bar"><div class="sb-left"><div class="sb-period">Подробный расчёт</div><div class="sb-total">${calc.stageStats.plan} шт<div class="sb-stat">лепка ост. ${calc.stageStats.dough} · начинки ост. ${calc.stageStats.filling}</div></div></div><div class="sb-cost"><div class="sb-cost-label">Период</div><div class="sb-cost-val">${formatRangeDates(dates)}</div></div></div>`;
   const baseItems=[],otherItems=[];
   Object.entries(calc.needs).forEach(([n,g])=>{(BASE_INGREDIENTS.has(n)?baseItems:otherItems).push({name:n,grams:g});});
   baseItems.sort((a,b)=>a.name.localeCompare(b.name,'ru')); otherItems.sort((a,b)=>a.name.localeCompare(b.name,'ru'));
