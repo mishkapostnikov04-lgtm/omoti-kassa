@@ -25,7 +25,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 .header-badge span{font-size:11px;font-weight:800;color:#fff;letter-spacing:.06em;text-transform:uppercase}
 .header-dot{width:6px;height:6px;border-radius:999px;background:#7dff9a}
 .header-title{font-size:22px;font-weight:700;color:#fff;line-height:1}
-.header-sub{font-size:12px;color:rgba(255,255,255,.65);margin-top:4px;margin-bottom:14px}
+.header-sub{font-size:12px;color:rgba(255,255,255,.65);margin-top:4px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.refresh-btn{background:rgba(255,255,255,.18);border:none;color:#fff;font-family:inherit;font-size:11px;font-weight:600;padding:6px 12px;border-radius:999px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:.15s}
+.refresh-btn:active{background:rgba(255,255,255,.3)}
+.refresh-btn.loading svg{animation:spin 1s linear infinite}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.plan-status{font-size:11px;color:rgba(255,255,255,.6)}
 .tab-row{display:flex;gap:4px;background:rgba(0,0,0,.18);border-radius:12px;padding:3px}
 .tab-btn{flex:1;border:none;background:transparent;border-radius:10px;padding:9px 6px;font-size:13px;font-weight:600;font-family:inherit;color:rgba(255,255,255,.6);cursor:pointer;transition:.15s}
 .tab-btn.active{background:#fff;color:var(--green)}
@@ -162,7 +167,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
   <div class="header">
     <div class="header-badge"><div class="header-dot"></div><span>OMOTI · Продукты</span></div>
     <div class="header-title">Расчёт закупки</div>
-    <div class="header-sub">Сколько продуктов нужно под план</div>
+    <div class="header-sub">
+      <span class="plan-status" id="plan-status">Загружаю план...</span>
+      <button class="refresh-btn" id="refresh-btn" onclick="loadPlan(true)">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        Обновить
+      </button>
+    </div>
     <div class="tab-row">
       <button class="tab-btn active" data-tab="week" onclick="switchTab('week')">Неделя</button>
       <button class="tab-btn" data-tab="day" onclick="switchTab('day')">По дням</button>
@@ -215,22 +226,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 <div class="toast" id="toast"></div>
 
 <script>
-// ── ТЕСТОВЫЕ ДАННЫЕ ─────────────────────────────────────────────────────────
-// Имитируем ответ /get_plan: { plan: { 'YYYY-MM-DD': { 'Вкус': qty, ... }, ... } }
-const TODAY=new Date('2026-05-18'); // понедельник, демо-неделя
+// ── API ─────────────────────────────────────────────────────────────────────
+const API='https://script.google.com/macros/s/AKfycbyItLqVWxgGSYuWXc4HT6qtaSeDwSeRqv67dJBFBPaLWFbXxKSIyl9jq_q4i3WT4IPC/exec';
+
+// План загружается с сервера. Структура: { 'YYYY-MM-DD': { 'Вкус': qty, ... }, ... }
+let PLAN_DATA = null;  // заполнится после fetch
+let PLAN_DATES = [];   // массив дат недели
+let PLAN_LOADED_AT = null;
+
 function dateStr(d){return d.toISOString().slice(0,10);}
 function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
-const WEEK_DATES=[0,1,2,3,4,5,6].map(i=>dateStr(addDays(TODAY,i)));
-
-const DEMO_PLAN={
-  [WEEK_DATES[0]]:{ 'Дубайский шоколад':240, 'Бабл Гам':120 }, // Пн
-  [WEEK_DATES[1]]:{ 'Клубника':180, 'Малина-Ваниль':180 },     // Вт
-  [WEEK_DATES[2]]:{ 'Сникерс':150, 'Кокос-Маракуйя':150, 'Шоколад':60 }, // Ср
-  [WEEK_DATES[3]]:{ 'Дубайский шоколад':180, 'Смородина':180 }, // Чт
-  [WEEK_DATES[4]]:{ 'Банан- Нутелла':240, 'Кофе-Карамель':120 }, // Пт
-  [WEEK_DATES[5]]:{},                                            // Сб
-  [WEEK_DATES[6]]:{}                                             // Вс
-};
 
 const PREMIUM=new Set(['Дубайский шоколад','Криспи','Мандарин','Пряник']);
 
@@ -535,9 +540,11 @@ function copyShoppingList(containerId){
   let flavors;
   if(containerId==='wk-content'){
     flavors={};
-    Object.values(DEMO_PLAN).forEach(dp=>Object.entries(dp).forEach(([n,q])=>{flavors[n]=(flavors[n]||0)+q;}));
+    if(!PLAN_DATA){showToast('План не загружен','err');return;}
+    Object.values(PLAN_DATA).forEach(dp=>Object.entries(dp).forEach(([n,q])=>{flavors[n]=(flavors[n]||0)+q;}));
   } else if(containerId==='dy-content'){
-    flavors=DEMO_PLAN[WEEK_DATES[currentDayIdx]]||{};
+    if(!PLAN_DATA){showToast('План не загружен','err');return;}
+    flavors=PLAN_DATA[PLAN_DATES[currentDayIdx]]||{};
   } else {
     flavors=lastManualFlavors||{};
   }
@@ -559,21 +566,70 @@ function copyShoppingList(containerId){
   }).catch(()=>showToast('Не удалось скопировать','err'));
 }
 
-// ── РЕНДЕРИНГ ВКЛАДОК ──────────────────────────────────────────────────────
+// ── ЗАГРУЗКА ПЛАНА ─────────────────────────────────────────────────────────
+function setPlanStatus(text){
+  const el=document.getElementById('plan-status');
+  if(el) el.textContent=text;
+}
+function fmtRelativeTime(d){
+  const diff=Math.floor((Date.now()-d.getTime())/1000);
+  if(diff<60) return 'только что';
+  if(diff<3600) return Math.floor(diff/60)+' мин назад';
+  if(diff<86400) return Math.floor(diff/3600)+' ч назад';
+  return d.toLocaleDateString('ru-RU',{day:'numeric',month:'short'});
+}
+
+async function loadPlan(isManual){
+  const btn=document.getElementById('refresh-btn');
+  if(btn) btn.classList.add('loading');
+  setPlanStatus(isManual?'Обновляю план...':'Загружаю план...');
+  try{
+    const r=await fetch(API+'?action=get_plan',{cache:'no-store'});
+    const json=await r.json();
+    if(!json.ok||!json.plan) throw new Error('Не удалось получить план');
+    PLAN_DATA=json.plan;
+    PLAN_DATES=Object.keys(PLAN_DATA).sort();
+    PLAN_LOADED_AT=new Date();
+    // Если currentDayIdx за пределами — сбрасываем
+    if(currentDayIdx>=PLAN_DATES.length) currentDayIdx=0;
+    setPlanStatus(`План на ${PLAN_DATES.length} ${PLAN_DATES.length===1?'день':PLAN_DATES.length<5?'дня':'дней'} · ${fmtRelativeTime(PLAN_LOADED_AT)}`);
+    // Перерисовать активный экран
+    if(currentTab==='week') renderWeek();
+    else if(currentTab==='day') renderDay();
+    if(isManual) showToast('План обновлён','ok');
+  }catch(e){
+    setPlanStatus('Нет связи с планом');
+    showToast('Не удалось загрузить план','err');
+  }finally{
+    if(btn) btn.classList.remove('loading');
+  }
+}
 function renderWeek(){
+  if(!PLAN_DATA||!PLAN_DATES.length){
+    document.getElementById('wk-content').innerHTML='<div class="empty-msg">План пока не загружен</div>';
+    document.getElementById('wk-period').textContent='Неделя';
+    document.getElementById('wk-total').textContent='— шт';
+    document.getElementById('wk-cost').textContent='— ₽';
+    return;
+  }
   const flavors={};
-  Object.values(DEMO_PLAN).forEach(dp=>Object.entries(dp).forEach(([n,q])=>{flavors[n]=(flavors[n]||0)+q;}));
+  Object.values(PLAN_DATA).forEach(dp=>Object.entries(dp).forEach(([n,q])=>{flavors[n]=(flavors[n]||0)+q;}));
   const total=Object.values(flavors).reduce((s,q)=>s+q,0);
-  const start=new Date(WEEK_DATES[0]),end=new Date(WEEK_DATES[6]);
+  const start=new Date(PLAN_DATES[0]),end=new Date(PLAN_DATES[PLAN_DATES.length-1]);
   const label=`${start.getDate()}–${end.getDate()} ${end.toLocaleDateString('ru-RU',{month:'long'})}`;
   renderPlanContent(flavors,'wk-content',total,label);
 }
 
 function renderDay(){
+  if(!PLAN_DATA||!PLAN_DATES.length){
+    document.getElementById('days-row').innerHTML='';
+    document.getElementById('dy-content').innerHTML='<div class="empty-msg">План пока не загружен</div>';
+    return;
+  }
   // Day pills
-  const pills=WEEK_DATES.map((ds,i)=>{
+  const pills=PLAN_DATES.map((ds,i)=>{
     const d=new Date(ds);
-    const dayPlan=DEMO_PLAN[ds]||{};
+    const dayPlan=PLAN_DATA[ds]||{};
     const qty=Object.values(dayPlan).reduce((s,q)=>s+q,0);
     return `<div class="day-pill${i===currentDayIdx?' active':''}${qty===0?' empty':''}" onclick="selectDay(${i})">
       <div class="dp-name">${DAY_SHORT[d.getDay()]}</div>
@@ -583,8 +639,8 @@ function renderDay(){
   }).join('');
   document.getElementById('days-row').innerHTML=pills;
 
-  const ds=WEEK_DATES[currentDayIdx];
-  const dayPlan=DEMO_PLAN[ds]||{};
+  const ds=PLAN_DATES[currentDayIdx];
+  const dayPlan=PLAN_DATA[ds]||{};
   const total=Object.values(dayPlan).reduce((s,q)=>s+q,0);
   const d=new Date(ds);
   const label=`${DAY_SHORT[d.getDay()]} ${d.getDate()} ${d.toLocaleDateString('ru-RU',{month:'long'})}`;
@@ -701,7 +757,7 @@ function renderPlanContentManual(flavors, containerId, totalQty, periodLabel){
 
 // ── INIT ───────────────────────────────────────────────────────────────────
 addManualRow();addManualRow();addManualRow();
-renderWeek();
+loadPlan(false);
 </script>
 </body>
 </html>
