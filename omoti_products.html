@@ -201,7 +201,7 @@ function parseLocalDate(v){const s=String(v||'').trim();let m=s.match(/^(\d{4})-
 function localKey(d){return d?d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'):''}
 function sameDay(a,b){return localKey(a)===localKey(b)}
 function formatDate(d){return d?`${DAY_SHORT[d.getDay()]} ${d.getDate()} ${RU_MONTHS_GEN[d.getMonth()]}`:'—'}
-function formatRange(dates){if(!dates.length)return 'Период пустой';const a=parseLocalDate(dates[0]),b=parseLocalDate(dates[dates.length-1]);if(sameDay(a,b))return formatDate(a);return `${a.getDate()} ${RU_MONTHS_GEN[a.getMonth()]} – ${b.getDate()} ${RU_MONTHS_GEN[b.getMonth()]}`}
+function formatRange(dates){if(!dates.length)return 'Период пустой';const a=parseLocalDate(dates[0]),b=parseLocalDate(dates[dates.length-1]);if(sameDay(a,b))return formatDate(a);if(a.getMonth()===b.getMonth())return `${a.getDate()}–${b.getDate()} ${RU_MONTHS_GEN[b.getMonth()]}`;return `${a.getDate()} ${RU_MONTHS_GEN[a.getMonth()]} – ${b.getDate()} ${RU_MONTHS_GEN[b.getMonth()]}`}
 function normDate(v){const d=parseLocalDate(v);return d?String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+d.getFullYear():String(v||'')}
 function safeJson(v){try{return typeof v==='object'&&v!==null?v:JSON.parse(v||'{}')}catch(e){return {}}}
 function parseRecords(rows){return (rows||[]).filter(r=>r&&r[0]).map(r=>({id:String(r[0]),person:String(r[1]||''),workType:String(r[2]||''),date:normDate(r[3]),flavors:safeJson(r[4]),newFlavors:safeJson(r[5])||[],total:Number(r[7]||0)}))}
@@ -211,6 +211,15 @@ function rangeDates(mode){const d=sortedDates();if(!d.length)return [];const i=t
 function planQtyForDates(dates){const out={};dates.forEach(ds=>{const p=PLAN_DATA?.[ds]||{};Object.entries(p).forEach(([f,q])=>{out[f]=(out[f]||0)+Number(q||0)})});return out}
 function weekBounds(){const dates=sortedDates();if(!dates.length)return [null,null];return [parseLocalDate(dates[0]),parseLocalDate(dates[dates.length-1])]}
 function factTotals(){const [from,to]=weekBounds();const lepka={},nachinka={};if(!from||!to)return {lepka,nachinka};PROD_RECORDS.forEach(r=>{const d=parseLocalDate(r.date);if(!d||d<from||d>to)return;const tgt=r.workType==='Лепка'?lepka:(r.workType==='Начинки'?nachinka:null);if(!tgt)return;Object.entries(r.flavors||{}).forEach(([f,q])=>{tgt[f]=(tgt[f]||0)+Number(q||0)});(r.newFlavors||[]).forEach(nf=>{tgt[nf.name]=(tgt[nf.name]||0)+Number(nf.qty||0)})});return {lepka,nachinka}}
+function overproduction(){
+  // Вкусы, по которым факт лепки превышает план
+  const facts=factTotals();
+  const planByFlavor={};
+  sortedDates().forEach(ds=>{Object.entries(PLAN_DATA?.[ds]||{}).forEach(([f,q])=>{planByFlavor[f]=(planByFlavor[f]||0)+Number(q||0)})});
+  const over=[];
+  Object.entries(facts.lepka).forEach(([f,q])=>{const plan=planByFlavor[f]||0;if(q>plan)over.push({name:f,plan,fact:q,extra:q-plan})});
+  return over;
+}
 function remainingByDay(){const dates=sortedDates(),facts=factTotals(),lf={...facts.lepka},nf={...facts.nachinka},out={};dates.forEach(ds=>{out[ds]={};Object.entries(PLAN_DATA?.[ds]||{}).forEach(([f,qty0])=>{let qty=Number(qty0||0);const usedL=Math.min(qty,lf[f]||0);qty-=usedL;lf[f]=(lf[f]||0)-usedL;let fill=qty;const usedN=Math.min(fill,nf[f]||0);fill-=usedN;nf[f]=(nf[f]||0)-usedN;out[ds][f]={plan:Number(qty0||0),dough:qty,filling:fill}})});return out}
 function calcNeedsForDates(dates){const rem=remainingByDay();const needs={};let planTotal=0,doughTotal=0,fillTotal=0;dates.forEach(ds=>{Object.entries(rem[ds]||{}).forEach(([f,r])=>{planTotal+=r.plan;doughTotal+=r.dough;fillTotal+=r.filling;const rec=RECIPES[f];if(!rec)return;rec.forEach(it=>{const qty=DOUGH_INGREDIENTS.has(it.n)?r.dough:r.filling;if(qty>0)needs[it.n]=(needs[it.n]||0)+it.w*qty})})});return {needs,planTotal,doughTotal,fillTotal}}
 function unitInfo(name){const pr=PRICES[name];return pr?{pack:pr.pack,unit:'уп',price:pr.p,packLabel:fmtPack(pr.pack)}:{pack:1,unit:'г',price:0,packLabel:'г'}}
@@ -237,12 +246,27 @@ function renderNow(){
   let html=`<div class="hero">
     <div class="hero-kicker">${isToday?'Сегодня':'Ближайший план'}</div>
     <div class="hero-title">${formatDate(dayDate)}</div>
-    <div class="hero-sub">${calc.planTotal} моти · ${Object.keys(dayPlan).length} вкус(ов). Факт начинок и лепки уже учтён.</div>
-    <div class="hero-row">
-      <div class="mini"><div class="mini-val">${calc.doughTotal}</div><div class="mini-label">лепка ост.</div></div>
-      <div class="mini"><div class="mini-val">${calc.fillTotal}</div><div class="mini-label">начинки ост.</div></div>
-    </div>
+    <div class="hero-sub">${calc.planTotal} моти · ${Object.keys(dayPlan).length} вкус(ов)${calc.planTotal!==calc.doughTotal||calc.planTotal!==calc.fillTotal?'. Уже сделанное вычтено.':''}</div>
   </div>`;
+
+  // Плашка про заказы, которые ждут приёмки
+  const orderedCount=accountedLines().filter(x=>x.ordered).length;
+  if(orderedCount){
+    html+=`<div class="notice" onclick="openArrivedModal()" style="cursor:pointer">
+      <div class="notice-title">🔔 Ждёт приёмки</div>
+      <div class="notice-text">${orderedCount} ${orderedCount===1?'позиция':orderedCount<5?'позиции':'позиций'} заказано. Открыть отметку «приехало».</div>
+    </div>`;
+  }
+
+  // Плашка про переработку (факт > план)
+  const over=overproduction();
+  if(over.length){
+    const sample=over.slice(0,2).map(x=>`${x.name} +${x.extra}`).join(', ');
+    html+=`<div class="notice">
+      <div class="notice-title">ℹ Переработали по плану</div>
+      <div class="notice-text">${sample}${over.length>2?` и ещё ${over.length-2}`:''}. Излишек уйдёт в запас.</div>
+    </div>`;
+  }
 
   const hasAny=SUP_ORDER.some(k=>totals[k].count>0);
   if(!hasAny){
@@ -278,7 +302,7 @@ function renderWeekSummary(){
       <div class="soft-row"><span class="soft-name"><b>${formatRange(dates)}</b><br><span class="muted">${calc.planTotal} моти · ${dates.length} дн.</span></span><span class="week-total">${fmtMoney(totalCost)}</span></div>
       ${rows}${other}
     </div>
-    <div class="bottom-actions" style="margin-left:0;margin-right:0"><button class="btn light" onclick="openListsFor('week')">Открыть неделю</button><button class="btn primary" onclick="copyMode('week')">Скопировать всё</button></div>
+    <div class="bottom-actions" style="margin-left:0;margin-right:0"><button class="btn primary" onclick="openListsFor('week')">Открыть неделю</button></div>
   </div>`;
 }
 function renderWeekSupplierRow(key,total){
@@ -289,7 +313,7 @@ function renderWeekSupplierRow(key,total){
 
 function renderSupplierAction(key,items,total,mode){
   const ui=SUP_UI[key];
-  if(!total||!total.count)return `<div class="supplier-card ${ui.cls}"><div class="supplier-main"><div class="supplier-icon">${ui.icon}</div><div class="supplier-info"><div class="supplier-name">${ui.title}</div><div class="supplier-desc">ничего не нужно</div></div></div></div>`;
+  if(!total||!total.count)return `<div class="supplier-card ${ui.cls}"><div class="supplier-main"><div class="supplier-info"><div class="supplier-name">${ui.title}</div><div class="supplier-desc">ничего не нужно</div></div></div></div>`;
   const btnClass=key==='ashan'?'amber':(key==='ozon'?'teal':'primary');
   const openLabel=key==='sasha'?'Список Саши':(key==='ashan'?'Список магазина':(key==='ozon'?'Список Озона':'Открыть список'));
   const mainLabel=key==='sasha'?'Скопировать':'Открыть список';
@@ -297,12 +321,12 @@ function renderSupplierAction(key,items,total,mode){
   const secondAction=key==='sasha'?`openSupplierList('${key}','${mode||'today'}')`:`copyAndAsk('${key}')`;
   const secondLabel=key==='sasha'?openLabel:'Скопировать';
   return `<div class="supplier-card ${ui.cls}">
-    <div class="supplier-main"><div class="supplier-icon">${ui.icon}</div><div class="supplier-info"><div class="supplier-name">${ui.title}</div><div class="supplier-desc">${total.count} поз. · примерно ${fmtMoney(total.cost)}</div></div><div class="supplier-sum"><div class="supplier-price">${fmtMoney(total.cost)}</div><div class="supplier-count">${total.count} поз.</div></div></div>
+    <div class="supplier-main"><div class="supplier-info"><div class="supplier-name">${ui.title}</div><div class="supplier-desc">${total.count} поз. · примерно ${fmtMoney(total.cost)}</div></div><div class="supplier-sum"><div class="supplier-price">${fmtMoney(total.cost)}</div><div class="supplier-count">${total.count} поз.</div></div></div>
     <div class="card-actions"><button class="btn ${btnClass}" onclick="${mainAction}">${mainLabel}</button><button class="btn light" onclick="${secondAction}">${secondLabel}</button></div>
   </div>`;
 }
-function openListsFor(mode){listMode=mode;openedSupplier='sasha';switchTab('lists')}
-function openSupplierList(key,mode){if(mode)listMode=mode;openedSupplier=key;if(currentTab!=='lists')switchTab('lists');else renderLists();setTimeout(()=>{const el=document.getElementById('list-'+key);if(el){el.classList.add('open');el.scrollIntoView({block:'nearest',behavior:'smooth'});}},0)}
+function openListsFor(mode){listMode=mode;CUSTOM_DATES=null;openedSupplier='sasha';switchTab('lists')}
+function openSupplierList(key,mode){if(mode){listMode=mode;if(mode!=='custom')CUSTOM_DATES=null;}openedSupplier=key;if(currentTab!=='lists')switchTab('lists');else renderLists();setTimeout(()=>{const el=document.getElementById('list-'+key);if(el){el.classList.add('open');el.scrollIntoView({block:'nearest',behavior:'smooth'});}},0)}
 function renderLists(){
   const el=document.getElementById('screen-lists');
   if(!PLAN_DATA||!PLAN_DATES.length){el.innerHTML='<div class="empty">План пока не загружен</div>';return}
@@ -311,7 +335,7 @@ function renderLists(){
   const groups=groupLines(calc.needs);
   const totals=groupTotals(groups);
   const totalCost=Object.values(totals).reduce((s,x)=>s+x.cost,0);
-  let html=`<div class="chips">${Object.entries(RANGE_LABELS).map(([k,v])=>`<button class="chip ${listMode===k?'active':''}" onclick="listMode='${k}';renderLists()">${v}</button>`).join('')}</div>
+  let html=`<div class="chips">${Object.entries(RANGE_LABELS).map(([k,v])=>`<button class="chip ${listMode===k?'active':''}" onclick="listMode='${k}';CUSTOM_DATES=null;renderLists()">${v}</button>`).join('')}</div>
   <div class="hero"><div class="hero-kicker">${RANGE_LABELS[listMode]||'Выбранный день'}</div><div class="hero-title">${formatRange(dates)}</div><div class="hero-sub">${calc.planTotal} моти · осталось к закупке примерно ${fmtMoney(totalCost)}</div></div>`;
   html+=`<div class="section"><div class="section-head"><div class="section-title">Списки</div><div class="section-meta">открывай по одному</div></div>${SUP_ORDER.map(k=>renderListCard(k,groups[k]||[],totals[k]||{count:0,cost:0})).join('')}</div>`;
   html+=`<div class="bottom-actions"><button class="btn light" onclick="openAddModal()">Добавить остаток</button><button class="btn light" onclick="switchTab('more')">Уже учтено</button></div>`;
@@ -322,16 +346,18 @@ function renderListCard(key,items,total){
   const ui=SUP_UI[key];
   const open=openedSupplier===key?' open':'';
   const btnClass=key==='ashan'?'amber':(key==='ozon'?'teal':'primary');
-  return `<div class="list-card ${ui.cls}${open}" id="list-${key}"><div class="list-head" onclick="toggleList('${key}')"><div class="supplier-icon">${ui.icon}</div><div class="list-head-title"><div class="list-title">${ui.title}</div><div class="list-sub">${items.length?items.length+' позиций':'пусто'}</div></div><div class="list-total"><div class="sum">${fmtMoney(total.cost)}</div><div class="open">открыть</div></div></div>${items.length?`<div class="list-body"><div class="card-actions" style="padding-top:12px"><button class="btn ${btnClass}" onclick="event.stopPropagation();copyAndAsk('${key}')">Скопировать</button><button class="btn light" onclick="event.stopPropagation();markSupplier('${key}','${ui.kind}')">${ui.done} всё</button></div>${items.map(it=>renderItem(key,it)).join('')}</div>`:`<div class="list-body"><div class="empty" style="box-shadow:none;margin:0;border-radius:0">По этому поставщику ничего не нужно</div></div>`}</div>`;
+  return `<div class="list-card ${ui.cls}${open}" id="list-${key}"><div class="list-head" onclick="toggleList('${key}')"><div class="list-head-title"><div class="list-title">${ui.title}</div><div class="list-sub">${items.length?items.length+' позиций':'пусто'}</div></div><div class="list-total"><div class="sum">${fmtMoney(total.cost)}</div><div class="open">открыть</div></div></div>${items.length?`<div class="list-body"><div class="card-actions" style="padding-top:12px"><button class="btn ${btnClass}" onclick="event.stopPropagation();copyAndAsk('${key}')">Скопировать</button><button class="btn light" onclick="event.stopPropagation();markSupplier('${key}','${ui.kind}')">${ui.done} всё</button></div>${items.map(it=>renderItem(key,it)).join('')}</div>`:`<div class="list-body"><div class="empty" style="box-shadow:none;margin:0;border-radius:0">По этому поставщику ничего не нужно</div></div>`}</div>`;
 }
 function toggleList(key){openedSupplier=openedSupplier===key?'':key;renderLists()}
-function renderItem(key,it){const ui=SUP_UI[key];const label=ui.kind==='ordered'?'Заказала':'Купила';const note=[`нужно ${fmtG(it.grams)}`,`упаковка ${it.packLabel}`];if(it.stock)note.push(`есть ${it.stock} ${it.unit}`);if(it.bought)note.push(`куплено ${it.bought} ${it.unit}`);if(it.ordered)note.push(`заказано ${it.ordered} ${it.unit}`);return `<div class="item"><button class="item-check" onclick="markItem('${escJs(it.name)}','${ui.kind}',${it.action})">✓</button><div class="item-main" onclick="openEditModal('${escJs(it.name)}',${it.grams})"><div class="item-name">${escHtml(it.name)}</div><div class="item-note">${note.join(' · ')}</div></div><div class="item-qty">${it.action} ${it.unit}</div><button class="item-edit" onclick="openEditModal('${escJs(it.name)}',${it.grams})">изм.</button></div>`}
-function renderDays(){const el=document.getElementById('screen-days');if(!PLAN_DATA||!PLAN_DATES.length){el.innerHTML='<div class="empty">План пока не загружен</div>';return}let html=`<div class="section"><div class="section-head"><div class="section-title">Дни</div><div class="section-meta">что не закрыто</div></div>`;sortedDates().forEach(ds=>{const date=parseLocalDate(ds);const calc=calcNeedsForDates([ds]);const groups=groupLines(calc.needs);const totals=groupTotals(groups);const count=Object.values(totals).reduce((s,x)=>s+x.count,0);const cost=Object.values(totals).reduce((s,x)=>s+x.cost,0);html+=`<div class="day-card" onclick="listMode='today';openedSupplier='sasha';PLAN_DATES=[...PLAN_DATES];showDayLists('${escJs(ds)}')"><div class="day-date"><div class="day-dow">${DAY_SHORT[date.getDay()]}</div><div class="day-num">${date.getDate()}</div></div><div class="day-main"><div class="day-title">${calc.planTotal} шт · ${Object.keys(PLAN_DATA[ds]||{}).length} вкус.</div><div class="day-sub">лепка ${calc.doughTotal} · начинки ${calc.fillTotal}</div></div><div class="day-status">${count?count+' поз.': 'готово'}<br><span class="muted">${count?fmtMoney(cost):''}</span></div></div>`});html+='</div>';el.innerHTML=html}
-function showDayLists(ds){listMode='custom';window.CUSTOM_DATES=[ds];switchTab('lists')}
-const _rangeDates=rangeDates;rangeDates=function(mode){if(mode==='custom'&&window.CUSTOM_DATES)return window.CUSTOM_DATES;return _rangeDates(mode)}
+function renderItem(key,it){const note=[`нужно ${fmtG(it.grams)}`,`упаковка ${it.packLabel}`];if(it.stock)note.push(`есть ${it.stock} ${it.unit}`);if(it.bought)note.push(`куплено ${it.bought} ${it.unit}`);if(it.ordered)note.push(`заказано ${it.ordered} ${it.unit}`);return `<div class="item" onclick="openEditModal('${escJs(it.name)}',${it.grams})"><div class="item-main"><div class="item-name">${escHtml(it.name)}</div><div class="item-note">${note.join(' · ')}</div></div><div class="item-qty">${it.action} ${it.unit}</div><button class="item-edit" onclick="event.stopPropagation();openEditModal('${escJs(it.name)}',${it.grams})">изм.</button></div>`}
+function renderDays(){const el=document.getElementById('screen-days');if(!PLAN_DATA||!PLAN_DATES.length){el.innerHTML='<div class="empty">План пока не загружен</div>';return}let html=`<div class="section"><div class="section-head"><div class="section-title">Дни</div><div class="section-meta">что не закрыто</div></div>`;sortedDates().forEach(ds=>{const date=parseLocalDate(ds);const calc=calcNeedsForDates([ds]);const groups=groupLines(calc.needs);const totals=groupTotals(groups);const count=Object.values(totals).reduce((s,x)=>s+x.count,0);const cost=Object.values(totals).reduce((s,x)=>s+x.cost,0);const flavCount=Object.keys(PLAN_DATA[ds]||{}).length;html+=`<div class="day-card" onclick="showDayLists('${escJs(ds)}')"><div class="day-date"><div class="day-dow">${DAY_SHORT[date.getDay()]}</div><div class="day-num">${date.getDate()}</div></div><div class="day-main"><div class="day-title">${calc.planTotal} шт · ${flavCount} вкус.</div><div class="day-sub">${count?count+' поз. к закупке':'всё закрыто'}</div></div><div class="day-status">${count?fmtMoney(cost): '✓'}<br><span class="muted">${count?count+' поз.':''}</span></div></div>`});html+='</div>';el.innerHTML=html}
+let CUSTOM_DATES=null;
+function showDayLists(ds){listMode='custom';CUSTOM_DATES=[ds];openedSupplier='sasha';switchTab('lists')}
+const _origRangeDates=rangeDates;
+rangeDates=function(mode){if(mode==='custom'&&CUSTOM_DATES&&CUSTOM_DATES.length)return CUSTOM_DATES;return _origRangeDates(mode)}
 function renderMore(){const el=document.getElementById('screen-more');const acc=accountedLines();let html=`<div class="hero"><div class="hero-kicker">Ещё</div><div class="hero-title">Остатки и отметки</div><div class="hero-sub">Здесь можно добавить, что уже есть, купили или заказали. На главном экране это не мешает.</div></div><div class="bottom-actions"><button class="btn primary" onclick="openAddModal()">Добавить</button><button class="btn light" onclick="openArrivedModal()">Заказ приехал</button></div>`;if(acc.length){html+=`<div class="section"><div class="section-head"><div class="section-title">Уже учтено</div><div class="section-meta">${acc.length} поз.</div></div><div class="soft-list">${acc.map(renderAccountedRow).join('')}</div></div>`}else html+='<div class="empty">Пока ничего не отмечено</div>';html+=`<button class="danger-link" onclick="resetState()">Сбросить все отметки</button>`;el.innerHTML=html}
 function renderAccountedRow(x){const parts=[];if(x.stock)parts.push(`есть ${x.stock}`);if(x.bought)parts.push(`куплено ${x.bought}`);if(x.ordered)parts.push(`заказано ${x.ordered}`);return `<div class="soft-row" onclick="openEditModal('${escJs(x.name)}',0)"><span class="soft-name">${escHtml(x.name)}<br><span class="muted">${parts.join(' · ')}</span></span><span class="soft-val">изм.</span></div>`}
-function markItem(name,kind,qty){const cur=getState(name);setState(name,{[kind]:Number(cur[kind]||0)+Number(qty||0)});showToast(kind==='ordered'?'Отмечено как заказанное':'Отмечено как купленное')}
+function markItem(name,kind,qty){openEditModal(name,0,{[kind]:Number(qty||0)})}
 function markSupplier(key,kind){const dates=rangeDates(listMode);const groups=groupLines(calcNeedsForDates(dates).needs);(groups[key]||[]).forEach(it=>{const cur=getState(it.name);STATE[it.name]={...cur,[kind]:Number(cur[kind]||0)+it.action,updatedAt:Date.now()}});saveState();render();showToast(kind==='ordered'?'Список отмечен заказанным':'Список отмечен купленным')}
 function copyMode(mode){
   const dates=rangeDates(mode);
@@ -355,7 +381,7 @@ function copyMode(mode){
 function copyAndAsk(key){const dates=rangeDates(listMode==='custom'?'custom':(currentTab==='now'?'today':listMode));const groups=groupLines(calcNeedsForDates(dates).needs);const items=groups[key]||[];if(!items.length){showToast('Список пустой');return}const ui=SUP_UI[key];const total=items.reduce((s,x)=>s+x.cost,0);const txt=`OMOTI · ${ui.short}\n${formatRange(dates)}\n\n`+items.map(it=>`• ${it.name} — ${it.action} ${it.unit}${it.unit==='уп'?' × '+it.packLabel:''}`).join('\n')+`\n\nПримерно: ${fmtMoney(total)}`;navigator.clipboard.writeText(txt).then(()=>{showToast('Список скопирован');if(key!=='ashan'&&confirm('Отметить этот список как заказанный?'))markSupplier(key,'ordered')}).catch(()=>showToast('Не получилось скопировать',true))}
 function openAddModal(){openModal(`<div class="modal-title">Что уже есть?</div><div class="modal-sub">Добавь только то, что реально важно. Не надо вести весь склад.</div><div class="field"><label>Продукт</label><select id="m-name">${ALL_INGREDIENTS.map(n=>`<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('')}</select></div><div class="modal-row"><div class="field"><label>Есть</label><input id="m-stock" type="number" min="0" step="0.5" placeholder="0"></div><div class="field"><label>Купили</label><input id="m-bought" type="number" min="0" step="0.5" placeholder="0"></div><div class="field"><label>Заказали</label><input id="m-ordered" type="number" min="0" step="0.5" placeholder="0"></div></div><div class="modal-actions"><button class="btn light" onclick="closeModal()">Отмена</button><button class="btn primary" onclick="saveAddModal()">Сохранить</button></div>`)}
 function saveAddModal(){const name=document.getElementById('m-name').value;const cur=getState(name);const patch={};['stock','bought','ordered'].forEach(k=>{const v=Number(document.getElementById('m-'+k).value||0);if(v>0)patch[k]=Number(cur[k]||0)+v});setState(name,patch);closeModal();showToast('Учёл')}
-function openEditModal(name,grams){const line=grams?lineFor(name,grams):null;const st=getState(name);const unit=unitInfo(name).unit;openModal(`<div class="modal-title">${escHtml(name)}</div><div class="modal-sub">${line?`Нужно по расчёту: ${fmtG(line.grams)} · ${line.needUnits} ${unit}`:'Ручная отметка'}<br>Единица: ${unit}</div><div class="modal-row"><div class="field"><label>Есть</label><input id="e-stock" type="number" min="0" step="0.5" value="${st.stock||''}" placeholder="0"></div><div class="field"><label>Купили</label><input id="e-bought" type="number" min="0" step="0.5" value="${st.bought||''}" placeholder="0"></div><div class="field"><label>Заказали</label><input id="e-ordered" type="number" min="0" step="0.5" value="${st.ordered||''}" placeholder="0"></div></div><div class="modal-actions"><button class="btn light" onclick="deleteItemState('${escJs(name)}')">Очистить</button><button class="btn primary" onclick="saveEditModal('${escJs(name)}')">Сохранить</button></div>`)}
+function openEditModal(name,grams,prefill){const line=grams?lineFor(name,grams):null;const st=getState(name);const unit=unitInfo(name).unit;const pf=prefill||{};const valStock=pf.stock!==undefined?pf.stock:(st.stock||'');const valBought=pf.bought!==undefined?pf.bought:(st.bought||'');const valOrdered=pf.ordered!==undefined?pf.ordered:(st.ordered||'');openModal(`<div class="modal-title">${escHtml(name)}</div><div class="modal-sub">${line?`Нужно по расчёту: ${fmtG(line.grams)} · ${line.needUnits} ${unit}`:'Ручная отметка'}<br>Единица: ${unit}</div><div class="modal-row"><div class="field"><label>Есть</label><input id="e-stock" type="number" min="0" step="0.5" value="${valStock}" placeholder="0"></div><div class="field"><label>Купили</label><input id="e-bought" type="number" min="0" step="0.5" value="${valBought}" placeholder="0"></div><div class="field"><label>Заказали</label><input id="e-ordered" type="number" min="0" step="0.5" value="${valOrdered}" placeholder="0"></div></div><div class="modal-actions"><button class="btn light" onclick="deleteItemState('${escJs(name)}')">Очистить</button><button class="btn primary" onclick="saveEditModal('${escJs(name)}')">Сохранить</button></div>`)}
 function saveEditModal(name){setState(name,{stock:Number(document.getElementById('e-stock').value||0),bought:Number(document.getElementById('e-bought').value||0),ordered:Number(document.getElementById('e-ordered').value||0)});closeModal();showToast('Сохранено')}
 function deleteItemState(name){delete STATE[name];saveState();closeModal();render();showToast('Удалено')}
 function openArrivedModal(){const ordered=accountedLines().filter(x=>x.ordered);if(!ordered.length){showToast('Нет заказанных позиций');return}openModal(`<div class="modal-title">Заказ приехал?</div><div class="modal-sub">Нажми на продукт, и он перейдёт из “заказано” в “куплено”.</div><div class="soft-list">${ordered.map(x=>`<div class="soft-row" onclick="moveArrived('${escJs(x.name)}')"><span class="soft-name">${escHtml(x.name)}<br><span class="muted">заказано ${x.ordered}</span></span><span class="soft-val">приехало</span></div>`).join('')}</div><div class="modal-actions"><button class="btn light" onclick="closeModal()">Закрыть</button></div>`)}
@@ -363,7 +389,7 @@ function moveArrived(name){const st=getState(name);setState(name,{bought:Number(
 function openModal(html){document.getElementById('modal').innerHTML=html;document.getElementById('modal-back').style.display='block';document.getElementById('modal').style.display='block'}
 function closeModal(){document.getElementById('modal-back').style.display='none';document.getElementById('modal').style.display='none'}
 function resetState(){if(!confirm('Сбросить остатки, купленное и заказанное?'))return;STATE={};saveState();render();showToast('Сброшено')}
-async function loadAll(manual){setStatus(manual?'Обновляю...':'Загружаю план...');try{const [plan,prod]=await Promise.all([fetch(API+'?action=get_plan',{cache:'no-store'}).then(r=>r.json()),fetch(API+'?action=get_production&limit=300',{cache:'no-store'}).then(r=>r.json()).catch(()=>null)]);if(!plan.ok||!plan.plan)throw new Error('plan');PLAN_DATA=plan.plan;PLAN_BASE=plan.base||null;PLAN_DATES=Object.keys(PLAN_DATA).sort((a,b)=>parseLocalDate(a)-parseLocalDate(b));PLAN_LOADED_AT=new Date();if(prod&&prod.ok)PROD_RECORDS=parseRecords(prod.rows||[]);setStatus(`План ${PLAN_DATES.length} дн. · факт ${PROD_RECORDS.length} зап.`);render();if(manual)showToast('Обновлено')}catch(e){setStatus('Нет связи с планом');showToast('План не загрузился',true);render()}}
+async function loadAll(manual){setStatus(manual?'Обновляю...':'Загружаю план...');try{const planResp=await fetch(API+'?action=get_plan',{cache:'no-store'});const plan=await planResp.json();if(!plan.ok||!plan.plan)throw new Error('plan');PLAN_DATA=plan.plan;PLAN_BASE=plan.base||null;PLAN_DATES=Object.keys(PLAN_DATA).sort((a,b)=>parseLocalDate(a)-parseLocalDate(b));PLAN_LOADED_AT=new Date();try{const prodResp=await fetch(API+'?action=get_production&limit=300',{cache:'no-store'});const prod=await prodResp.json();if(prod&&prod.ok&&Array.isArray(prod.rows))PROD_RECORDS=parseRecords(prod.rows);}catch(e){PROD_RECORDS=[]}setStatus(`План ${PLAN_DATES.length} дн.${PROD_RECORDS.length?` · факт ${PROD_RECORDS.length} зап.`:''}`);render();if(manual)showToast('Обновлено')}catch(e){setStatus('Нет связи с планом');showToast('План не загрузился',true);render()}}
 loadAll(false);
 </script>
 </body>
