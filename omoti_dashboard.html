@@ -108,6 +108,95 @@ body{font-family:'Onest',system-ui,sans-serif;background:var(--bg);color:var(--t
 .color-a{background:#4caf82}
 .color-s{background:#5b8def}
 .color-n{background:#c8a84b}
+
+/* TABS */
+.tabs{display:flex;gap:4px;padding:10px 12px 0;background:rgba(13,13,15,.92);border-bottom:1px solid var(--border)}
+.tab-btn{flex:1;border:none;background:transparent;color:var(--muted);font-family:'Onest',sans-serif;font-size:12px;font-weight:600;padding:10px 4px;cursor:pointer;border-bottom:2px solid transparent;letter-spacing:-.01em;transition:.15s}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:700}
+.screen{display:none}.screen.active{display:block}
+
+/* CONTROLS for new tabs */
+.ctrl-block{padding:12px 16px 0;display:flex;flex-direction:column;gap:8px}
+.ctrl-row{display:flex;align-items:center;gap:8px}
+.ctrl-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;min-width:64px;flex-shrink:0}
+.ctrl-select{flex:1;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:9px 12px;font-family:'Onest',sans-serif;font-size:13px;font-weight:600;color:var(--text);appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none' stroke='%236b6b78' stroke-width='1.5'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:30px}
+
+/* BIG NUMBERS */
+.big-stats{padding:14px 16px 0;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.big-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px}
+.big-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+.big-val{font-size:24px;font-weight:800;line-height:1;letter-spacing:-.02em}
+.big-val.profit{color:var(--accent2)}
+.big-delta{font-size:11px;font-weight:700;margin-top:5px}
+.big-delta.pos{color:var(--green)}
+.big-delta.neg{color:var(--red)}
+.big-delta.zero{color:var(--muted)}
+
+/* WEEKDAY chart */
+.wd-chart{background:var(--card);border:1px solid var(--border);border-radius:16px;margin:14px 16px 0;padding:14px 10px 12px}
+.wd-bars{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;align-items:end;height:140px;margin-bottom:8px}
+.wd-bar-col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.wd-bar{width:100%;background:linear-gradient(180deg,var(--accent2),var(--accent));border-radius:6px 6px 0 0;min-height:3px}
+.wd-bar.dim{background:#3a3a44}
+.wd-bar.best{background:linear-gradient(180deg,#7adba0,var(--green))}
+.wd-bar.worst{background:linear-gradient(180deg,#e88a8a,#a04040)}
+.wd-labels{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.wd-lbl-name{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase}
+.wd-lbl-val{font-size:12px;font-weight:800;margin-top:3px}
+.wd-lbl-qty{font-size:10px;color:var(--muted);font-weight:600;margin-top:1px}
+.wd-meta{display:flex;justify-content:space-between;margin:12px 16px 0;padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:14px;font-size:12px}
+.wd-meta-row{display:flex;justify-content:space-between;padding:6px 0}
+.wd-meta-row .lbl{color:var(--muted)}
+.wd-meta-row .val{font-weight:700}
+
+/* DYNAMICS chart */
+.dyn-chart{background:var(--card);border:1px solid var(--border);border-radius:16px;margin:14px 16px 0;padding:14px 12px}
+.dyn-bars{display:flex;align-items:flex-end;gap:2px;height:120px;margin-bottom:6px}
+.dyn-bar{flex:1;background:linear-gradient(180deg,var(--accent2),var(--accent));border-radius:2px 2px 0 0;min-height:2px;cursor:pointer;transition:.1s;position:relative}
+.dyn-bar.dim{background:#3a3a44}
+.dyn-bar.selected{box-shadow:0 0 0 2px #fff}
+.dyn-bar.a{background:linear-gradient(180deg,#7adba0,var(--green))}
+.dyn-bar.s{background:linear-gradient(180deg,#85aaff,var(--blue))}
+.dyn-bar.n{background:linear-gradient(180deg,var(--accent2),var(--accent))}
+.dyn-axis{display:flex;justify-content:space-between;padding:0 2px;font-size:10px;color:var(--muted);font-weight:600}
+.dyn-stacked-col{flex:1;display:flex;flex-direction:column-reverse;height:120px;min-width:6px;cursor:pointer;gap:1px}
+.dyn-stacked-col.selected{outline:2px solid #fff;outline-offset:1px}
+.dyn-seg{width:100%;min-height:1px}
+.dyn-seg.a{background:var(--green)}
+.dyn-seg.s{background:var(--blue)}
+.dyn-seg.n{background:var(--accent)}
+.dyn-detail{margin:10px 0 0;padding:10px 12px;background:var(--card2);border-radius:12px;font-size:12px}
+.dyn-detail-date{font-weight:800;font-size:13px;margin-bottom:6px}
+.dyn-detail-row{display:flex;justify-content:space-between;margin-top:3px}
+.dyn-detail-row .lbl{color:var(--muted)}
+.dyn-detail-row .val{font-weight:700}
+.dyn-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:11px;color:var(--muted)}
+.dyn-legend-dot{width:10px;height:10px;border-radius:3px;display:inline-block;margin-right:5px;vertical-align:-1px}
+
+/* FORECAST */
+.fc-progress{margin:14px 16px 0;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 14px}
+.fc-progress-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+.fc-progress-bar{position:relative;height:8px;background:#2a2a32;border-radius:99px;overflow:hidden;margin-top:8px}
+.fc-progress-fill{position:absolute;left:0;top:0;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:99px}
+.fc-progress-marker{position:absolute;top:-3px;width:2px;height:14px;background:#fff;border-radius:99px}
+.fc-progress-legend{display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:var(--muted)}
+.fc-card{margin:10px 16px 0;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 14px}
+.fc-card .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+.fc-card .val{font-size:20px;font-weight:800;color:var(--text);margin-top:5px;letter-spacing:-.02em}
+.fc-card .val.accent{color:var(--accent2)}
+.fc-card .sub{font-size:11px;color:var(--muted);margin-top:4px;font-weight:600}
+.fc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 16px 0}
+.fc-grid .fc-card{margin:0}
+.fc-delta{font-size:12px;font-weight:700;margin-top:4px}
+.fc-delta.pos{color:var(--green)}.fc-delta.neg{color:var(--red)}.fc-delta.zero{color:var(--muted)}
+
+@media (max-width:380px){
+  .big-val{font-size:21px}
+  .wd-lbl-name{font-size:10px}
+  .wd-lbl-val{font-size:11px}
+  .wd-lbl-qty{font-size:9px}
+  .tab-btn{font-size:11px}
+}
 </style>
 </head>
 <body>
@@ -118,6 +207,14 @@ body{font-family:'Onest',system-ui,sans-serif;background:var(--bg);color:var(--t
   <div class="topbar-sub"><span class="live-dot"></span><span id="last-update">Загрузка...</span></div>
 </div>
 
+<div class="tabs">
+  <button class="tab-btn active" data-tab="main" onclick="switchTab('main')">Главная</button>
+  <button class="tab-btn" data-tab="weekday" onclick="switchTab('weekday')">Дни недели</button>
+  <button class="tab-btn" data-tab="dynamics" onclick="switchTab('dynamics')">Динамика</button>
+  <button class="tab-btn" data-tab="forecast" onclick="switchTab('forecast')">Прогноз</button>
+</div>
+
+<div class="screen active" id="screen-main">
 <div class="period-row" id="period-row">
   <div class="period-dropdown" id="dd-day">
     <button class="period-btn" id="btn-day" onclick="toggleDD('day',event)">День ▾</button>
@@ -138,6 +235,11 @@ body{font-family:'Onest',system-ui,sans-serif;background:var(--bg);color:var(--t
 <div id="main-content">
   <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
 </div>
+</div>
+
+<div class="screen" id="screen-weekday"></div>
+<div class="screen" id="screen-dynamics"></div>
+<div class="screen" id="screen-forecast"></div>
 
 </div>
 
@@ -356,6 +458,9 @@ function loadAll(){
     document.getElementById('last-update').textContent =
       'Обновлено в '+pad(now.getHours())+':'+pad(now.getMinutes());
     render();
+    if(currentTab==='weekday') renderWeekday();
+    else if(currentTab==='dynamics') renderDynamics();
+    else if(currentTab==='forecast') renderForecast();
   });
 }
 
@@ -473,6 +578,409 @@ function fmtK(n){
 function pc(n){ return n>=0?'profit-pos':'profit-neg'; }
 function sg(n){ return n>=0?'+':''; }
 function esc(s){ return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+
+// ─── НОВЫЕ ВКЛАДКИ ────────────────────────────────────────────────────────────
+
+// Состояние селекторов
+let currentTab='main';
+let wdState={period:'1m', point:'all', channel:'retail'};
+let dynState={period:'30d', point:'all', channel:'retail', selectedDate:null};
+let fcState={point:'all', channel:'retail'};
+
+function switchTab(tab){
+  currentTab=tab;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active','screen-'+tab===s.id));
+  if(tab==='weekday') renderWeekday();
+  else if(tab==='dynamics') renderDynamics();
+  else if(tab==='forecast') renderForecast();
+}
+
+// Все чеки одной плоской таблицей с уже посчитанной прибылью на чек
+// channel: 'retail' (только розница+себе оплачено−брак как чистая прибыль точек),
+//          'yandex' (только яндекс),
+//          'all' (всё вместе)
+function flatChecks(pointKey, channel){
+  const out=[];
+  const points = pointKey==='all' ? POINTS : POINTS.filter(p=>p.key===pointKey);
+  points.forEach(pt=>{
+    const checks=allData[pt.key]||[];
+    checks.forEach(ck=>{
+      const group=getPayGroup(ck.pay);
+      if(!group) return;
+      const qty=ck.items.reduce((a,it)=>a+Number(it.qty||0),0);
+      const rev=ck.items.reduce((a,it)=>a+Number(it.sum||0),0);
+      const d=parseDate(ck.date);
+      if(!d) return;
+
+      let profit=0, includeQty=qty, includeRev=rev;
+      const wantRetail = channel==='retail' || channel==='all';
+      const wantYandex = channel==='yandex' || channel==='all';
+
+      if(group==='retail' && wantRetail){
+        profit=calcRetailProfit(qty,rev,pt.payPoint);
+      } else if(group==='yandex' && wantYandex){
+        profit=calcYandexProfit(qty,rev,pt.payPoint);
+      } else if(group==='self_paid' && wantRetail){
+        profit=calcSelfPaidProfit(qty,rev);
+      } else if(group==='brak' && wantRetail){
+        profit=calcBrakLoss(qty); // отриц.
+        includeRev=0;
+      } else {
+        return; // не входит в выбранный канал
+      }
+      out.push({date:d, qty:includeQty, revenue:includeRev, profit, point:pt.key});
+    });
+  });
+  return out;
+}
+
+function startOfDay(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate())}
+function endOfDay(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate(),23,59,59,999)}
+function daysAgo(n){const d=new Date();d.setDate(d.getDate()-n);return startOfDay(d)}
+
+// Сумма метрики за диапазон
+function sumInRange(checks, from, to){
+  let qty=0, revenue=0, profit=0;
+  checks.forEach(c=>{
+    if(c.date>=from && c.date<=to){
+      qty+=c.qty; revenue+=c.revenue; profit+=c.profit;
+    }
+  });
+  return {qty, revenue, profit};
+}
+
+function fmtDelta(cur, prev){
+  if(prev===0) return cur===0?{cls:'zero',txt:'—'}:{cls:'pos',txt:'нет данных'};
+  const pct=Math.round((cur-prev)/Math.abs(prev)*100);
+  if(pct===0) return {cls:'zero', txt:'0%'};
+  return {cls:pct>0?'pos':'neg', txt:(pct>0?'+':'')+pct+'%'};
+}
+
+// ─── ВКЛАДКА: ДНИ НЕДЕЛИ ────────────────────────────────────────────────────
+function renderWeekday(){
+  const el=document.getElementById('screen-weekday');
+  const periods={'1m':30,'3m':90,'6m':180,'12m':365};
+  const days=periods[wdState.period];
+  const to=endOfDay(new Date());
+  const from=daysAgo(days-1);
+  const checks=flatChecks(wdState.point, wdState.channel);
+  // Группируем по дню недели (0=Вс)
+  const wd={0:{qty:0,profit:0,n:0},1:{qty:0,profit:0,n:0},2:{qty:0,profit:0,n:0},3:{qty:0,profit:0,n:0},4:{qty:0,profit:0,n:0},5:{qty:0,profit:0,n:0},6:{qty:0,profit:0,n:0}};
+  const seenDates={0:new Set(),1:new Set(),2:new Set(),3:new Set(),4:new Set(),5:new Set(),6:new Set()};
+  checks.forEach(c=>{
+    if(c.date<from || c.date>to) return;
+    const w=c.date.getDay();
+    wd[w].qty+=c.qty; wd[w].profit+=c.profit;
+    seenDates[w].add(startOfDay(c.date).getTime());
+  });
+  Object.keys(wd).forEach(k=>{wd[k].n=seenDates[k].size});
+  const order=[1,2,3,4,5,6,0]; // Пн..Вс
+  const names=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+  const avgs=order.map(d=>({d, name:names[order.indexOf(d)], avgProfit: wd[d].n?wd[d].profit/wd[d].n:0, avgQty: wd[d].n?wd[d].qty/wd[d].n:0, n: wd[d].n}));
+  const maxV=Math.max(...avgs.map(a=>a.avgProfit), 1);
+  const sorted=[...avgs].sort((a,b)=>b.avgProfit-a.avgProfit);
+  const best=sorted[0], worst=sorted[sorted.length-1];
+
+  const totalQty=Object.values(wd).reduce((s,x)=>s+x.qty,0);
+  const totalProfit=Object.values(wd).reduce((s,x)=>s+x.profit,0);
+
+  el.innerHTML=`
+    <div class="ctrl-block">
+      <div class="ctrl-row"><div class="ctrl-label">Период</div>
+        <select class="ctrl-select" onchange="wdState.period=this.value;renderWeekday()">
+          <option value="1m"${wdState.period==='1m'?' selected':''}>Месяц</option>
+          <option value="3m"${wdState.period==='3m'?' selected':''}>3 месяца</option>
+          <option value="6m"${wdState.period==='6m'?' selected':''}>6 месяцев</option>
+          <option value="12m"${wdState.period==='12m'?' selected':''}>12 месяцев</option>
+        </select>
+      </div>
+      <div class="ctrl-row"><div class="ctrl-label">Точка</div>
+        <select class="ctrl-select" onchange="wdState.point=this.value;renderWeekday()">
+          <option value="all"${wdState.point==='all'?' selected':''}>Все точки</option>
+          ${POINTS.map(p=>`<option value="${p.key}"${wdState.point===p.key?' selected':''}>${p.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="ctrl-row"><div class="ctrl-label">Канал</div>
+        <select class="ctrl-select" onchange="wdState.channel=this.value;renderWeekday()">
+          <option value="retail"${wdState.channel==='retail'?' selected':''}>Розница (твои точки)</option>
+          <option value="yandex"${wdState.channel==='yandex'?' selected':''}>Только Яндекс</option>
+          <option value="all"${wdState.channel==='all'?' selected':''}>Все каналы</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="big-stats">
+      <div class="big-card">
+        <div class="big-label">Прибыль в среднем за день</div>
+        <div class="big-val profit">${fmtK(avgs.reduce((s,a)=>s+a.avgProfit,0)/7)}</div>
+        <div class="big-delta zero">за период ${fmtK(totalProfit)}</div>
+      </div>
+      <div class="big-card">
+        <div class="big-label">Штук в среднем за день</div>
+        <div class="big-val">${Math.round(avgs.reduce((s,a)=>s+a.avgQty,0)/7)}</div>
+        <div class="big-delta zero">за период ${totalQty} шт</div>
+      </div>
+    </div>
+
+    <div class="wd-chart">
+      <div class="wd-bars">
+        ${avgs.map(a=>{
+          const h=Math.max(3,(a.avgProfit/maxV)*140);
+          const cls=a.d===best.d?'best':(a.d===worst.d?'worst':(a.n===0?'dim':''));
+          return `<div class="wd-bar-col"><div class="wd-bar ${cls}" style="height:${h}px"></div></div>`;
+        }).join('')}
+      </div>
+      <div class="wd-labels">
+        ${avgs.map(a=>`
+          <div>
+            <div class="wd-lbl-name">${a.name}</div>
+            <div class="wd-lbl-val">${a.n?fmtK(a.avgProfit):'—'}</div>
+            <div class="wd-lbl-qty">${a.n?Math.round(a.avgQty)+' шт':'—'}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="fc-card">
+      <div class="wd-meta-row"><span class="lbl">Сильный день</span><span class="val" style="color:var(--green)">${best.name} · ${fmtK(best.avgProfit)} / ${Math.round(best.avgQty)} шт</span></div>
+      <div class="wd-meta-row"><span class="lbl">Слабый день</span><span class="val" style="color:var(--red)">${worst.name} · ${fmtK(worst.avgProfit)} / ${Math.round(worst.avgQty)} шт</span></div>
+      <div class="wd-meta-row"><span class="lbl">Период</span><span class="val">${formatDDMM(from)} – ${formatDDMM(to)}</span></div>
+      <div class="wd-meta-row"><span class="lbl">Дней попало</span><span class="val">${order.map((d,i)=>names[i]+' '+wd[d].n).join(', ')}</span></div>
+    </div>
+  `;
+}
+
+function formatDDMM(d){return pad(d.getDate())+'.'+pad(d.getMonth()+1)}
+
+// ─── ВКЛАДКА: ДИНАМИКА ──────────────────────────────────────────────────────
+function renderDynamics(){
+  const el=document.getElementById('screen-dynamics');
+  const periods={'7d':7,'30d':30,'90d':90};
+  const days=periods[dynState.period];
+  const to=endOfDay(new Date());
+  const from=daysAgo(days-1);
+  const prevFrom=daysAgo(days*2-1);
+  const prevTo=daysAgo(days);
+  prevTo.setHours(23,59,59,999);
+
+  const checks=flatChecks(dynState.point, dynState.channel);
+  const cur=sumInRange(checks, from, to);
+  const prev=sumInRange(checks, prevFrom, prevTo);
+
+  // Группируем по дням
+  const byDay={};
+  for(let i=0;i<days;i++){
+    const d=daysAgo(days-1-i);
+    const key=startOfDay(d).getTime();
+    byDay[key]={ts:key, date:d, qty:0, profit:0, byPoint:{}};
+    POINTS.forEach(p=>{byDay[key].byPoint[p.key]={qty:0,profit:0}});
+  }
+  checks.forEach(c=>{
+    if(c.date<from||c.date>to) return;
+    const key=startOfDay(c.date).getTime();
+    if(!byDay[key]) return;
+    byDay[key].qty+=c.qty;
+    byDay[key].profit+=c.profit;
+    byDay[key].byPoint[c.point].qty+=c.qty;
+    byDay[key].byPoint[c.point].profit+=c.profit;
+  });
+  const dailyList=Object.values(byDay).sort((a,b)=>a.ts-b.ts);
+  const maxProfit=Math.max(...dailyList.map(d=>d.profit),1);
+
+  // Best/Worst
+  const nonZero=dailyList.filter(d=>d.qty>0);
+  const bestDay=nonZero.length?nonZero.reduce((a,b)=>b.profit>a.profit?b:a):null;
+  const worstDay=nonZero.length?nonZero.reduce((a,b)=>b.profit<a.profit?b:a):null;
+  const avgPerDay=cur.profit/days;
+
+  const deltaProfit=fmtDelta(cur.profit, prev.profit);
+  const deltaQty=fmtDelta(cur.qty, prev.qty);
+
+  // Выбранный день для деталей
+  const selected = dynState.selectedDate ? dailyList.find(d=>d.ts===dynState.selectedDate) : null;
+
+  const isAllPoints = dynState.point==='all';
+  const showStacked = isAllPoints && POINTS.length>1;
+
+  el.innerHTML=`
+    <div class="ctrl-block">
+      <div class="ctrl-row"><div class="ctrl-label">Период</div>
+        <select class="ctrl-select" onchange="dynState.period=this.value;dynState.selectedDate=null;renderDynamics()">
+          <option value="7d"${dynState.period==='7d'?' selected':''}>7 дней</option>
+          <option value="30d"${dynState.period==='30d'?' selected':''}>30 дней</option>
+          <option value="90d"${dynState.period==='90d'?' selected':''}>90 дней</option>
+        </select>
+      </div>
+      <div class="ctrl-row"><div class="ctrl-label">Точка</div>
+        <select class="ctrl-select" onchange="dynState.point=this.value;dynState.selectedDate=null;renderDynamics()">
+          <option value="all"${dynState.point==='all'?' selected':''}>Все точки</option>
+          ${POINTS.map(p=>`<option value="${p.key}"${dynState.point===p.key?' selected':''}>${p.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="ctrl-row"><div class="ctrl-label">Канал</div>
+        <select class="ctrl-select" onchange="dynState.channel=this.value;dynState.selectedDate=null;renderDynamics()">
+          <option value="retail"${dynState.channel==='retail'?' selected':''}>Розница (твои точки)</option>
+          <option value="yandex"${dynState.channel==='yandex'?' selected':''}>Только Яндекс</option>
+          <option value="all"${dynState.channel==='all'?' selected':''}>Все каналы</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="big-stats">
+      <div class="big-card">
+        <div class="big-label">Прибыль за ${days} дн.</div>
+        <div class="big-val profit">${fmtK(cur.profit)}</div>
+        <div class="big-delta ${deltaProfit.cls}">${deltaProfit.txt} к пред. ${days} дн.</div>
+      </div>
+      <div class="big-card">
+        <div class="big-label">Штук за ${days} дн.</div>
+        <div class="big-val">${cur.qty}</div>
+        <div class="big-delta ${deltaQty.cls}">${deltaQty.txt} к пред. ${days} дн.</div>
+      </div>
+    </div>
+
+    <div class="dyn-chart">
+      <div class="dyn-bars">
+        ${dailyList.map(d=>{
+          if(showStacked){
+            const cols=POINTS.map(p=>{
+              const v=d.byPoint[p.key].profit;
+              const h=v>0 ? (v/maxProfit)*120 : 0;
+              return h>0?`<div class="dyn-seg ${p.key}" style="height:${h}px"></div>`:'';
+            }).join('');
+            const sel=d.ts===dynState.selectedDate?' selected':'';
+            return `<div class="dyn-stacked-col${sel}" onclick="dynState.selectedDate=${d.ts};renderDynamics()">${cols}</div>`;
+          } else {
+            const h=Math.max(2,(d.profit/maxProfit)*120);
+            const dim=d.qty===0?'dim':(dynState.point!=='all'?dynState.point:'');
+            const sel=d.ts===dynState.selectedDate?' selected':'';
+            return `<div class="dyn-bar ${dim}${sel}" style="height:${h}px" onclick="dynState.selectedDate=${d.ts};renderDynamics()"></div>`;
+          }
+        }).join('')}
+      </div>
+      <div class="dyn-axis">
+        <span>${formatDDMM(from)}</span>
+        <span>${formatDDMM(daysAgo(Math.floor(days/2)))}</span>
+        <span>${formatDDMM(to)}</span>
+      </div>
+      ${showStacked?`<div class="dyn-legend">${POINTS.map(p=>`<span><span class="dyn-legend-dot" style="background:${p.key==='a'?'var(--green)':(p.key==='s'?'var(--blue)':'var(--accent)')}"></span>${p.name}</span>`).join('')}</div>`:''}
+      ${selected?`
+        <div class="dyn-detail">
+          <div class="dyn-detail-date">${formatDDMM(selected.date)} ${['Вс','Пн','Вт','Ср','Чт','Пт','Сб'][selected.date.getDay()]}</div>
+          <div class="dyn-detail-row"><span class="lbl">Прибыль</span><span class="val ${pc(selected.profit)}">${fmtK(selected.profit)}</span></div>
+          <div class="dyn-detail-row"><span class="lbl">Штук</span><span class="val">${selected.qty}</span></div>
+          ${showStacked?POINTS.filter(p=>selected.byPoint[p.key].qty>0).map(p=>`<div class="dyn-detail-row"><span class="lbl">· ${p.name}</span><span class="val">${selected.byPoint[p.key].qty} шт · ${fmtK(selected.byPoint[p.key].profit)}</span></div>`).join(''):''}
+        </div>
+      `:'<div class="dyn-detail" style="color:var(--muted);font-size:12px">Нажми на столбик чтобы увидеть день</div>'}
+    </div>
+
+    <div class="fc-card">
+      <div class="wd-meta-row"><span class="lbl">Средний день</span><span class="val">${fmtK(avgPerDay)}</span></div>
+      ${bestDay?`<div class="wd-meta-row"><span class="lbl">Лучший день</span><span class="val" style="color:var(--green)">${formatDDMM(bestDay.date)} · ${fmtK(bestDay.profit)} · ${bestDay.qty} шт</span></div>`:''}
+      ${worstDay?`<div class="wd-meta-row"><span class="lbl">Худший день</span><span class="val" style="color:var(--red)">${formatDDMM(worstDay.date)} · ${fmtK(worstDay.profit)} · ${worstDay.qty} шт</span></div>`:''}
+    </div>
+  `;
+}
+
+// ─── ВКЛАДКА: ПРОГНОЗ ───────────────────────────────────────────────────────
+function renderForecast(){
+  const el=document.getElementById('screen-forecast');
+  const now=new Date();
+  const year=now.getFullYear(), month=now.getMonth();
+  const monthStart=new Date(year, month, 1);
+  const monthEnd=new Date(year, month+1, 0, 23,59,59,999);
+  const daysTotal=monthEnd.getDate();
+  const daysPassed=now.getDate();
+  const daysLeft=daysTotal-daysPassed;
+  const pctPassed=Math.round(daysPassed/daysTotal*100);
+
+  // Прошлый месяц
+  const prevStart=new Date(year, month-1, 1);
+  const prevEnd=new Date(year, month, 0, 23,59,59,999);
+  const prevDays=prevEnd.getDate();
+
+  const checks=flatChecks(fcState.point, fcState.channel);
+  const cur=sumInRange(checks, monthStart, endOfDay(now));
+  const prev=sumInRange(checks, prevStart, prevEnd);
+
+  // Прогноз = текущий темп * всего дней
+  const profitPerDay = daysPassed>0 ? cur.profit/daysPassed : 0;
+  const qtyPerDay = daysPassed>0 ? cur.qty/daysPassed : 0;
+  const fcProfit = profitPerDay * daysTotal;
+  const fcQty = Math.round(qtyPerDay * daysTotal);
+
+  const deltaProfit=fmtDelta(fcProfit, prev.profit);
+  const deltaQty=fmtDelta(fcQty, prev.qty);
+
+  // Прогресс-бар: где сейчас vs прошлый месяц
+  const fillPct = prev.profit>0 ? Math.min(100, (cur.profit/prev.profit)*100) : 0;
+  const monthNames=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+  const monthName=monthNames[month];
+  const prevMonthName=monthNames[(month-1+12)%12];
+
+  el.innerHTML=`
+    <div class="ctrl-block">
+      <div class="ctrl-row"><div class="ctrl-label">Точка</div>
+        <select class="ctrl-select" onchange="fcState.point=this.value;renderForecast()">
+          <option value="all"${fcState.point==='all'?' selected':''}>Все точки</option>
+          ${POINTS.map(p=>`<option value="${p.key}"${fcState.point===p.key?' selected':''}>${p.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="ctrl-row"><div class="ctrl-label">Канал</div>
+        <select class="ctrl-select" onchange="fcState.channel=this.value;renderForecast()">
+          <option value="retail"${fcState.channel==='retail'?' selected':''}>Розница (твои точки)</option>
+          <option value="yandex"${fcState.channel==='yandex'?' selected':''}>Только Яндекс</option>
+          <option value="all"${fcState.channel==='all'?' selected':''}>Все каналы</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="fc-progress">
+      <div class="fc-progress-label">${monthName.charAt(0).toUpperCase()+monthName.slice(1)}</div>
+      <div style="font-size:13px;font-weight:600;color:var(--muted);margin-top:3px">Прошло ${daysPassed} из ${daysTotal} дней (${pctPassed}%)</div>
+      <div class="fc-progress-bar">
+        <div class="fc-progress-fill" style="width:${fillPct}%"></div>
+        <div class="fc-progress-marker" style="left:100%"></div>
+      </div>
+      <div class="fc-progress-legend">
+        <span>сейчас ${fmtK(cur.profit)}</span>
+        <span>${prevMonthName.charAt(0).toUpperCase()+prevMonthName.slice(1)} ${fmtK(prev.profit)}</span>
+      </div>
+    </div>
+
+    <div class="big-stats">
+      <div class="big-card">
+        <div class="big-label">Сейчас прибыль</div>
+        <div class="big-val profit">${fmtK(cur.profit)}</div>
+        <div class="big-delta zero">темп ${fmtK(profitPerDay)}/день</div>
+      </div>
+      <div class="big-card">
+        <div class="big-label">Сейчас штуки</div>
+        <div class="big-val">${cur.qty}</div>
+        <div class="big-delta zero">темп ${Math.round(qtyPerDay)} шт/день</div>
+      </div>
+    </div>
+
+    <div class="big-stats">
+      <div class="big-card">
+        <div class="big-label">Прогноз к ${daysTotal} ${monthName}</div>
+        <div class="big-val profit">${fmtK(fcProfit)}</div>
+        <div class="big-delta ${deltaProfit.cls}">${deltaProfit.txt} к ${prevMonthName}</div>
+      </div>
+      <div class="big-card">
+        <div class="big-label">Прогноз штук</div>
+        <div class="big-val">~ ${fcQty}</div>
+        <div class="big-delta ${deltaQty.cls}">${deltaQty.txt} к ${prevMonthName}</div>
+      </div>
+    </div>
+
+    <div class="fc-card">
+      <div class="lbl">Прошлый месяц итог</div>
+      <div class="val">${fmtK(prev.profit)} · ${prev.qty} шт</div>
+      <div class="sub">${prevDays} дней</div>
+    </div>
+  `;
+}
 
 // ─── РЕНДЕР ───────────────────────────────────────────────────────────────────
 function render(){
