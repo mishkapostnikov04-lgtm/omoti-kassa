@@ -432,6 +432,9 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
   const [saving, setSaving] = useState(false);
   const [loadingEdit, setLoadingEdit] = useState(false);
   const [editingOrder, setEditingOrder] = useState(null); // полный объект редактируемого заказа
+  const [quickText, setQuickText] = useState('');
+  const [quickParsing, setQuickParsing] = useState(false);
+  const [quickParseResult, setQuickParseResult] = useState(null);
 
   const isEditMode = !!editOrderId;
 
@@ -506,6 +509,129 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
   }), [clients, points, legals]);
 
   const calcPrice = usePriceCalc(flavors, extras, priceOverrides, clientId, pointId, legalId);
+
+  const calcPriceForContext = useCallback((type, refId, ctx = {}) => {
+    if (type === 'extra') {
+      const ex = extras.find(e => e.extra_id === refId);
+      return { price: Number(ex?.default_price || 0), basePrice: Number(ex?.default_price || 0), source: 'extra_default' };
+    }
+
+    const flavor = flavors.find(f => f.flavor_id === refId);
+    if (!flavor) return { price: 0, basePrice: 0, source: 'flavor_default' };
+
+    const base = Number(flavor.default_price || 0);
+    const todayValue = new Date().toISOString().substring(0, 10);
+    const ctxClientId = ctx.client_id || clientId;
+    const ctxPointId = ctx.point_id || pointId;
+    const ctxLegalId = ctx.legal_id || legalId;
+
+    const isValid = (o) => {
+      if (!isTrue(o.is_active)) return false;
+      if (o.valid_from && dateOnly(o.valid_from) > todayValue) return false;
+      if (o.valid_to && dateOnly(o.valid_to) < todayValue) return false;
+      return true;
+    };
+
+    const findOverride = (scope, scopeId) => {
+      if (!scopeId) return null;
+      return priceOverrides.find(o =>
+        isValid(o) && o.scope === scope && o.scope_id === scopeId &&
+        (o.flavor_id === refId || !o.flavor_id)
+      );
+    };
+
+    const pOver = findOverride('point', ctxPointId);
+    if (pOver) return { price: Number(pOver.price), basePrice: base, source: 'point_override' };
+
+    const lOver = findOverride('legal', ctxLegalId);
+    if (lOver) return { price: Number(lOver.price), basePrice: base, source: 'legal_override' };
+
+    const cOver = findOverride('client', ctxClientId);
+    if (cOver) return { price: Number(cOver.price), basePrice: base, source: 'client_override' };
+
+    return { price: base, basePrice: base, source: 'flavor_default' };
+  }, [flavors, extras, priceOverrides, clientId, pointId, legalId]);
+
+  const applyParsedDraft = useCallback((draft) => {
+    if (!draft) return;
+
+    const nextClientId = draft.client_id || '';
+    const nextPointId = draft.point_id || '';
+    const nextLegalId = draft.legal_id || '';
+    const ctx = { client_id: nextClientId, point_id: nextPointId, legal_id: nextLegalId };
+
+    const nextItems = (draft.items || [])
+      .filter(i => i && i.ref_id && Number(i.qty) > 0)
+      .map(i => {
+        const priceInfo = calcPriceForContext(i.type, i.ref_id, ctx);
+        const ref = i.type === 'extra'
+          ? extras.find(e => e.extra_id === i.ref_id)
+          : flavors.find(f => f.flavor_id === i.ref_id);
+
+        return {
+          type: i.type,
+          ref_id: i.ref_id,
+          name: ref?.name || i.ref_id,
+          qty: Number(i.qty),
+          price: priceInfo.price,
+          basePrice: priceInfo.basePrice,
+          source: priceInfo.source,
+        };
+      });
+
+    setClientId(nextClientId);
+    setPointId(nextPointId);
+    setLegalId(nextLegalId);
+    if (draft.delivery_date) setDeliveryDate(dateOnly(draft.delivery_date));
+    setComment(draft.comment || '');
+    setItems(nextItems);
+  }, [calcPriceForContext, extras, flavors]);
+
+  const parseQuickOrder = async () => {
+    const raw = quickText.trim();
+    if (!raw) {
+      showToast('Вставь текст заказа', 'warn');
+      return;
+    }
+
+    if (quickParsing) return;
+    setQuickParsing(true);
+    setQuickParseResult(null);
+
+    try {
+      const res = await api('parseOrderDraft', {
+        raw_text: raw,
+        source: 'dashboard',
+        created_by: CURRENT_USER,
+      });
+
+      setQuickParseResult(res);
+
+      if (res.success && !res.needs_clarification && res.draft) {
+        const hasCurrentData = clientId || pointId || legalId || items.length || comment;
+        if (hasCurrentData && !window.confirm('Заменить текущую форму данными из разбора?')) {
+          showToast('Разбор готов, форма не изменена', 'warn');
+          return;
+        }
+
+        applyParsedDraft(res.draft);
+        const totalParsed = (res.draft.items || []).reduce((sum, i) => sum + Number(i.qty || 0), 0);
+        const model = res.ai_model_used === 'fallback_js'
+          ? 'без ИИ'
+          : res.ai_model_used === 'openai/gpt-4.1-mini'
+            ? 'GPT-4.1 mini'
+            : res.ai_model_used || 'ИИ';
+        showToast(`Заказ разобран: ${totalParsed} шт · ${model}`);
+      } else {
+        showToast(res.message || 'Нужно проверить текст вручную', 'warn');
+      }
+    } catch (err) {
+      setQuickParseResult({ success: false, needs_clarification: true, message: err.message, warnings: [], unresolved: {} });
+      showToast('Ошибка разбора: ' + err.message, 'error');
+    } finally {
+      setQuickParsing(false);
+    }
+  };
 
   // При смене клиента подставляем первый адрес/юрлицо, но не затираем загруженные значения при редактировании
   const prevClientIdRef = useRef(clientId);
@@ -758,6 +884,15 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
     {!loadingEdit && <div className="grid grid-cols-[1.45fr_0.75fr] gap-5">
       <Card className="p-5 min-w-0">
         <div className="space-y-5">
+          {!isEditMode && <QuickParseBlock
+            value={quickText}
+            onChange={setQuickText}
+            onParse={parseQuickOrder}
+            loading={quickParsing}
+            result={quickParseResult}
+            onClear={() => { setQuickText(''); setQuickParseResult(null); }}
+          />}
+
           {/* Клиент / дата */}
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -862,6 +997,60 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
       </div>
     </div>}
   </>;
+}
+
+function QuickParseBlock({ value, onChange, onParse, loading, result, onClear }) {
+  const itemCount = result?.draft?.items?.length || 0;
+  const totalQty = (result?.draft?.items || []).reduce((sum, i) => sum + Number(i.qty || 0), 0);
+  const modelLabel = result?.ai_model_used === 'fallback_js'
+    ? 'без ИИ'
+    : result?.ai_model_used === 'openai/gpt-4.1-mini'
+      ? 'GPT-4.1 mini'
+      : result?.ai_model_used === 'anthropic/claude-sonnet-4.5'
+        ? 'Sonnet 4.5'
+        : result?.ai_model_used || '';
+
+  return <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+    <div className="mb-3 flex items-start justify-between gap-3">
+      <div>
+        <div className="text-sm font-semibold text-slate-900">Быстрый ввод из сообщения</div>
+        <div className="mt-1 text-xs text-slate-500">Вставь заказ как прислал клиент. Форма заполнится автоматически, но перед сохранением всё равно проверь.</div>
+      </div>
+      {modelLabel && <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-500 border border-slate-200">{modelLabel}</span>}
+    </div>
+
+    <textarea
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      rows={5}
+      placeholder={`Например:\nДао\nБанан нутелла\nСникерс\nТвикс\nПо 15`}
+      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100 resize-y"
+    />
+
+    <div className="mt-3 flex flex-wrap items-center gap-2">
+      <Button onClick={onParse} disabled={loading || !value.trim()} variant="dark">
+        {loading ? <><Spinner /> Разбираю...</> : 'Разобрать и заполнить'}
+      </Button>
+      <Button onClick={onClear} disabled={loading || (!value && !result)} variant="light">Очистить</Button>
+      <div className="text-xs text-slate-500">Сложные заказы “как обычно” и несколько точек лучше вносить руками.</div>
+    </div>
+
+    {result && <div className={`mt-3 rounded-2xl border p-3 text-sm ${result.success && !result.needs_clarification ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-amber-200 bg-amber-50 text-amber-900'}`}>
+      <div className="font-semibold">
+        {result.success && !result.needs_clarification
+          ? `Разбор готов: ${itemCount} позиций, ${totalQty} шт`
+          : (result.message || 'Нужно проверить вручную')}
+      </div>
+
+      {result.warnings?.length > 0 && <div className="mt-2 space-y-1">
+        {result.warnings.map((w, i) => <div key={i}>• {w.message}</div>)}
+      </div>}
+
+      {(result.unresolved?.flavors?.length > 0 || result.unresolved?.extras?.length > 0) && <div className="mt-2 text-xs">
+        Не найдено: {[...(result.unresolved.flavors || []), ...(result.unresolved.extras || [])].map(x => x.raw_text).join(', ')}
+      </div>}
+    </div>}
+  </div>;
 }
 
 function FlavorLine({ flavor, item, priceInfo, draftPrice, hidden, onHide, onPriceChange, onQtyChange }) {
