@@ -316,17 +316,33 @@ function App() {
 
   const loadCatalogs = useCallback(async () => {
     try {
-      const [c, p, l, f, e, ov] = await Promise.all([
-        api('getClients'), api('getPoints'), api('getLegals'),
-        api('getFlavors'), api('getExtras'), api('getPriceOverrides'),
-      ]);
+      let bootstrap;
+
+      try {
+        bootstrap = await api('getBootstrap');
+      } catch (bootstrapErr) {
+        // Запасной путь, если Apps Script ещё не обновлён.
+        const [c, p, l, f, e, ov] = await Promise.all([
+          api('getClients'), api('getPoints'), api('getLegals'),
+          api('getFlavors'), api('getExtras'), api('getPriceOverrides'),
+        ]);
+        bootstrap = {
+          clients: c.clients || [],
+          points: p.points || [],
+          legals: l.legals || [],
+          flavors: f.flavors || [],
+          extras: e.extras || [],
+          priceOverrides: ov.overrides || ov.priceOverrides || [],
+        };
+      }
+
       setData({
-        clients: c.clients || [],
-        points: p.points || [],
-        legals: l.legals || [],
-        flavors: f.flavors || [],
-        extras: e.extras || [],
-        priceOverrides: ov.overrides || [],
+        clients: bootstrap.clients || [],
+        points: bootstrap.points || [],
+        legals: bootstrap.legals || [],
+        flavors: bootstrap.flavors || [],
+        extras: bootstrap.extras || [],
+        priceOverrides: bootstrap.priceOverrides || bootstrap.price_overrides || bootstrap.overrides || [],
       });
     } catch (err) {
       showToast('Ошибка загрузки: ' + err.message, 'error');
