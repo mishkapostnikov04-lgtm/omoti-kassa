@@ -1569,7 +1569,6 @@ function AssemblyPage({ clients, points, showToast, onEditOrder }) {
 
   const clientById = useMemo(() => { const m = {}; clients.forEach(c => { m[c.client_id] = c; }); return m; }, [clients]);
   const pointById = useMemo(() => { const m = {}; points.forEach(p => { m[p.point_id] = p; }); return m; }, [points]);
-  const legalById = useMemo(() => { const m = {}; (legals || []).forEach(l => { m[l.legal_id] = l; }); return m; }, [legals]);
 
   const load = async () => {
     const cacheKey = 'assembly_new';
