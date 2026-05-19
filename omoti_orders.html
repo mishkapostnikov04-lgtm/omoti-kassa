@@ -345,9 +345,9 @@ function App() {
       <Sidebar page={page} setPage={setPage} />
       <main className="space-y-5 min-w-0">
         {page === 'order' && <NewOrderPage {...data} editOrderId={editOrderId} editOrderData={editOrderData} onClearEdit={() => { setEditOrderId(null); setEditOrderData(null); }} onSaved={loadCatalogs} showToast={showToast} />}
-        {page === 'inwork' && <InWorkPage clients={data.clients} points={data.points} flavors={data.flavors} extras={data.extras} priceOverrides={data.priceOverrides} showToast={showToast} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} />}
+        {page === 'inwork' && <InWorkPage clients={data.clients} points={data.points} legals={data.legals} flavors={data.flavors} extras={data.extras} priceOverrides={data.priceOverrides} showToast={showToast} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} />}
         {page === 'assembly' && <AssemblyPage clients={data.clients} points={data.points} showToast={showToast} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} />}
-        {page === 'history' && <HistoryPage clients={data.clients} points={data.points} flavors={data.flavors} extras={data.extras} showToast={showToast} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} />}
+        {page === 'history' && <HistoryPage clients={data.clients} points={data.points} legals={data.legals} flavors={data.flavors} extras={data.extras} showToast={showToast} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} />}
         {page === 'export' && <ExportPage showToast={showToast} />}
         {page === 'catalog' && <CatalogPage {...data} reload={loadCatalogs} showToast={showToast} />}
       </main>
@@ -1151,7 +1151,7 @@ function HistoryOrderMini({ order, point, onRepeat }) {
 
 // ===== Сегодня / завтра =====
 
-function InWorkPage({ clients, points, flavors, extras, priceOverrides, showToast, onEditOrder }) {
+function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, showToast, onEditOrder }) {
   const initialInworkCache = getPageCache('inwork_all');
   const [orders, setOrders] = useState(() => initialInworkCache || []);
   const [loading, setLoading] = useState(() => !initialInworkCache);
@@ -1196,6 +1196,7 @@ function InWorkPage({ clients, points, flavors, extras, priceOverrides, showToas
 
   const clientById = useMemo(() => { const m = {}; clients.forEach(c => { m[c.client_id] = c; }); return m; }, [clients]);
   const pointById = useMemo(() => { const m = {}; points.forEach(p => { m[p.point_id] = p; }); return m; }, [points]);
+  const legalById = useMemo(() => { const m = {}; (legals || []).forEach(l => { m[l.legal_id] = l; }); return m; }, [legals]);
 
   // фильтр по статусу
   const filteredOrders = useMemo(() => {
@@ -1317,6 +1318,20 @@ function InWorkPage({ clients, points, flavors, extras, priceOverrides, showToas
     }
   };
 
+  const applyElbaResult = (orderId, res) => {
+    const updates = {
+      documents_status: res.documents_status || 'full',
+      waybill_id: res.waybill_id || '',
+      waybill_number: res.waybill_number || '',
+      invoice_id: res.invoice_id || '',
+      invoice_number: res.invoice_number || '',
+      invoice_url: res.invoice_url || '',
+      documents_error: res.link_error || '',
+      documents_created_at: new Date().toISOString(),
+    };
+    setOrders(prev => prev.map(o => o.order_id === orderId ? { ...o, ...updates } : o));
+  };
+
   return <>
     <header className="flex items-center justify-between rounded-3xl bg-white p-5 shadow-sm">
       <div>
@@ -1358,12 +1373,15 @@ function InWorkPage({ clients, points, flavors, extras, priceOverrides, showToas
               order={o}
               client={clientById[o.client_id]}
               point={pointById[o.point_id]}
+              legal={legalById[o.legal_id]}
               expanded={expandedId === o.order_id}
               items={expandedItems[o.order_id]}
               onToggle={() => toggleExpand(o.order_id)}
               onChangeStatus={updateStatus}
               onEdit={() => onEditOrder({ ...o, items: expandedItems[o.order_id] || o.items || [] })}
               onDelete={() => deleteOrder(o)}
+              onDocumentsCreated={applyElbaResult}
+              showToast={showToast}
               isOverdue={group.key === 'overdue'}
             />
           ))}
@@ -1373,7 +1391,7 @@ function InWorkPage({ clients, points, flavors, extras, priceOverrides, showToas
   </>;
 }
 
-function InWorkOrderRow({ order, client, point, expanded, items, onToggle, onChangeStatus, onEdit, onDelete, isOverdue }) {
+function InWorkOrderRow({ order, client, point, legal, expanded, items, onToggle, onChangeStatus, onEdit, onDelete, onDocumentsCreated, showToast, isOverdue }) {
   const statusColor = { new: 'blue', assembled: 'amber' }[order.status] || 'slate';
   const statusLabel = { new: 'Новый', assembled: 'Собран' }[order.status] || order.status;
 
@@ -1433,6 +1451,10 @@ function InWorkOrderRow({ order, client, point, expanded, items, onToggle, onCha
             {order.comment && <div className="rounded-xl bg-amber-50 px-3 py-2 text-amber-900 text-xs mt-2"><b>Комментарий:</b> {order.comment}</div>}
           </div>
 
+          <div className="mt-4">
+            <ElbaDocumentsBlock order={order} legal={legal} onCreated={onDocumentsCreated} showToast={showToast} />
+          </div>
+
           <h4 className="font-semibold text-sm mb-2 mt-4 text-slate-700">Изменить статус</h4>
           <div className="flex flex-wrap gap-2">
             {STATUS_OPTIONS.map(s => (
@@ -1455,6 +1477,85 @@ function InWorkOrderRow({ order, client, point, expanded, items, onToggle, onCha
   </div>;
 }
 
+// ===== Документы Эльбы =====
+
+function ElbaDocumentsBlock({ order, onCreated, showToast }) {
+  const [creating, setCreating] = useState(false);
+
+  const hasDocs = !!(order.invoice_id || order.waybill_id || order.invoice_url);
+  const status = order.documents_status || (hasDocs ? 'full' : '');
+  const statusMap = {
+    full: ['Документы созданы', 'green'],
+    waybill_only: ['Создана только ТН', 'amber'],
+    invoice_only: ['Создан только счёт', 'amber'],
+    error: ['Ошибка документов', 'red'],
+  };
+  const [statusLabel, statusColor] = statusMap[status] || ['Не созданы', 'slate'];
+
+  const handleCreate = async () => {
+    if (creating) return;
+
+    const force = hasDocs;
+    if (force) {
+      const ok = confirm(`У заказа ${order.order_no || ''} уже есть документы.\n\nСоздать новый счёт и новую накладную повторно?`);
+      if (!ok) return;
+    }
+
+    setCreating(true);
+    try {
+      const res = await api('elbaCreateDocuments', {
+        order_id: order.order_id,
+        force,
+      });
+
+      onCreated(order.order_id, res);
+      clearPageCache('inwork');
+      clearPageCache('history');
+
+      const invoiceText = res.invoice_number ? `Счёт №${res.invoice_number}` : 'Счёт';
+      showToast(`${invoiceText} и накладная созданы`);
+    } catch (err) {
+      showToast('Ошибка Эльбы: ' + err.message, 'error');
+    }
+    setCreating(false);
+  };
+
+  return <div className="rounded-2xl border border-slate-200 bg-white p-4">
+    <div className="mb-3 flex items-start justify-between gap-3">
+      <div>
+        <h4 className="font-semibold text-sm text-slate-700">Документы Эльбы</h4>
+        <div className="mt-1 flex flex-wrap items-center gap-2">
+          <Pill color={statusColor}>{statusLabel}</Pill>
+          {order.invoice_number && <span className="text-xs text-slate-500">Счёт №{order.invoice_number}</span>}
+          {order.waybill_number && <span className="text-xs text-slate-500">ТН №{order.waybill_number}</span>}
+        </div>
+      </div>
+      <Button onClick={handleCreate} variant={hasDocs ? 'light' : 'success'} size="sm" disabled={creating}>
+        {creating ? <><Spinner small /> Создаю...</> : (hasDocs ? 'Создать повторно' : 'Создать документы')}
+      </Button>
+    </div>
+
+    <div className="space-y-2 text-xs text-slate-600">
+      {order.invoice_url && <a
+        href={order.invoice_url}
+        target="_blank"
+        rel="noreferrer"
+        className="inline-flex rounded-xl bg-slate-950 px-3 py-2 font-medium text-white hover:bg-slate-800"
+      >
+        Открыть счёт
+      </a>}
+
+      {order.documents_created_at && <div>
+        <span className="text-slate-400">Создано:</span> {displayDate(order.documents_created_at)}
+      </div>}
+
+      {order.documents_error && <div className="rounded-xl bg-red-50 px-3 py-2 text-red-700">
+        {order.documents_error}
+      </div>}
+    </div>
+  </div>;
+}
+
 
 // ===== Сборка / печать =====
 
@@ -1468,6 +1569,7 @@ function AssemblyPage({ clients, points, showToast, onEditOrder }) {
 
   const clientById = useMemo(() => { const m = {}; clients.forEach(c => { m[c.client_id] = c; }); return m; }, [clients]);
   const pointById = useMemo(() => { const m = {}; points.forEach(p => { m[p.point_id] = p; }); return m; }, [points]);
+  const legalById = useMemo(() => { const m = {}; (legals || []).forEach(l => { m[l.legal_id] = l; }); return m; }, [legals]);
 
   const load = async () => {
     const cacheKey = 'assembly_new';
@@ -1726,7 +1828,7 @@ function PrintAssemblySheet({ orders, clientById, pointById }) {
 
 // ===== История =====
 
-function HistoryPage({ clients, points, flavors, extras, showToast, onEditOrder }) {
+function HistoryPage({ clients, points, legals, flavors, extras, showToast, onEditOrder }) {
   const savedFilters = readLocalJson('omoti_history_filters_v1', null);
   const [dateFrom, setDateFrom] = useState(() => savedFilters?.dateFrom || (() => { const d = new Date(); d.setDate(d.getDate() - 14); return d.toISOString().substring(0, 10); })());
   const [dateTo, setDateTo] = useState(() => savedFilters?.dateTo || today());
@@ -1783,6 +1885,7 @@ function HistoryPage({ clients, points, flavors, extras, showToast, onEditOrder 
 
   const clientById = useMemo(() => { const m = {}; clients.forEach(c => { m[c.client_id] = c; }); return m; }, [clients]);
   const pointById = useMemo(() => { const m = {}; points.forEach(p => { m[p.point_id] = p; }); return m; }, [points]);
+  const legalById = useMemo(() => { const m = {}; (legals || []).forEach(l => { m[l.legal_id] = l; }); return m; }, [legals]);
 
   const toggleExpand = async (orderId) => {
     if (expandedId === orderId) { setExpandedId(null); return; }
@@ -1842,6 +1945,20 @@ function HistoryPage({ clients, points, flavors, extras, showToast, onEditOrder 
     }
   };
 
+  const applyElbaResult = (orderId, res) => {
+    const updates = {
+      documents_status: res.documents_status || 'full',
+      waybill_id: res.waybill_id || '',
+      waybill_number: res.waybill_number || '',
+      invoice_id: res.invoice_id || '',
+      invoice_number: res.invoice_number || '',
+      invoice_url: res.invoice_url || '',
+      documents_error: res.link_error || '',
+      documents_created_at: new Date().toISOString(),
+    };
+    setOrders(prev => prev.map(o => o.order_id === orderId ? { ...o, ...updates } : o));
+  };
+
   return <>
     <header className="flex items-center justify-between rounded-3xl bg-white p-5 shadow-sm">
       <div>
@@ -1869,12 +1986,15 @@ function HistoryPage({ clients, points, flavors, extras, showToast, onEditOrder 
             order={o}
             client={clientById[o.client_id]}
             point={pointById[o.point_id]}
+            legal={legalById[o.legal_id]}
             expanded={expandedId === o.order_id}
             items={expandedItems[o.order_id]}
             onToggle={() => toggleExpand(o.order_id)}
             onChangeStatus={updateStatus}
             onEdit={() => onEditOrder({ ...o, items: expandedItems[o.order_id] || o.items || [] })}
             onDelete={() => deleteOrder(o)}
+            onDocumentsCreated={applyElbaResult}
+            showToast={showToast}
           />
         ))}
       </div>}
@@ -1890,7 +2010,7 @@ const STATUS_OPTIONS = [
   { value: 'cancelled', label: 'Отменён' },
 ];
 
-function HistoryOrderRow({ order, client, point, expanded, items, onToggle, onChangeStatus, onEdit, onDelete }) {
+function HistoryOrderRow({ order, client, point, legal, expanded, items, onToggle, onChangeStatus, onEdit, onDelete, onDocumentsCreated, showToast }) {
   return <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
     <button onClick={onToggle} className="w-full flex items-center gap-4 p-4 hover:bg-slate-50 text-left transition">
       <svg className={`text-slate-400 transition flex-shrink-0 ${expanded ? 'rotate-90' : ''}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
@@ -1931,6 +2051,10 @@ function HistoryOrderRow({ order, client, point, expanded, items, onToggle, onCh
             <div><span className="text-slate-500">Создал:</span> {order.created_by || '—'}</div>
             <div><span className="text-slate-500">Источник:</span> {order.source || '—'}</div>
             {order.comment && <div className="rounded-xl bg-amber-50 px-3 py-2 text-amber-900 text-xs mt-2"><b>Комментарий:</b> {order.comment}</div>}
+          </div>
+
+          <div className="mt-4">
+            <ElbaDocumentsBlock order={order} legal={legal} onCreated={onDocumentsCreated} showToast={showToast} />
           </div>
 
           <h4 className="font-semibold text-sm mb-2 mt-4 text-slate-700">Изменить статус</h4>
