@@ -310,6 +310,7 @@ function App() {
   const [page, setPage] = useState('order');
   const [toast, setToast] = useState(null);
   const [editOrderId, setEditOrderId] = useState(null);
+  const [editOrderData, setEditOrderData] = useState(null);
 
   const showToast = (message, type = 'success') => setToast({ message, type });
 
@@ -343,10 +344,10 @@ function App() {
     <div className="mx-auto grid max-w-[1440px] grid-cols-[240px_1fr] gap-5">
       <Sidebar page={page} setPage={setPage} />
       <main className="space-y-5 min-w-0">
-        {page === 'order' && <NewOrderPage {...data} editOrderId={editOrderId} onClearEdit={() => setEditOrderId(null)} onSaved={loadCatalogs} showToast={showToast} />}
-        {page === 'inwork' && <InWorkPage clients={data.clients} points={data.points} flavors={data.flavors} extras={data.extras} priceOverrides={data.priceOverrides} showToast={showToast} onEditOrder={(id) => { setEditOrderId(id); setPage('order'); }} />}
-        {page === 'assembly' && <AssemblyPage clients={data.clients} points={data.points} showToast={showToast} onEditOrder={(id) => { setEditOrderId(id); setPage('order'); }} />}
-        {page === 'history' && <HistoryPage clients={data.clients} points={data.points} flavors={data.flavors} extras={data.extras} showToast={showToast} onEditOrder={(id) => { setEditOrderId(id); setPage('order'); }} />}
+        {page === 'order' && <NewOrderPage {...data} editOrderId={editOrderId} editOrderData={editOrderData} onClearEdit={() => { setEditOrderId(null); setEditOrderData(null); }} onSaved={loadCatalogs} showToast={showToast} />}
+        {page === 'inwork' && <InWorkPage clients={data.clients} points={data.points} flavors={data.flavors} extras={data.extras} priceOverrides={data.priceOverrides} showToast={showToast} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} />}
+        {page === 'assembly' && <AssemblyPage clients={data.clients} points={data.points} showToast={showToast} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} />}
+        {page === 'history' && <HistoryPage clients={data.clients} points={data.points} flavors={data.flavors} extras={data.extras} showToast={showToast} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} />}
         {page === 'export' && <ExportPage showToast={showToast} />}
         {page === 'catalog' && <CatalogPage {...data} reload={loadCatalogs} showToast={showToast} />}
       </main>
@@ -419,7 +420,7 @@ function usePriceCalc(flavors, extras, priceOverrides, clientId, pointId, legalI
 
 // ===== Новый заказ =====
 
-function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides, onSaved, showToast, editOrderId, onClearEdit }) {
+function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides, onSaved, showToast, editOrderId, editOrderData, onClearEdit }) {
   const [clientId, setClientId] = useState('');
   const [pointId, setPointId] = useState('');
   const [legalId, setLegalId] = useState('');
@@ -440,39 +441,48 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
       setEditingOrder(null);
       return;
     }
+
+    const hydrateOrderForEdit = (o, rawItems = []) => {
+      setEditingOrder(o);
+      setClientId(o.client_id || '');
+      setPointId(o.point_id || '');
+      setLegalId(o.legal_id || '');
+      setDeliveryDate(dateOnly(o.delivery_date) || tomorrow());
+      setComment(o.comment || '');
+      const loadedItems = (rawItems || [])
+        .filter(it => Number(it.qty) > 0)
+        .map(it => ({
+          type: it.type,
+          ref_id: it.ref_id,
+          name: it.name_snapshot || it.name,
+          qty: Number(it.qty),
+          price: Number(it.price),
+          basePrice: Number(it.base_price),
+          source: it.price_source,
+        }));
+      setItems(loadedItems);
+    };
+
+    // Если пришли из «В работе», «Сборка» или «История», заказ уже лежит во фронте вместе с позициями.
+    // Используем его сразу и не дёргаем медленный getOrder.
+    if (editOrderData && editOrderData.order_id === editOrderId) {
+      hydrateOrderForEdit(editOrderData, editOrderData.items || []);
+      setLoadingEdit(false);
+      return;
+    }
+
     setLoadingEdit(true);
     (async () => {
       try {
         const res = await api('getOrder', { order_id: editOrderId });
-        const o = res.order;
-        setEditingOrder(o);
-        setClientId(o.client_id || '');
-        // pointId и legalId установятся через useEffect ниже, но переопределим после
-        setTimeout(() => {
-          setPointId(o.point_id || '');
-          setLegalId(o.legal_id || '');
-        }, 50);
-        setDeliveryDate(dateOnly(o.delivery_date) || tomorrow());
-        setComment(o.comment || '');
-        const loadedItems = (res.items || [])
-          .filter(it => Number(it.qty) > 0)
-          .map(it => ({
-            type: it.type,
-            ref_id: it.ref_id,
-            name: it.name_snapshot,
-            qty: Number(it.qty),
-            price: Number(it.price),
-            basePrice: Number(it.base_price),
-            source: it.price_source,
-          }));
-        setItems(loadedItems);
+        hydrateOrderForEdit(res.order, res.items || []);
       } catch (err) {
         showToast('Ошибка загрузки заказа: ' + err.message, 'error');
         onClearEdit();
       }
       setLoadingEdit(false);
     })();
-  }, [editOrderId]);
+  }, [editOrderId, editOrderData]);
 
   const client = clients.find(c => c.client_id === clientId);
   const point = points.find(p => p.point_id === pointId);
@@ -557,6 +567,55 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
       type: 'moti', ref_id: flavorId, name: flavor.name,
       qty: q, price: priceInfo.price, basePrice: priceInfo.basePrice, source: priceInfo.source,
     });
+  };
+
+  const setMotiQuantityFromGrid = (flavorId, qtyValue, priceDraftValue) => {
+    const q = Number(qtyValue);
+    const flavor = flavors.find(f => f.flavor_id === flavorId);
+    if (!flavor) return;
+
+    // Пустое поле или 0 = вкус не входит в заказ
+    if (!qtyValue || !Number.isFinite(q) || q <= 0) {
+      setItems(prev => prev.filter(it => !(it.type === 'moti' && it.ref_id === flavorId)));
+      return;
+    }
+
+    const priceInfo = calcPrice('moti', flavorId);
+    const draftPrice = priceDraftValue !== undefined && priceDraftValue !== '' ? Number(priceDraftValue) : NaN;
+
+    setItems(prev => {
+      const existing = prev.find(it => it.type === 'moti' && it.ref_id === flavorId);
+      const price = Number.isFinite(draftPrice) ? draftPrice : (existing ? Number(existing.price) : Number(priceInfo.price));
+      const source = price !== Number(priceInfo.price) ? 'manual' : priceInfo.source;
+      const nextItem = {
+        type: 'moti',
+        ref_id: flavorId,
+        name: flavor.name,
+        qty: q,
+        price,
+        basePrice: priceInfo.basePrice,
+        source,
+      };
+
+      if (existing) {
+        return prev.map(it => it.type === 'moti' && it.ref_id === flavorId ? nextItem : it);
+      }
+      return [...prev, nextItem];
+    });
+  };
+
+  const setMotiPriceFromGrid = (flavorId, priceValue) => {
+    const priceInfo = calcPrice('moti', flavorId);
+    setItems(prev => prev.map(it => {
+      if (!(it.type === 'moti' && it.ref_id === flavorId)) return it;
+      const price = priceValue === '' ? '' : Number(priceValue);
+      return {
+        ...it,
+        price,
+        basePrice: priceInfo.basePrice,
+        source: Number(price) !== Number(priceInfo.price) ? 'manual' : priceInfo.source,
+      };
+    }));
   };
 
   const addExtra = (extraId, qty) => {
@@ -696,7 +755,7 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
     </header>
 
     {loadingEdit && <div className="text-center py-12"><Spinner /></div>}
-    {!loadingEdit && <div className="grid grid-cols-[1.15fr_0.85fr] gap-5">
+    {!loadingEdit && <div className="grid grid-cols-[1.45fr_0.75fr] gap-5">
       <Card className="p-5 min-w-0">
         <div className="space-y-5">
           {/* Клиент / дата */}
@@ -754,7 +813,16 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
             </div>
           </>}
 
-          <AddItemBlock flavors={flavors} extras={extras} onAddMoti={addMoti} onAddExtra={addExtra} />
+          <AddItemBlock
+            flavors={flavors}
+            extras={extras}
+            items={items}
+            calcPrice={calcPrice}
+            priceContextKey={`${clientId}|${pointId}|${legalId}`}
+            onSetMotiQuantity={setMotiQuantityFromGrid}
+            onSetMotiPrice={setMotiPriceFromGrid}
+            onAddExtra={addExtra}
+          />
 
           {items.length > 0 && <div className="space-y-2">
             {items.map((it, idx) => <ItemRow key={idx} item={it} idx={idx} onUpdate={updateItem} onRemove={removeItem} />)}
@@ -796,37 +864,182 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
   </>;
 }
 
-function AddItemBlock({ flavors, extras, onAddMoti, onAddExtra }) {
+function FlavorLine({ flavor, item, priceInfo, draftPrice, hidden, onHide, onPriceChange, onQtyChange }) {
+  const displayPrice = item ? item.price : (draftPrice ?? priceInfo.price);
+  const displayQty = item ? item.qty : '';
+  const currentSource = item ? item.source : priceInfo.source;
+  const hasQty = item && Number(item.qty || 0) > 0;
+  const isManual = item && Number(item.price) !== Number(priceInfo.price);
+  const sourceText = {
+    point_override: 'точка',
+    legal_override: 'юрлицо',
+    client_override: 'клиент',
+    manual: 'ручная',
+    flavor_default: '',
+    extra_default: '',
+  }[isManual ? 'manual' : currentSource] || '';
+
+  return <div className={`group relative grid grid-cols-[minmax(0,1fr)_62px_62px] items-center gap-2 rounded-xl border py-1 pl-2 pr-9 transition ${hasQty ? 'border-emerald-300 bg-emerald-50' : 'border-transparent hover:bg-slate-50'}`}>
+    <div className="min-w-0">
+      <div className={`${hasQty ? 'font-semibold text-slate-950' : 'font-medium text-slate-900'} text-sm leading-tight`} title={flavor.name}>{flavor.name}</div>
+      {(sourceText || (hidden && item)) && <div className="mt-0.5 flex flex-wrap gap-1 text-[10px] leading-none">
+        {sourceText && <span className={`rounded-full px-1.5 py-0.5 font-medium ${isManual ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-700'}`}>{sourceText}</span>}
+        {hidden && item && <span className="rounded-full bg-slate-100 px-1.5 py-0.5 font-medium text-slate-500">скрытый</span>}
+      </div>}
+    </div>
+
+    <input
+      value={displayPrice ?? ''}
+      onChange={(e) => onPriceChange(flavor.flavor_id, e.target.value)}
+      inputMode="numeric"
+      className={`h-9 w-full rounded-lg border bg-white px-2 text-right text-sm font-semibold outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 ${hasQty ? 'border-emerald-200' : 'border-slate-200'}`}
+      title="Цена"
+    />
+
+    <input
+      value={displayQty}
+      onChange={(e) => onQtyChange(flavor.flavor_id, e.target.value, draftPrice)}
+      placeholder=""
+      inputMode="numeric"
+      className={`h-9 w-full rounded-lg border bg-white px-2 text-right text-sm font-semibold outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 ${hasQty ? 'border-emerald-300 text-emerald-900' : 'border-slate-200'}`}
+      title="Количество"
+    />
+
+    <button
+      type="button"
+      onClick={() => onHide(flavor.flavor_id)}
+      disabled={!!item}
+      className={`absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 rounded-lg text-sm transition ${item ? 'pointer-events-none text-transparent' : 'text-slate-300 hover:bg-slate-100 hover:text-slate-700 group-hover:text-slate-500'}`}
+      title={item ? '' : 'Скрыть вкус'}
+    >
+      ×
+    </button>
+  </div>;
+}
+
+function AddItemBlock({ flavors, extras, items, calcPrice, priceContextKey, onSetMotiQuantity, onSetMotiPrice, onAddExtra }) {
   const [tab, setTab] = useState('moti');
-  const [selectedFlavor, setSelectedFlavor] = useState('');
-  const [motiQty, setMotiQty] = useState('');
   const [selectedExtra, setSelectedExtra] = useState('');
   const [extraQty, setExtraQty] = useState('');
+  const [draftPrices, setDraftPrices] = useState({});
+  const [hiddenFlavorIds, setHiddenFlavorIds] = useState(() => {
+    try {
+      const raw = localStorage.getItem('omoti_hidden_flavor_ids');
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      return [];
+    }
+  });
+  const [showHiddenFlavors, setShowHiddenFlavors] = useState(false);
 
-  const submitMoti = () => {
-    onAddMoti(selectedFlavor, motiQty);
-    setSelectedFlavor(''); setMotiQty('');
+  useEffect(() => {
+    setDraftPrices({});
+  }, [priceContextKey]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('omoti_hidden_flavor_ids', JSON.stringify(hiddenFlavorIds));
+    } catch (e) {}
+  }, [hiddenFlavorIds]);
+
+  const motiByFlavorId = useMemo(() => {
+    const map = {};
+    (items || []).forEach(it => {
+      if (it.type === 'moti') map[it.ref_id] = it;
+    });
+    return map;
+  }, [items]);
+
+  const activeFlavors = useMemo(() => [...flavors].sort((a, b) => {
+    const sa = Number(a.sort_order || 999);
+    const sb = Number(b.sort_order || 999);
+    if (sa !== sb) return sa - sb;
+    return String(a.name).localeCompare(String(b.name), 'ru');
+  }), [flavors]);
+
+  const hiddenSet = useMemo(() => new Set(hiddenFlavorIds), [hiddenFlavorIds]);
+
+  const visibleFlavors = useMemo(() => activeFlavors.filter(f => {
+    if (motiByFlavorId[f.flavor_id]) return true;
+    return !hiddenSet.has(f.flavor_id);
+  }), [activeFlavors, hiddenSet, motiByFlavorId]);
+
+  const hiddenFlavors = useMemo(() => activeFlavors.filter(f => {
+    if (motiByFlavorId[f.flavor_id]) return false;
+    return hiddenSet.has(f.flavor_id);
+  }), [activeFlavors, hiddenSet, motiByFlavorId]);
+
+  const hideFlavor = (flavorId) => {
+    setHiddenFlavorIds(prev => prev.includes(flavorId) ? prev : [...prev, flavorId]);
   };
+
+  const showFlavor = (flavorId) => {
+    setHiddenFlavorIds(prev => prev.filter(id => id !== flavorId));
+  };
+
+  const handlePriceChange = useCallback((flavorId, value) => {
+    setDraftPrices(prev => ({ ...prev, [flavorId]: value }));
+    onSetMotiPrice(flavorId, value);
+  }, [onSetMotiPrice]);
+
   const submitExtra = () => {
     onAddExtra(selectedExtra, extraQty);
     setSelectedExtra(''); setExtraQty('');
   };
 
   return <div className="rounded-3xl border border-slate-100 bg-white p-4">
-    <div className="mb-3 flex gap-2 rounded-2xl bg-slate-100 p-1 w-fit">
-      <button onClick={() => setTab('moti')} className={`rounded-xl px-4 py-1.5 text-sm transition ${tab === 'moti' ? 'bg-white shadow-sm font-medium' : 'text-slate-500'}`}>Моти</button>
-      <button onClick={() => setTab('extra')} className={`rounded-xl px-4 py-1.5 text-sm transition ${tab === 'extra' ? 'bg-white shadow-sm font-medium' : 'text-slate-500'}`}>Упаковка</button>
+    <div className="mb-3 flex items-center justify-between gap-3">
+      <div className="flex gap-2 rounded-2xl bg-slate-100 p-1 w-fit">
+        <button onClick={() => setTab('moti')} className={`rounded-xl px-4 py-1.5 text-sm transition ${tab === 'moti' ? 'bg-white shadow-sm font-medium' : 'text-slate-500'}`}>Моти</button>
+        <button onClick={() => setTab('extra')} className={`rounded-xl px-4 py-1.5 text-sm transition ${tab === 'extra' ? 'bg-white shadow-sm font-medium' : 'text-slate-500'}`}>Упаковка</button>
+      </div>
+      {tab === 'moti' && <div className="text-xs text-slate-500">Цена и количество вводятся сразу. Пустое количество = не добавлять.</div>}
     </div>
 
-    {tab === 'moti' && <div className="grid grid-cols-[1fr_110px_120px] gap-3">
-      <Combobox
-        value={selectedFlavor}
-        onChange={setSelectedFlavor}
-        options={flavors.map(f => ({ value: f.flavor_id, label: f.name, search: f.aliases }))}
-        placeholder="Выбрать вкус..."
-      />
-      <Input value={motiQty} onChange={setMotiQty} placeholder="Кол-во" type="number" />
-      <Button onClick={submitMoti} disabled={!selectedFlavor || !motiQty}>Добавить</Button>
+    {tab === 'moti' && <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-slate-50 px-3 py-2 text-xs text-slate-500">
+        <div>Первое поле — цена, второе — количество. Пустое количество = не добавлять.</div>
+        {hiddenFlavors.length > 0 && <button
+          type="button"
+          onClick={() => setShowHiddenFlavors(v => !v)}
+          className="rounded-xl bg-white px-3 py-1 font-medium text-slate-700 border border-slate-200 hover:bg-slate-100"
+        >
+          {showHiddenFlavors ? 'Скрыть список' : `Скрытые вкусы (${hiddenFlavors.length})`}
+        </button>}
+      </div>
+
+      {showHiddenFlavors && hiddenFlavors.length > 0 && <div className="rounded-2xl border border-slate-200 bg-white p-3">
+        <div className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">Скрытые вкусы</div>
+        <div className="flex flex-wrap gap-2">
+          {hiddenFlavors.map(flavor => <button
+            key={flavor.flavor_id}
+            type="button"
+            onClick={() => showFlavor(flavor.flavor_id)}
+            className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-100"
+          >
+            {flavor.name} · вернуть
+          </button>)}
+        </div>
+      </div>}
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-x-8 gap-y-1">
+        {visibleFlavors.map(flavor => {
+          const item = motiByFlavorId[flavor.flavor_id];
+          const priceInfo = calcPrice('moti', flavor.flavor_id);
+          return <FlavorLine
+            key={flavor.flavor_id}
+            flavor={flavor}
+            item={item}
+            priceInfo={priceInfo}
+            draftPrice={draftPrices[flavor.flavor_id]}
+            hidden={hiddenSet.has(flavor.flavor_id)}
+            onHide={hideFlavor}
+            onPriceChange={handlePriceChange}
+            onQtyChange={onSetMotiQuantity}
+          />;
+        })}
+      </div>
     </div>}
 
     {tab === 'extra' && <div className="grid grid-cols-[1fr_110px_120px] gap-3">
@@ -845,29 +1058,30 @@ function AddItemBlock({ flavors, extras, onAddMoti, onAddExtra }) {
 function ItemRow({ item, idx, onUpdate, onRemove }) {
   const lineSum = Number(item.qty || 0) * Number(item.price || 0);
   const customPrice = Number(item.price) !== Number(item.basePrice);
+  const isExtra = item.type === 'extra';
   const sourceLabel = {
     point_override: 'индив. цена точки',
     legal_override: 'индив. цена юрлица',
     client_override: 'индив. цена клиента',
   }[item.source];
 
-  return <div className="grid grid-cols-[1fr_85px_100px_120px_28px] items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2">
+  return <div className={`grid grid-cols-[1fr_85px_100px_120px_28px] items-center gap-3 rounded-2xl border px-3 py-2 ${isExtra ? 'border-amber-200 bg-amber-50/70' : 'border-slate-200 border-l-4 border-l-emerald-200 bg-white'}`}>
     <div className="min-w-0">
-      <div className="flex items-center gap-2 text-sm font-medium text-slate-900 truncate">
+      <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 truncate">
         {item.name}
-        {item.type === 'extra' && <Pill>упаковка</Pill>}
+        {isExtra && <Pill color="amber">упаковка</Pill>}
+        {customPrice && <Pill color="amber">цена изменена</Pill>}
       </div>
       <div className="text-xs text-slate-500">
         Стандарт: {item.basePrice} ₽
-        {customPrice && ' · цена изменена'}
         {sourceLabel && ` · ${sourceLabel}`}
       </div>
     </div>
     <input value={item.qty} onChange={(e) => onUpdate(idx, 'qty', e.target.value)}
-      className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-slate-100" />
+      className={`rounded-xl border px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-slate-100 ${isExtra ? 'border-amber-200 bg-white' : 'border-slate-200'}`} />
     <input value={item.price} onChange={(e) => onUpdate(idx, 'price', e.target.value)}
-      className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-slate-100" />
-    <div className="rounded-xl bg-slate-100 px-3 py-2 text-sm font-semibold text-right">{money(lineSum)}</div>
+      className={`rounded-xl border px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-slate-100 ${customPrice ? 'border-amber-300 bg-amber-50/70' : isExtra ? 'border-amber-200 bg-white' : 'border-slate-200'}`} />
+    <div className={`rounded-xl px-3 py-2 text-sm font-semibold text-right ${isExtra ? 'bg-amber-100 text-amber-900' : 'bg-slate-100 text-slate-900'}`}>{money(lineSum)}</div>
     <button onClick={() => onRemove(idx)} className="rounded-lg px-2 py-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">×</button>
   </div>;
 }
@@ -1148,7 +1362,7 @@ function InWorkPage({ clients, points, flavors, extras, priceOverrides, showToas
               items={expandedItems[o.order_id]}
               onToggle={() => toggleExpand(o.order_id)}
               onChangeStatus={updateStatus}
-              onEdit={() => onEditOrder(o.order_id)}
+              onEdit={() => onEditOrder({ ...o, items: expandedItems[o.order_id] || o.items || [] })}
               onDelete={() => deleteOrder(o)}
               isOverdue={group.key === 'overdue'}
             />
@@ -1408,7 +1622,7 @@ function AssemblyPage({ clients, points, showToast, onEditOrder }) {
           selected={selectedIds.has(order.order_id)}
           onSelect={() => toggleSelected(order.order_id)}
           onAssembled={() => markAssembled(order)}
-          onEdit={() => onEditOrder(order.order_id)}
+          onEdit={() => onEditOrder(order)}
         />
       ))}
     </div>}
@@ -1659,7 +1873,7 @@ function HistoryPage({ clients, points, flavors, extras, showToast, onEditOrder 
             items={expandedItems[o.order_id]}
             onToggle={() => toggleExpand(o.order_id)}
             onChangeStatus={updateStatus}
-            onEdit={() => onEditOrder(o.order_id)}
+            onEdit={() => onEditOrder({ ...o, items: expandedItems[o.order_id] || o.items || [] })}
             onDelete={() => deleteOrder(o)}
           />
         ))}
