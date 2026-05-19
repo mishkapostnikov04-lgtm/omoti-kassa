@@ -85,12 +85,17 @@ const displayDate = (v) => {
 const isTrue = (v) => v === true || ['TRUE', 'ИСТИНА', 'ДА', '1'].includes(String(v).trim().toUpperCase());
 
 // Лёгкий кеш внутри открытой вкладки браузера.
-// Не заменяет Google Таблицу: показываем последние данные сразу,
-// а потом всё равно обновляем их из Apps Script в фоне.
+// Главная цель: не ходить в Apps Script при каждом переключении вкладок.
+// Данные обновляются по кнопке «Обновить», после изменений заказа или по TTL.
+const PAGE_CACHE_TTL_MS = 90 * 1000;
 const pageCache = {};
-function getPageCache(key) {
+function getPageCache(key, maxAgeMs = PAGE_CACHE_TTL_MS) {
   const cached = pageCache[key];
   if (!cached) return null;
+  if (maxAgeMs !== Infinity && Date.now() - cached.time > maxAgeMs) {
+    delete pageCache[key];
+    return null;
+  }
   return cached.data;
 }
 function setPageCache(key, data) {
@@ -98,6 +103,12 @@ function setPageCache(key, data) {
 }
 function clearPageCache(prefix) {
   Object.keys(pageCache).forEach(k => { if (!prefix || k.startsWith(prefix)) delete pageCache[k]; });
+}
+function clearOrdersPageCache() {
+  clearPageCache('inwork');
+  clearPageCache('assembly');
+  clearPageCache('history');
+  clearPageCache('export');
 }
 function readLocalJson(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch (e) { return fallback; }
@@ -849,6 +860,7 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
         } catch (err) {
           console.warn('Не удалось пометить старый заказ:', err);
         }
+        clearOrdersPageCache();
         showToast(`Заказ обновлён: ${res.order_no} вместо ${editingOrder.order_no}`);
         // выходим из режима редактирования
         setItems([]); setComment(''); setClientId(''); setPointId(''); setLegalId('');
@@ -865,6 +877,7 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
           status: 'new',
           created_by: CURRENT_USER,
         });
+        clearOrdersPageCache();
         showToast(`Заказ ${res.order_no} сохранён · ${money(res.total_amount)}`);
         setItems([]); setComment('');
         loadHistory(clientId);
@@ -1365,16 +1378,19 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
   const [refreshKey, setRefreshKey] = useState(0);
   const [statusFilter, setStatusFilter] = useState(''); // '', 'new', 'assembled'
 
-  const load = async () => {
+  const load = async (force = false) => {
     const cacheKey = 'inwork_all';
-    const cached = getPageCache(cacheKey);
+    const cached = !force ? getPageCache(cacheKey) : null;
+
     if (cached) {
       setOrders(cached);
       setExpandedItems(prev => ({ ...itemsMapFromOrders(cached), ...prev }));
       setLoading(false);
-    } else {
-      setLoading(true);
+      return;
     }
+
+    setLoading(true);
+
     try {
       let all = [];
       try {
@@ -1397,7 +1413,7 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [refreshKey]);
+  useEffect(() => { load(refreshKey > 0); }, [refreshKey]);
 
   const clientById = useMemo(() => { const m = {}; clients.forEach(c => { m[c.client_id] = c; }); return m; }, [clients]);
   const pointById = useMemo(() => { const m = {}; points.forEach(p => { m[p.point_id] = p; }); return m; }, [points]);
@@ -1490,8 +1506,7 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
     setOrders(prev => prev.map(o => o.order_id === orderId ? { ...o, ...updates } : o));
     try {
       await api('updateOrder', { order_id: orderId, updates });
-      clearPageCache('inwork');
-      clearPageCache('history');
+      clearOrdersPageCache();
       showToast('Статус обновлён');
       // если стал shipped/cancelled — убираем из списка
       if (newStatus === 'shipped' || newStatus === 'cancelled') {
@@ -1514,8 +1529,7 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
           comment: '[УДАЛЁН] ' + (order.comment || ''),
         }
       });
-      clearPageCache('inwork');
-      clearPageCache('history');
+      clearOrdersPageCache();
       setOrders(prev => prev.filter(o => o.order_id !== order.order_id));
       showToast(`Заказ ${order.order_no} удалён`);
     } catch (err) {
@@ -1545,10 +1559,13 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
           {totalCount > 0 ? <>{totalCount} заказов · {money(totalAmount)}</> : 'Заказов в работе нет'}
         </p>
       </div>
-      <div className="flex gap-2 rounded-2xl bg-slate-100 p-1">
-        {[['', 'Все'], ['new', 'Новые'], ['assembled', 'Собранные']].map(([k, l]) => (
-          <button key={k} onClick={() => setStatusFilter(k)} className={`rounded-xl px-4 py-2 text-sm transition ${statusFilter === k ? 'bg-white shadow-sm font-medium' : 'text-slate-500'}`}>{l}</button>
-        ))}
+      <div className="flex items-center gap-2">
+        <div className="flex gap-2 rounded-2xl bg-slate-100 p-1">
+          {[['', 'Все'], ['new', 'Новые'], ['assembled', 'Собранные']].map(([k, l]) => (
+            <button key={k} onClick={() => setStatusFilter(k)} className={`rounded-xl px-4 py-2 text-sm transition ${statusFilter === k ? 'bg-white shadow-sm font-medium' : 'text-slate-500'}`}>{l}</button>
+          ))}
+        </div>
+        <Button variant="light" onClick={() => setRefreshKey(k => k + 1)}>Обновить</Button>
       </div>
     </header>
 
@@ -1714,8 +1731,7 @@ function ElbaDocumentsBlock({ order, onCreated, showToast }) {
       });
 
       onCreated(order.order_id, res);
-      clearPageCache('inwork');
-      clearPageCache('history');
+      clearOrdersPageCache();
 
       const invoiceText = res.invoice_number ? `Счёт №${res.invoice_number}` : 'Счёт';
       showToast(`${invoiceText} и накладная созданы`);
@@ -1775,15 +1791,22 @@ function AssemblyPage({ clients, points, showToast, onEditOrder }) {
   const clientById = useMemo(() => { const m = {}; clients.forEach(c => { m[c.client_id] = c; }); return m; }, [clients]);
   const pointById = useMemo(() => { const m = {}; points.forEach(p => { m[p.point_id] = p; }); return m; }, [points]);
 
-  const load = async () => {
+  const load = async (force = false) => {
     const cacheKey = 'assembly_new';
-    const cached = getPageCache(cacheKey);
+    const cached = !force ? getPageCache(cacheKey) : null;
+
     if (cached) {
       setOrders(cached);
+      setSelectedIds(prev => {
+        const valid = new Set(cached.map(o => o.order_id));
+        return new Set([...prev].filter(id => valid.has(id)));
+      });
       setLoading(false);
-    } else {
-      setLoading(true);
+      return;
     }
+
+    setLoading(true);
+
     try {
       let all = [];
       try {
@@ -1820,7 +1843,7 @@ function AssemblyPage({ clients, points, showToast, onEditOrder }) {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [refreshKey]);
+  useEffect(() => { load(refreshKey > 0); }, [refreshKey]);
 
   const filteredOrders = useMemo(() => {
     const t = today();
@@ -1856,8 +1879,7 @@ function AssemblyPage({ clients, points, showToast, onEditOrder }) {
     try {
       await api('updateOrder', { order_id: order.order_id, updates: { status: 'assembled' } });
       clearPageCache('assembly');
-      clearPageCache('inwork');
-      clearPageCache('history');
+      clearOrdersPageCache();
       setOrders(prev => prev.filter(o => o.order_id !== order.order_id));
       setSelectedIds(prev => { const next = new Set(prev); next.delete(order.order_id); return next; });
       showToast(`Заказ ${order.order_no} отмечен как собран`);
@@ -2044,16 +2066,19 @@ function HistoryPage({ clients, points, legals, flavors, extras, showToast, onEd
   const [expandedId, setExpandedId] = useState(null);
   const [expandedItems, setExpandedItems] = useState(() => initialHistoryCache ? itemsMapFromOrders(initialHistoryCache) : {});
 
-  const load = async () => {
+  const load = async (force = false) => {
     const cacheKey = `history_${dateFrom}_${dateTo}_${filterClient || 'all'}_${filterStatus || 'all'}`;
-    const cached = getPageCache(cacheKey);
+    const cached = !force ? getPageCache(cacheKey) : null;
+
     if (cached) {
       setOrders(cached);
       setExpandedItems(prev => ({ ...itemsMapFromOrders(cached), ...prev }));
       setLoading(false);
-    } else {
-      setLoading(true);
+      return;
     }
+
+    setLoading(true);
+
     try {
       let nextOrders = [];
       try {
@@ -2084,7 +2109,7 @@ function HistoryPage({ clients, points, legals, flavors, extras, showToast, onEd
 
   useEffect(() => {
     writeLocalJson('omoti_history_filters_v1', { dateFrom, dateTo, filterClient, filterStatus });
-    load();
+    load(false);
   }, [dateFrom, dateTo, filterClient, filterStatus]);
 
   const clientById = useMemo(() => { const m = {}; clients.forEach(c => { m[c.client_id] = c; }); return m; }, [clients]);
@@ -2121,8 +2146,7 @@ function HistoryPage({ clients, points, legals, flavors, extras, showToast, onEd
     setOrders(prev => prev.map(o => o.order_id === orderId ? { ...o, ...updates } : o));
     try {
       await api('updateOrder', { order_id: orderId, updates });
-      clearPageCache('history');
-      clearPageCache('inwork');
+      clearOrdersPageCache();
       showToast('Статус обновлён');
     } catch (err) {
       showToast('Ошибка: ' + err.message, 'error');
@@ -2140,8 +2164,7 @@ function HistoryPage({ clients, points, legals, flavors, extras, showToast, onEd
           comment: '[УДАЛЁН] ' + (order.comment || ''),
         }
       });
-      clearPageCache('history');
-      clearPageCache('inwork');
+      clearOrdersPageCache();
       setOrders(prev => prev.map(o => o.order_id === order.order_id ? { ...o, status: 'cancelled' } : o));
       showToast(`Заказ ${order.order_no} удалён`);
     } catch (err) {
@@ -2179,7 +2202,7 @@ function HistoryPage({ clients, points, legals, flavors, extras, showToast, onEd
           options={[{ value: '', label: 'Все клиенты' }, ...clients.map(c => ({ value: c.client_id, label: c.name }))]} placeholder="Все клиенты" /></div>
         <div><Label>Статус</Label><Combobox value={filterStatus} onChange={setFilterStatus}
           options={[{ value: '', label: 'Все' }, ...STATUS_OPTIONS]} placeholder="Все статусы" /></div>
-        <div className="self-end"><Button onClick={load} variant="light">Обновить</Button></div>
+        <div className="self-end"><Button onClick={() => load(true)} variant="light">Обновить</Button></div>
       </div>
 
       {loading && <div className="text-center py-12"><Spinner /></div>}
@@ -2307,23 +2330,38 @@ function ExportPage({ showToast }) {
 
   const rowKey = (row, index) => row.meta_order_id || row.order_id || `${index}_${row['L_Заказчик'] || ''}_${row['K_Примечание'] || ''}_${row['M_На какое число'] || ''}`;
 
-  const load = async () => {
+  const load = async (force = false) => {
+    const cacheKey = `export_${dateFrom}_${dateTo}`;
+    const cached = !force ? getPageCache(cacheKey) : null;
+
+    if (cached) {
+      setRows(cached.rows || []);
+      setColumns(cached.columns || []);
+      setSelectedKeys(cached.selectedKeys || {});
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
+
     try {
       const res = await api('getOrdersForExport', { delivery_from: dateFrom, delivery_to: dateTo });
       const nextRows = res.rows || [];
-      setRows(nextRows);
-      setColumns(res.columns || []);
+      const nextColumns = res.columns || [];
       const nextSelected = {};
       nextRows.forEach((row, index) => { nextSelected[rowKey(row, index)] = true; });
+
+      setRows(nextRows);
+      setColumns(nextColumns);
       setSelectedKeys(nextSelected);
+      setPageCache(cacheKey, { rows: nextRows, columns: nextColumns, selectedKeys: nextSelected });
     } catch (err) {
       showToast('Ошибка: ' + err.message, 'error');
     }
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [dateFrom, dateTo]);
+  useEffect(() => { load(false); }, [dateFrom, dateTo]);
 
   const visibleColumns = columns.filter(c => !c.startsWith('meta_'));
   const selectedRows = rows.filter((row, index) => selectedKeys[rowKey(row, index)]);
@@ -2369,7 +2407,7 @@ function ExportPage({ showToast }) {
       <div className="grid grid-cols-[1fr_1fr_auto] gap-4 mb-5">
         <div><Label>Доставка с</Label><Input type="date" value={dateFrom} onChange={setDateFrom} /></div>
         <div><Label>По</Label><Input type="date" value={dateTo} onChange={setDateTo} /></div>
-        <div className="self-end"><Button onClick={load} variant="light">Обновить</Button></div>
+        <div className="self-end"><Button onClick={() => load(true)} variant="light">Обновить</Button></div>
       </div>
 
       <div className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-900 mb-5">
