@@ -1,0 +1,2814 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OMOTI — Заказы B2B</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  body { font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; }
+  button:focus, input:focus, select:focus, textarea:focus { outline: none; }
+  .modal-bg { animation: fadeIn 0.15s ease-out; }
+  .modal-content { animation: slideUp 0.2s ease-out; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  /* Combobox dropdown */
+  .combo-dropdown { max-height: 280px; overflow-y: auto; }
+  .combo-option { padding: 0.625rem 1rem; cursor: pointer; font-size: 0.875rem; }
+  .combo-option:hover, .combo-option.highlighted { background: #f1f5f9; }
+  .combo-option.selected { background: #e2e8f0; font-weight: 500; }
+
+
+  /* Печать листа сборки */
+  .print-area { display: none; }
+  @media print {
+    @page { size: A4 portrait; margin: 10mm; }
+    body { background: #fff !important; }
+    body * { visibility: hidden !important; }
+    .print-area, .print-area * { visibility: visible !important; }
+    .print-area { display: block !important; position: absolute; left: 0; top: 0; width: 100%; color: #111827; font-family: Arial, sans-serif; }
+    .print-card { page-break-inside: avoid; break-inside: avoid; border: 1px solid #111827; border-radius: 8px; padding: 10px; margin-bottom: 10px; }
+    .print-muted { color: #4b5563; }
+    .print-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .print-table th, .print-table td { border: 1px solid #d1d5db; padding: 4px 6px; }
+    .print-table th { background: #f3f4f6; text-align: left; }
+  }
+
+</style>
+</head>
+<body class="bg-slate-100">
+<div id="root"></div>
+
+<script type="text/babel" data-type="module">
+const { useState, useEffect, useMemo, useCallback, useRef } = React;
+
+// ===== Конфигурация =====
+const API_URL = 'https://script.google.com/macros/s/AKfycbxeKUgd-cxwHruf9gSYQm9rVH1VDZIUHSeBMVdY7_VAMUxLh8qpAS3d3FZ5bXOK0tZSDg/exec';
+const API_SECRET = 'omoti-2026-secret-key-do-not-share-publicly-7x3k9p2m';
+const CURRENT_USER = 'Евгений';
+
+// ===== API клиент =====
+async function api(action, params = {}) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ secret: API_SECRET, action, params }),
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || data.message || 'Unknown error');
+  return data;
+}
+
+// ===== Утилиты =====
+const money = (v) => new Intl.NumberFormat('ru-RU').format(Number(v || 0)) + ' ₽';
+const today = () => new Date().toISOString().substring(0, 10);
+const tomorrow = () => {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().substring(0, 10);
+};
+const dateOnly = (v) => String(v || '').substring(0, 10);
+const displayDate = (v) => {
+  const s = dateOnly(v);
+  if (!s) return '';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const [y, m, d] = s.split('-');
+  return `${d}.${m}.${y}`;
+};
+const isTrue = (v) => v === true || ['TRUE', 'ИСТИНА', 'ДА', '1'].includes(String(v).trim().toUpperCase());
+
+// Лёгкий кеш внутри открытой вкладки браузера.
+// Не заменяет Google Таблицу: показываем последние данные сразу,
+// а потом всё равно обновляем их из Apps Script в фоне.
+const pageCache = {};
+function getPageCache(key) {
+  const cached = pageCache[key];
+  if (!cached) return null;
+  return cached.data;
+}
+function setPageCache(key, data) {
+  pageCache[key] = { time: Date.now(), data };
+}
+function clearPageCache(prefix) {
+  Object.keys(pageCache).forEach(k => { if (!prefix || k.startsWith(prefix)) delete pageCache[k]; });
+}
+function readLocalJson(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch (e) { return fallback; }
+}
+function writeLocalJson(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
+}
+function itemsMapFromOrders(orders) {
+  const out = {};
+  (orders || []).forEach(o => {
+    if (Array.isArray(o.items)) out[o.order_id] = o.items;
+  });
+  return out;
+}
+
+// ===== Базовые UI =====
+
+function Pill({ children, color = 'slate', size = 'sm' }) {
+  const colors = {
+    slate: 'bg-slate-100 text-slate-700',
+    green: 'bg-emerald-100 text-emerald-700',
+    amber: 'bg-amber-100 text-amber-800',
+    red: 'bg-red-100 text-red-700',
+    blue: 'bg-blue-100 text-blue-700',
+    indigo: 'bg-indigo-100 text-indigo-700',
+  };
+  const sizes = { sm: 'px-3 py-1 text-xs', md: 'px-3 py-1.5 text-sm' };
+  return <span className={`inline-flex rounded-full font-medium ${colors[color]} ${sizes[size]}`}>{children}</span>;
+}
+
+function Card({ children, className = '' }) {
+  return <div className={`rounded-3xl bg-white shadow-sm ${className}`}>{children}</div>;
+}
+
+function Button({ children, onClick, variant = 'dark', className = '', disabled = false, type = 'button', size = 'md' }) {
+  const base = 'rounded-2xl font-medium transition active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 inline-flex items-center justify-center gap-2';
+  const variants = {
+    dark: 'bg-slate-950 text-white hover:bg-slate-800',
+    light: 'bg-white text-slate-900 border border-slate-200 hover:bg-slate-50',
+    ghost: 'bg-slate-100 text-slate-700 hover:bg-slate-200',
+    danger: 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100',
+    success: 'bg-emerald-600 text-white hover:bg-emerald-700',
+    amber: 'bg-amber-500 text-white hover:bg-amber-600',
+  };
+  const sizes = {
+    sm: 'px-3 py-1.5 text-xs',
+    md: 'px-4 py-2 text-sm',
+    lg: 'px-6 py-3 text-base',
+  };
+  return <button type={type} onClick={onClick} disabled={disabled} className={`${base} ${variants[variant]} ${sizes[size]} ${className}`}>{children}</button>;
+}
+
+function Input({ value, onChange, placeholder = '', type = 'text', className = '' }) {
+  return <input
+    type={type}
+    value={value ?? ''}
+    onChange={(e) => onChange(e.target.value)}
+    placeholder={placeholder}
+    className={`w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100 ${className}`}
+  />;
+}
+
+function Label({ children, className = '' }) {
+  return <label className={`mb-2 block text-sm font-medium text-slate-700 ${className}`}>{children}</label>;
+}
+
+function Spinner({ small = false }) {
+  const size = small ? 'h-4 w-4 border-2' : 'h-5 w-5 border-2';
+  return <div className={`inline-block ${size} animate-spin rounded-full border-slate-300 border-t-slate-700`}></div>;
+}
+
+function Toast({ message, type = 'success', onClose }) {
+  useEffect(() => {
+    const t = setTimeout(onClose, 4500);
+    return () => clearTimeout(t);
+  }, [message]);
+  const colors = type === 'error' ? 'bg-red-600' : type === 'warn' ? 'bg-amber-600' : 'bg-emerald-600';
+  return <div className={`fixed bottom-6 right-6 z-50 ${colors} text-white rounded-2xl px-5 py-3 shadow-lg text-sm font-medium max-w-md`}>
+    {message}
+  </div>;
+}
+
+function Modal({ open, onClose, title, children, size = 'md' }) {
+  if (!open) return null;
+  const sizes = { sm: 'max-w-md', md: 'max-w-xl', lg: 'max-w-3xl', xl: 'max-w-5xl' };
+  return <div className="modal-bg fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4" onClick={onClose}>
+    <div className={`modal-content w-full ${sizes[size]} max-h-[90vh] overflow-y-auto rounded-3xl bg-white shadow-xl`} onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 sticky top-0 bg-white rounded-t-3xl z-10">
+        <h2 className="text-lg font-semibold">{title}</h2>
+        <button onClick={onClose} className="rounded-full p-1 hover:bg-slate-100 text-slate-500 hover:text-slate-900">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div className="p-6">{children}</div>
+    </div>
+  </div>;
+}
+
+function MenuItem({ active, children, onClick, icon }) {
+  return <button onClick={onClick} className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm transition ${active ? 'bg-white text-slate-950 font-medium shadow-sm' : 'text-slate-300 hover:bg-slate-900'}`}>
+    <span className="opacity-80">{icon}</span>
+    <span>{children}</span>
+  </button>;
+}
+
+// ===== Combobox с поиском =====
+
+function Combobox({ value, onChange, options, placeholder = 'Выбрать...', emptyText = 'Не найдено' }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [highlightedIdx, setHighlightedIdx] = useState(0);
+  const ref = useRef(null);
+  const inputRef = useRef(null);
+
+  const selected = options.find(o => o.value === value);
+
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false);
+        setQuery('');
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const filtered = useMemo(() => {
+    if (!query) return options;
+    const q = query.toLowerCase();
+    return options.filter(o =>
+      o.label.toLowerCase().includes(q) ||
+      (o.search && o.search.toLowerCase().includes(q))
+    );
+  }, [query, options]);
+
+  useEffect(() => { setHighlightedIdx(0); }, [query]);
+
+  const handleSelect = (opt) => {
+    onChange(opt.value);
+    setOpen(false);
+    setQuery('');
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlightedIdx(i => Math.min(i + 1, filtered.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlightedIdx(i => Math.max(i - 1, 0));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (filtered[highlightedIdx]) handleSelect(filtered[highlightedIdx]);
+    } else if (e.key === 'Escape') {
+      setOpen(false);
+      setQuery('');
+    }
+  };
+
+  return <div ref={ref} className="relative">
+    <button
+      type="button"
+      onClick={() => {
+        setOpen(o => !o);
+        setTimeout(() => inputRef.current?.focus(), 50);
+      }}
+      className={`w-full flex items-center justify-between rounded-2xl border bg-white px-4 py-3 text-sm outline-none transition text-left ${open ? 'border-slate-400 ring-2 ring-slate-100' : 'border-slate-200 hover:border-slate-300'}`}
+    >
+      <span className={selected ? 'text-slate-900' : 'text-slate-400'}>
+        {selected ? selected.label : placeholder}
+      </span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`text-slate-400 transition ${open ? 'rotate-180' : ''}`}><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+
+    {open && <div className="absolute z-30 mt-2 w-full rounded-2xl bg-white border border-slate-200 shadow-lg overflow-hidden">
+      <div className="p-2 border-b border-slate-100">
+        <input
+          ref={inputRef}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Поиск..."
+          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+        />
+      </div>
+      <div className="combo-dropdown">
+        {filtered.length === 0 && <div className="px-4 py-6 text-center text-sm text-slate-400">{emptyText}</div>}
+        {filtered.map((opt, idx) => (
+          <div
+            key={opt.value}
+            onClick={() => handleSelect(opt)}
+            onMouseEnter={() => setHighlightedIdx(idx)}
+            className={`combo-option ${idx === highlightedIdx ? 'highlighted' : ''} ${opt.value === value ? 'selected' : ''}`}
+          >
+            {opt.label}
+            {opt.hint && <span className="text-slate-400 ml-2">{opt.hint}</span>}
+          </div>
+        ))}
+      </div>
+    </div>}
+  </div>;
+}
+
+// ===== Главный =====
+
+function App() {
+  const [data, setData] = useState({ clients: [], points: [], legals: [], flavors: [], extras: [], priceOverrides: [] });
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState('order');
+  const [toast, setToast] = useState(null);
+  const [editOrderId, setEditOrderId] = useState(null);
+
+  const showToast = (message, type = 'success') => setToast({ message, type });
+
+  const loadCatalogs = useCallback(async () => {
+    try {
+      const [c, p, l, f, e, ov] = await Promise.all([
+        api('getClients'), api('getPoints'), api('getLegals'),
+        api('getFlavors'), api('getExtras'), api('getPriceOverrides'),
+      ]);
+      setData({
+        clients: c.clients || [],
+        points: p.points || [],
+        legals: l.legals || [],
+        flavors: f.flavors || [],
+        extras: e.extras || [],
+        priceOverrides: ov.overrides || [],
+      });
+    } catch (err) {
+      showToast('Ошибка загрузки: ' + err.message, 'error');
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { loadCatalogs(); }, [loadCatalogs]);
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center">
+    <div className="flex items-center gap-3 text-slate-600"><Spinner /><span>Загрузка...</span></div>
+  </div>;
+
+  return <div className="min-h-screen bg-slate-100 p-5 text-slate-900">
+    <div className="mx-auto grid max-w-[1440px] grid-cols-[240px_1fr] gap-5">
+      <Sidebar page={page} setPage={setPage} />
+      <main className="space-y-5 min-w-0">
+        {page === 'order' && <NewOrderPage {...data} editOrderId={editOrderId} onClearEdit={() => setEditOrderId(null)} onSaved={loadCatalogs} showToast={showToast} />}
+        {page === 'inwork' && <InWorkPage clients={data.clients} points={data.points} flavors={data.flavors} extras={data.extras} priceOverrides={data.priceOverrides} showToast={showToast} onEditOrder={(id) => { setEditOrderId(id); setPage('order'); }} />}
+        {page === 'assembly' && <AssemblyPage clients={data.clients} points={data.points} showToast={showToast} onEditOrder={(id) => { setEditOrderId(id); setPage('order'); }} />}
+        {page === 'history' && <HistoryPage clients={data.clients} points={data.points} flavors={data.flavors} extras={data.extras} showToast={showToast} onEditOrder={(id) => { setEditOrderId(id); setPage('order'); }} />}
+        {page === 'export' && <ExportPage showToast={showToast} />}
+        {page === 'catalog' && <CatalogPage {...data} reload={loadCatalogs} showToast={showToast} />}
+      </main>
+    </div>
+    {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+  </div>;
+}
+
+function Sidebar({ page, setPage }) {
+  const items = [
+    { key: 'order', label: 'Новый заказ', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg> },
+    { key: 'inwork', label: 'В работе', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> },
+    { key: 'assembly', label: 'Сборка / печать', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg> },
+    { key: 'history', label: 'История', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg> },
+    { key: 'export', label: 'Экспорт в Excel', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> },
+    { key: 'catalog', label: 'Справочники', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg> },
+  ];
+  return <aside className="rounded-3xl bg-slate-950 p-5 text-white shadow-sm h-fit sticky top-5">
+    <div className="mb-8 px-3">
+      <div className="text-2xl font-bold tracking-tight">OMOTI</div>
+      <div className="mt-1 text-sm text-slate-400">Заказы B2B</div>
+    </div>
+    <nav className="space-y-2">
+      {items.map(i => <MenuItem key={i.key} active={page === i.key} onClick={() => setPage(i.key)} icon={i.icon}>{i.label}</MenuItem>)}
+    </nav>
+    <div className="mt-10 rounded-2xl bg-slate-900 p-4 text-xs leading-relaxed text-slate-400">
+      Данные читаются из Google Таблицы. Все изменения попадают туда же автоматически.
+    </div>
+  </aside>;
+}
+
+// ===== Расчёт цены =====
+
+function usePriceCalc(flavors, extras, priceOverrides, clientId, pointId, legalId) {
+  return useCallback((type, refId) => {
+    if (type === 'extra') {
+      const ex = extras.find(e => e.extra_id === refId);
+      return { price: Number(ex?.default_price || 0), basePrice: Number(ex?.default_price || 0), source: 'extra_default' };
+    }
+    const flavor = flavors.find(f => f.flavor_id === refId);
+    if (!flavor) return { price: 0, basePrice: 0, source: 'flavor_default' };
+    const base = Number(flavor.default_price);
+
+    const today = new Date().toISOString().substring(0, 10);
+    const isValid = (o) => {
+      if (!isTrue(o.is_active)) return false;
+      if (o.valid_from && dateOnly(o.valid_from) > today) return false;
+      if (o.valid_to && dateOnly(o.valid_to) < today) return false;
+      return true;
+    };
+
+    const findOverride = (scope, scopeId) => {
+      if (!scopeId) return null;
+      return priceOverrides.find(o =>
+        isValid(o) && o.scope === scope && o.scope_id === scopeId &&
+        (o.flavor_id === refId || !o.flavor_id)
+      );
+    };
+
+    const pOver = findOverride('point', pointId);
+    if (pOver) return { price: Number(pOver.price), basePrice: base, source: 'point_override' };
+    const lOver = findOverride('legal', legalId);
+    if (lOver) return { price: Number(lOver.price), basePrice: base, source: 'legal_override' };
+    const cOver = findOverride('client', clientId);
+    if (cOver) return { price: Number(cOver.price), basePrice: base, source: 'client_override' };
+
+    return { price: base, basePrice: base, source: 'flavor_default' };
+  }, [flavors, extras, priceOverrides, clientId, pointId, legalId]);
+}
+
+// ===== Новый заказ =====
+
+function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides, onSaved, showToast, editOrderId, onClearEdit }) {
+  const [clientId, setClientId] = useState('');
+  const [pointId, setPointId] = useState('');
+  const [legalId, setLegalId] = useState('');
+  const [deliveryDate, setDeliveryDate] = useState(tomorrow());
+  const [comment, setComment] = useState('');
+  const [items, setItems] = useState([]);
+  const [history, setHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [loadingEdit, setLoadingEdit] = useState(false);
+  const [editingOrder, setEditingOrder] = useState(null); // полный объект редактируемого заказа
+
+  const isEditMode = !!editOrderId;
+
+  // загрузка заказа для редактирования
+  useEffect(() => {
+    if (!editOrderId) {
+      setEditingOrder(null);
+      return;
+    }
+    setLoadingEdit(true);
+    (async () => {
+      try {
+        const res = await api('getOrder', { order_id: editOrderId });
+        const o = res.order;
+        setEditingOrder(o);
+        setClientId(o.client_id || '');
+        // pointId и legalId установятся через useEffect ниже, но переопределим после
+        setTimeout(() => {
+          setPointId(o.point_id || '');
+          setLegalId(o.legal_id || '');
+        }, 50);
+        setDeliveryDate(dateOnly(o.delivery_date) || tomorrow());
+        setComment(o.comment || '');
+        const loadedItems = (res.items || [])
+          .filter(it => Number(it.qty) > 0)
+          .map(it => ({
+            type: it.type,
+            ref_id: it.ref_id,
+            name: it.name_snapshot,
+            qty: Number(it.qty),
+            price: Number(it.price),
+            basePrice: Number(it.base_price),
+            source: it.price_source,
+          }));
+        setItems(loadedItems);
+      } catch (err) {
+        showToast('Ошибка загрузки заказа: ' + err.message, 'error');
+        onClearEdit();
+      }
+      setLoadingEdit(false);
+    })();
+  }, [editOrderId]);
+
+  const client = clients.find(c => c.client_id === clientId);
+  const point = points.find(p => p.point_id === pointId);
+  const legal = legals.find(l => l.legal_id === legalId);
+
+  const clientPoints = useMemo(() => points.filter(p => p.client_id === clientId), [points, clientId]);
+  const clientLegals = useMemo(() => legals.filter(l => l.client_id === clientId), [legals, clientId]);
+
+  const clientOptions = useMemo(() => clients.map(c => {
+    const cPoints = points.filter(p => p.client_id === c.client_id);
+    const cLegals = legals.filter(l => l.client_id === c.client_id);
+    const search = [
+      c.name, c.aliases, c.comment, c.main_contact,
+      ...cPoints.flatMap(p => [p.address, p.label, p.working_hours, p.contact_person, p.delivery_comment]),
+      ...cLegals.flatMap(l => [l.legal_name, l.inn, l.kpp, l.documents_comment])
+    ].filter(Boolean).join(' ');
+    const hintParts = [];
+    if (cPoints.length) hintParts.push(`${cPoints.length} адр.`);
+    if (cLegals.length) hintParts.push(`${cLegals.length} юр.`);
+    return { value: c.client_id, label: c.name, search, hint: hintParts.join(' · ') };
+  }), [clients, points, legals]);
+
+  const calcPrice = usePriceCalc(flavors, extras, priceOverrides, clientId, pointId, legalId);
+
+  // При смене клиента подставляем первый адрес/юрлицо, но не затираем загруженные значения при редактировании
+  const prevClientIdRef = useRef(clientId);
+  useEffect(() => {
+    if (!clientId) {
+      setPointId('');
+      setLegalId('');
+      setHistory([]);
+      prevClientIdRef.current = '';
+      return;
+    }
+
+    const firstPoint = points.find(p => p.client_id === clientId);
+    const firstLegal = legals.find(l => l.client_id === clientId);
+    const clientChanged = prevClientIdRef.current !== clientId;
+    const pointBelongsToClient = pointId && points.some(p => p.point_id === pointId && p.client_id === clientId);
+    const legalBelongsToClient = legalId && legals.some(l => l.legal_id === legalId && l.client_id === clientId);
+
+    // Новый заказ: при первом выборе клиента сразу ставим первый адрес и первое юрлицо.
+    // Редактирование: если пользователь сам сменил клиента, тоже ставим первый адрес/юрлицо нового клиента.
+    if (clientChanged) {
+      if (!pointBelongsToClient) setPointId(firstPoint?.point_id || '');
+      if (!legalBelongsToClient) setLegalId(firstLegal?.legal_id || '');
+    }
+
+    loadHistory(clientId);
+    prevClientIdRef.current = clientId;
+  }, [clientId, points, legals]);
+
+  const loadHistory = async (cid) => {
+    setLoadingHistory(true);
+    try {
+      const res = await api('getClientHistory', { client_id: cid, limit: 5 });
+      setHistory(res.orders || []);
+    } catch (err) { console.error(err); }
+    setLoadingHistory(false);
+  };
+
+  const mergeOrAppendItem = (newItem) => {
+    setItems(prev => {
+      const idx = prev.findIndex(it => it.type === newItem.type && it.ref_id === newItem.ref_id);
+      if (idx === -1) return [...prev, newItem];
+
+      showToast(`${newItem.name} уже есть в заказе — прибавил количество`);
+      return prev.map((it, i) => i === idx
+        ? { ...it, qty: Number(it.qty || 0) + Number(newItem.qty || 0) }
+        : it
+      );
+    });
+  };
+
+  const addMoti = (flavorId, qty) => {
+    const q = Number(qty);
+    if (!flavorId || !q || q <= 0) return;
+    const flavor = flavors.find(f => f.flavor_id === flavorId);
+    if (!flavor) return;
+    const priceInfo = calcPrice('moti', flavorId);
+    mergeOrAppendItem({
+      type: 'moti', ref_id: flavorId, name: flavor.name,
+      qty: q, price: priceInfo.price, basePrice: priceInfo.basePrice, source: priceInfo.source,
+    });
+  };
+
+  const addExtra = (extraId, qty) => {
+    const q = Number(qty);
+    if (!extraId || !q || q <= 0) return;
+    const extra = extras.find(e => e.extra_id === extraId);
+    if (!extra) return;
+    mergeOrAppendItem({
+      type: 'extra', ref_id: extraId, name: extra.name,
+      qty: q, price: Number(extra.default_price), basePrice: Number(extra.default_price), source: 'extra_default',
+    });
+  };
+
+  const updateItem = (idx, field, value) => {
+    setItems(prev => prev.map((it, i) => i === idx
+      ? { ...it, [field]: value, ...(field === 'price' && Number(value) !== it.basePrice ? { source: 'manual' } : {}) }
+      : it));
+  };
+  const removeItem = (idx) => setItems(prev => prev.filter((_, i) => i !== idx));
+
+  const totalMoti = items.filter(i => i.type === 'moti').reduce((s, i) => s + Number(i.qty || 0), 0);
+  const totalExtra = items.filter(i => i.type === 'extra').reduce((s, i) => s + Number(i.qty || 0), 0);
+  const totalAmount = items.reduce((s, i) => s + Number(i.qty || 0) * Number(i.price || 0), 0);
+
+  const repeatOrder = (order) => {
+    if (order.point_id) setPointId(order.point_id);
+    if (order.legal_id) setLegalId(order.legal_id);
+    setItems((order.items || []).map(it => {
+      const priceInfo = calcPrice(it.type, it.ref_id);
+      return {
+        type: it.type, ref_id: it.ref_id,
+        name: it.name_snapshot || it.name,
+        qty: Number(it.qty),
+        price: priceInfo.price, basePrice: priceInfo.basePrice, source: priceInfo.source,
+      };
+    }));
+    showToast(`Заказ ${order.order_no} скопирован`);
+  };
+
+  const getSaveError = () => {
+    if (!clientId) return 'Выбери клиента';
+    if (!deliveryDate) return 'Укажи дату доставки';
+    if (items.length === 0) return 'Добавь хотя бы одну позицию';
+
+    const badQty = items.find(i => !Number.isFinite(Number(i.qty)) || Number(i.qty) <= 0);
+    if (badQty) return `Проверь количество: ${badQty.name}`;
+
+    const badPrice = items.find(i => !Number.isFinite(Number(i.price)) || Number(i.price) <= 0);
+    if (badPrice) return `Проверь цену: ${badPrice.name}`;
+
+    return '';
+  };
+
+  const getEditedOrderStatus = () => {
+    if (!editingOrder) return 'new';
+    if (editingOrder.status === 'shipped' || editingOrder.status === 'cancelled') return 'new';
+    return editingOrder.status || 'new';
+  };
+
+  const saveOrder = async () => {
+    const saveError = getSaveError();
+    if (saveError) { showToast(saveError, 'warn'); return; }
+    if (saving) return;
+    setSaving(true);
+    try {
+      if (isEditMode && editingOrder) {
+        // редактирование: создаём новый заказ, старый помечаем cancelled
+        const newComment = comment + (comment && editingOrder.order_no ? ' ' : '') + `(исправление ${editingOrder.order_no})`;
+        const res = await api('createOrder', {
+          client_id: clientId,
+          point_id: pointId || undefined,
+          legal_id: legalId || undefined,
+          delivery_date: deliveryDate,
+          comment: newComment,
+          items: items.map(i => ({ type: i.type, ref_id: i.ref_id, qty: Number(i.qty), price: Number(i.price) })),
+          source: 'manual',
+          status: getEditedOrderStatus(),
+          created_by: CURRENT_USER,
+        });
+        // помечаем старый как отменённый
+        try {
+          await api('updateOrder', {
+            order_id: editingOrder.order_id,
+            updates: {
+              status: 'cancelled',
+              comment: `[ЗАМЕНЁН на ${res.order_no}] ` + (editingOrder.comment || ''),
+            }
+          });
+        } catch (err) {
+          console.warn('Не удалось пометить старый заказ:', err);
+        }
+        showToast(`Заказ обновлён: ${res.order_no} вместо ${editingOrder.order_no}`);
+        // выходим из режима редактирования
+        setItems([]); setComment(''); setClientId(''); setPointId(''); setLegalId('');
+        onClearEdit();
+      } else {
+        const res = await api('createOrder', {
+          client_id: clientId,
+          point_id: pointId || undefined,
+          legal_id: legalId || undefined,
+          delivery_date: deliveryDate,
+          comment,
+          items: items.map(i => ({ type: i.type, ref_id: i.ref_id, qty: Number(i.qty), price: Number(i.price) })),
+          source: 'manual',
+          status: 'new',
+          created_by: CURRENT_USER,
+        });
+        showToast(`Заказ ${res.order_no} сохранён · ${money(res.total_amount)}`);
+        setItems([]); setComment('');
+        loadHistory(clientId);
+      }
+    } catch (err) {
+      showToast('Ошибка сохранения: ' + err.message, 'error');
+    }
+    setSaving(false);
+  };
+
+  const cancelEdit = () => {
+    setItems([]); setComment(''); setClientId(''); setPointId(''); setLegalId('');
+    setDeliveryDate(tomorrow());
+    onClearEdit();
+  };
+
+  return <>
+    <header className={`flex items-center justify-between rounded-3xl p-5 shadow-sm ${isEditMode ? 'bg-amber-50 ring-2 ring-amber-200' : 'bg-white'}`}>
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {isEditMode ? `Редактирование заказа ${editingOrder?.order_no || ''}` : 'Новый заказ'}
+        </h1>
+        <p className="mt-1 text-sm text-slate-500">
+          {isEditMode
+            ? 'Старый заказ будет помечен отменённым, создан новый с теми же данными.'
+            : 'Внесение B2B-заказа. Сохранение в Google Таблице.'}
+        </p>
+      </div>
+      {isEditMode && <Button onClick={cancelEdit} variant="light">Отменить редактирование</Button>}
+    </header>
+
+    {loadingEdit && <div className="text-center py-12"><Spinner /></div>}
+    {!loadingEdit && <div className="grid grid-cols-[1.15fr_0.85fr] gap-5">
+      <Card className="p-5 min-w-0">
+        <div className="space-y-5">
+          {/* Клиент / дата */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Клиент</Label>
+              <Combobox
+                value={clientId}
+                onChange={setClientId}
+                options={clientOptions}
+                placeholder="Выбрать клиента, адрес или ИП..."
+              />
+            </div>
+            <div>
+              <Label>Дата доставки</Label>
+              <Input type="date" value={deliveryDate} onChange={setDeliveryDate} />
+            </div>
+          </div>
+
+          {clientId && <>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Адрес / филиал</Label>
+                <Combobox
+                  value={pointId}
+                  onChange={setPointId}
+                  options={clientPoints.map(p => ({ value: p.point_id, label: p.address }))}
+                  placeholder={clientPoints.length ? 'Выбрать адрес...' : 'Нет адресов'}
+                />
+              </div>
+              <div>
+                <Label>Юрлицо</Label>
+                <Combobox
+                  value={legalId}
+                  onChange={setLegalId}
+                  options={clientLegals.map(l => ({ value: l.legal_id, label: l.legal_name, hint: `ИНН ${l.inn}` }))}
+                  placeholder={clientLegals.length ? 'Выбрать юрлицо...' : 'Без юрлица'}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 rounded-2xl bg-slate-50 p-4">
+              <div>
+                <div className="text-xs text-slate-500">ИНН</div>
+                <div className="mt-1 text-sm font-medium">{legal?.inn || '—'}</div>
+              </div>
+              <div>
+                <div className="text-xs text-slate-500">Время работы</div>
+                <div className="mt-1 text-sm font-medium">{point?.working_hours || '—'}</div>
+              </div>
+              <div>
+                <div className="text-xs text-slate-500">Контакт</div>
+                <div className="mt-1 text-sm font-medium">{point?.contact_person || '—'}</div>
+              </div>
+            </div>
+          </>}
+
+          <AddItemBlock flavors={flavors} extras={extras} onAddMoti={addMoti} onAddExtra={addExtra} />
+
+          {items.length > 0 && <div className="space-y-2">
+            {items.map((it, idx) => <ItemRow key={idx} item={it} idx={idx} onUpdate={updateItem} onRemove={removeItem} />)}
+          </div>}
+
+          <div>
+            <Label>Комментарий к заказу</Label>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              rows={2}
+              placeholder="Без соусников, упаковать на 15..."
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100 resize-none"
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-3 rounded-2xl bg-slate-950 p-4 text-white">
+            <div><div className="text-sm text-slate-400">Итого моти</div><div className="text-2xl font-bold">{totalMoti} шт</div></div>
+            <div><div className="text-sm text-slate-400">Упаковка</div><div className="text-2xl font-bold">{totalExtra} шт</div></div>
+            <div><div className="text-sm text-slate-400">Сумма заказа</div><div className="text-2xl font-bold">{money(totalAmount)}</div></div>
+          </div>
+
+          <Button onClick={saveOrder} disabled={saving || items.length === 0 || !clientId} size="lg" className="w-full">
+            {saving ? <><Spinner /> Сохранение...</> : (isEditMode ? 'Сохранить изменения' : 'Сохранить заказ')}
+          </Button>
+        </div>
+      </Card>
+
+      <div className="space-y-5 min-w-0">
+        {client && <ClientCard client={client} point={point} legal={legal} points={points} history={history} loadingHistory={loadingHistory} onRepeat={repeatOrder} />}
+        {!client && <Card className="p-8">
+          <div className="text-center text-slate-500">
+            <svg className="mx-auto mb-3 text-slate-300" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>
+            <div className="text-sm">Выбери клиента слева,<br />чтобы увидеть карточку и историю заказов</div>
+          </div>
+        </Card>}
+      </div>
+    </div>}
+  </>;
+}
+
+function AddItemBlock({ flavors, extras, onAddMoti, onAddExtra }) {
+  const [tab, setTab] = useState('moti');
+  const [selectedFlavor, setSelectedFlavor] = useState('');
+  const [motiQty, setMotiQty] = useState('');
+  const [selectedExtra, setSelectedExtra] = useState('');
+  const [extraQty, setExtraQty] = useState('');
+
+  const submitMoti = () => {
+    onAddMoti(selectedFlavor, motiQty);
+    setSelectedFlavor(''); setMotiQty('');
+  };
+  const submitExtra = () => {
+    onAddExtra(selectedExtra, extraQty);
+    setSelectedExtra(''); setExtraQty('');
+  };
+
+  return <div className="rounded-3xl border border-slate-100 bg-white p-4">
+    <div className="mb-3 flex gap-2 rounded-2xl bg-slate-100 p-1 w-fit">
+      <button onClick={() => setTab('moti')} className={`rounded-xl px-4 py-1.5 text-sm transition ${tab === 'moti' ? 'bg-white shadow-sm font-medium' : 'text-slate-500'}`}>Моти</button>
+      <button onClick={() => setTab('extra')} className={`rounded-xl px-4 py-1.5 text-sm transition ${tab === 'extra' ? 'bg-white shadow-sm font-medium' : 'text-slate-500'}`}>Упаковка</button>
+    </div>
+
+    {tab === 'moti' && <div className="grid grid-cols-[1fr_110px_120px] gap-3">
+      <Combobox
+        value={selectedFlavor}
+        onChange={setSelectedFlavor}
+        options={flavors.map(f => ({ value: f.flavor_id, label: f.name, search: f.aliases }))}
+        placeholder="Выбрать вкус..."
+      />
+      <Input value={motiQty} onChange={setMotiQty} placeholder="Кол-во" type="number" />
+      <Button onClick={submitMoti} disabled={!selectedFlavor || !motiQty}>Добавить</Button>
+    </div>}
+
+    {tab === 'extra' && <div className="grid grid-cols-[1fr_110px_120px] gap-3">
+      <Combobox
+        value={selectedExtra}
+        onChange={setSelectedExtra}
+        options={extras.map(e => ({ value: e.extra_id, label: e.name, hint: `${e.default_price} ₽` }))}
+        placeholder="Выбрать упаковку..."
+      />
+      <Input value={extraQty} onChange={setExtraQty} placeholder="Кол-во" type="number" />
+      <Button onClick={submitExtra} variant="light" disabled={!selectedExtra || !extraQty}>Добавить</Button>
+    </div>}
+  </div>;
+}
+
+function ItemRow({ item, idx, onUpdate, onRemove }) {
+  const lineSum = Number(item.qty || 0) * Number(item.price || 0);
+  const customPrice = Number(item.price) !== Number(item.basePrice);
+  const sourceLabel = {
+    point_override: 'индив. цена точки',
+    legal_override: 'индив. цена юрлица',
+    client_override: 'индив. цена клиента',
+  }[item.source];
+
+  return <div className="grid grid-cols-[1fr_85px_100px_120px_28px] items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2">
+    <div className="min-w-0">
+      <div className="flex items-center gap-2 text-sm font-medium text-slate-900 truncate">
+        {item.name}
+        {item.type === 'extra' && <Pill>упаковка</Pill>}
+      </div>
+      <div className="text-xs text-slate-500">
+        Стандарт: {item.basePrice} ₽
+        {customPrice && ' · цена изменена'}
+        {sourceLabel && ` · ${sourceLabel}`}
+      </div>
+    </div>
+    <input value={item.qty} onChange={(e) => onUpdate(idx, 'qty', e.target.value)}
+      className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-slate-100" />
+    <input value={item.price} onChange={(e) => onUpdate(idx, 'price', e.target.value)}
+      className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-slate-100" />
+    <div className="rounded-xl bg-slate-100 px-3 py-2 text-sm font-semibold text-right">{money(lineSum)}</div>
+    <button onClick={() => onRemove(idx)} className="rounded-lg px-2 py-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">×</button>
+  </div>;
+}
+
+function ClientCard({ client, point, legal, points, history, loadingHistory, onRepeat }) {
+  const pointById = useMemo(() => { const m = {}; (points || []).forEach(p => { m[p.point_id] = p; }); return m; }, [points]);
+  return <Card className="p-5">
+    <div className="mb-4 flex items-center justify-between">
+      <div>
+        <h2 className="text-lg font-semibold">Карточка клиента</h2>
+        <p className="text-sm text-slate-500">История и подсказки</p>
+      </div>
+      <Pill color={isTrue(client.is_active) ? 'green' : 'red'}>
+        {isTrue(client.is_active) ? 'активен' : 'архив'}
+      </Pill>
+    </div>
+
+    <div className="rounded-2xl bg-slate-50 p-4">
+      <div className="text-xl font-bold">{client.name}</div>
+      {client.comment && <div className="mt-1 text-sm text-slate-500">{client.comment}</div>}
+    </div>
+
+    <div className="mt-5">
+      <h3 className="font-semibold mb-3">Последние заказы</h3>
+      {loadingHistory && <div className="text-center py-4"><Spinner /></div>}
+      {!loadingHistory && history.length === 0 && <div className="text-sm text-slate-500 py-4">У этого клиента ещё нет заказов</div>}
+      <div className="space-y-3">
+        {history.map(order => <HistoryOrderMini key={order.order_id} order={order} point={pointById[order.point_id]} onRepeat={onRepeat} />)}
+      </div>
+    </div>
+  </Card>;
+}
+
+function HistoryOrderMini({ order, point, onRepeat }) {
+  const motiItems = (order.items || []).filter(i => i.type === 'moti');
+  const extraItems = (order.items || []).filter(i => i.type === 'extra');
+  return <div className="rounded-2xl border border-slate-200 bg-white p-4">
+    <div className="mb-3 flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <div className="font-semibold text-sm">{displayDate(order.delivery_date)} · {order.order_no}</div>
+        <div className="text-xs text-slate-500 mt-0.5">
+          {point?.address || 'Адрес не указан'}
+        </div>
+        <div className="text-xs text-slate-500 mt-0.5">
+          {order.total_qty_moti} шт · {money(order.total_amount)}
+        </div>
+        {order.comment && <div className="text-xs text-slate-400 mt-1 italic">{order.comment}</div>}
+      </div>
+      <Button onClick={() => onRepeat(order)} variant="light" size="sm" className="whitespace-nowrap">Повторить</Button>
+    </div>
+    {motiItems.length > 0 && <div className="space-y-1 text-sm">
+      {motiItems.map((it, i) => (
+        <div key={i} className="flex justify-between gap-3 rounded-lg bg-slate-50 px-2 py-1">
+          <span className="truncate">{it.name_snapshot}</span>
+          <span className="font-semibold whitespace-nowrap">{it.qty}</span>
+        </div>
+      ))}
+    </div>}
+    {motiItems.length === 0 && Number(order.total_qty_moti || 0) > 0 && <div className="rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800">
+      Позиции не найдены. Проверь лист «Позиции» по order_id: {order.order_id}
+    </div>}
+    {extraItems.length > 0 && <div className="mt-2 text-xs text-slate-500">
+      Упаковка: {extraItems.map(i => `${i.name_snapshot} × ${i.qty}`).join('; ')}
+    </div>}
+  </div>;
+}
+
+// ===== Сегодня / завтра =====
+
+function InWorkPage({ clients, points, flavors, extras, priceOverrides, showToast, onEditOrder }) {
+  const initialInworkCache = getPageCache('inwork_all');
+  const [orders, setOrders] = useState(() => initialInworkCache || []);
+  const [loading, setLoading] = useState(() => !initialInworkCache);
+  const [expandedId, setExpandedId] = useState(null);
+  const [expandedItems, setExpandedItems] = useState(() => initialInworkCache ? itemsMapFromOrders(initialInworkCache) : {});
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [statusFilter, setStatusFilter] = useState(''); // '', 'new', 'assembled'
+
+  const load = async () => {
+    const cacheKey = 'inwork_all';
+    const cached = getPageCache(cacheKey);
+    if (cached) {
+      setOrders(cached);
+      setExpandedItems(prev => ({ ...itemsMapFromOrders(cached), ...prev }));
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+    try {
+      let all = [];
+      try {
+        const res = await api('getInWorkWithItems', { limit: 500 });
+        all = res.orders || [];
+      } catch (fastErr) {
+        // Старый режим, если новый метод в Apps Script ещё не добавлен.
+        const [resNew, resAssembled] = await Promise.all([
+          api('listOrders', { status: 'new', limit: 500 }),
+          api('listOrders', { status: 'assembled', limit: 500 }),
+        ]);
+        all = [...(resNew.orders || []), ...(resAssembled.orders || [])];
+      }
+      setOrders(all);
+      setExpandedItems(prev => ({ ...itemsMapFromOrders(all), ...prev }));
+      setPageCache(cacheKey, all);
+    } catch (err) {
+      showToast('Ошибка: ' + err.message, 'error');
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, [refreshKey]);
+
+  const clientById = useMemo(() => { const m = {}; clients.forEach(c => { m[c.client_id] = c; }); return m; }, [clients]);
+  const pointById = useMemo(() => { const m = {}; points.forEach(p => { m[p.point_id] = p; }); return m; }, [points]);
+
+  // фильтр по статусу
+  const filteredOrders = useMemo(() => {
+    if (!statusFilter) return orders;
+    return orders.filter(o => o.status === statusFilter);
+  }, [orders, statusFilter]);
+
+  // группировка по дате доставки + просрочка
+  const groups = useMemo(() => {
+    const todayStr = today();
+    const tomorrowStr = tomorrow();
+
+    const overdue = [];
+    const todayList = [];
+    const tomorrowList = [];
+    const later = [];
+    const noDate = [];
+
+    filteredOrders.forEach(o => {
+      const dDate = dateOnly(o.delivery_date);
+
+      // Просрочено = дата доставки уже прошла, а заказ ещё не отгружен.
+      // Старые заказы без даты не красим, чтобы не засорять просрочку.
+      if (dDate && dDate < todayStr) {
+        overdue.push(o);
+        return;
+      }
+
+      if (!dDate) noDate.push(o);
+      else if (dDate === todayStr) todayList.push(o);
+      else if (dDate === tomorrowStr) tomorrowList.push(o);
+      else later.push(o);
+    });
+
+    // сортировка внутри: по дате доставки, потом по статусу (new раньше assembled)
+    const statusRank = { new: 0, assembled: 1 };
+    const sortFn = (a, b) => {
+      const d = dateOnly(a.delivery_date).localeCompare(dateOnly(b.delivery_date));
+      if (d !== 0) return d;
+      return (statusRank[a.status] ?? 99) - (statusRank[b.status] ?? 99);
+    };
+    overdue.sort(sortFn); todayList.sort(sortFn); tomorrowList.sort(sortFn);
+    later.sort(sortFn); noDate.sort(sortFn);
+
+    return [
+      { key: 'overdue', label: 'Просрочено', subtitle: 'дата доставки уже прошла, заказ не отгружен', orders: overdue, color: 'red' },
+      { key: 'today', label: 'Сегодня', subtitle: displayDate(todayStr), orders: todayList, color: 'blue' },
+      { key: 'tomorrow', label: 'Завтра', subtitle: displayDate(tomorrowStr), orders: tomorrowList, color: 'amber' },
+      { key: 'later', label: 'Позже', subtitle: 'будущие даты', orders: later, color: 'slate' },
+      { key: 'nodate', label: 'Без даты', subtitle: 'дата доставки не задана', orders: noDate, color: 'slate' },
+    ].filter(g => g.orders.length > 0);
+  }, [filteredOrders]);
+
+  const totalCount = filteredOrders.length;
+  const totalAmount = filteredOrders.reduce((s, o) => s + Number(o.total_amount || 0), 0);
+
+  const toggleExpand = async (orderId) => {
+    if (expandedId === orderId) { setExpandedId(null); return; }
+    setExpandedId(orderId);
+    if (!expandedItems[orderId]) {
+      try {
+        const res = await api('getOrder', { order_id: orderId });
+        setExpandedItems(prev => ({ ...prev, [orderId]: res.items }));
+      } catch (err) {
+        showToast('Ошибка загрузки: ' + err.message, 'error');
+      }
+    }
+  };
+
+  const updateStatus = async (orderId, newStatus) => {
+    const order = orders.find(o => o.order_id === orderId);
+    const updates = { status: newStatus };
+
+    // Если возвращаем старый заказ в работу, старая дата доставки оставит его в «Просрочено».
+    // Поэтому предлагаем сразу поставить сегодняшнюю дату.
+    if ((newStatus === 'new' || newStatus === 'assembled') && order) {
+      const oldDeliveryDate = dateOnly(order.delivery_date);
+      const todayStr = today();
+      if (oldDeliveryDate && oldDeliveryDate < todayStr) {
+        const ok = confirm(`У заказа ${order.order_no || ''} старая дата доставки ${displayDate(oldDeliveryDate)}.\nПоставить дату доставки на сегодня ${displayDate(todayStr)}?`);
+        if (ok) updates.delivery_date = todayStr;
+      }
+    }
+
+    // оптимистично
+    setOrders(prev => prev.map(o => o.order_id === orderId ? { ...o, ...updates } : o));
+    try {
+      await api('updateOrder', { order_id: orderId, updates });
+      clearPageCache('inwork');
+      clearPageCache('history');
+      showToast('Статус обновлён');
+      // если стал shipped/cancelled — убираем из списка
+      if (newStatus === 'shipped' || newStatus === 'cancelled') {
+        setOrders(prev => prev.filter(o => o.order_id !== orderId));
+      }
+    } catch (err) {
+      showToast('Ошибка: ' + err.message, 'error');
+      setRefreshKey(k => k + 1);
+    }
+  };
+
+  const deleteOrder = async (order) => {
+    const client = clientById[order.client_id];
+    if (!confirm(`Удалить заказ ${order.order_no} (${client?.name || order.client_id})?\n\nЗаказ будет помечен как отменён, в Google Таблице останется для истории.`)) return;
+    try {
+      await api('updateOrder', {
+        order_id: order.order_id,
+        updates: {
+          status: 'cancelled',
+          comment: '[УДАЛЁН] ' + (order.comment || ''),
+        }
+      });
+      clearPageCache('inwork');
+      clearPageCache('history');
+      setOrders(prev => prev.filter(o => o.order_id !== order.order_id));
+      showToast(`Заказ ${order.order_no} удалён`);
+    } catch (err) {
+      showToast('Ошибка: ' + err.message, 'error');
+    }
+  };
+
+  return <>
+    <header className="flex items-center justify-between rounded-3xl bg-white p-5 shadow-sm">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">В работе</h1>
+        <p className="mt-1 text-sm text-slate-500">
+          {totalCount > 0 ? <>{totalCount} заказов · {money(totalAmount)}</> : 'Заказов в работе нет'}
+        </p>
+      </div>
+      <div className="flex gap-2 rounded-2xl bg-slate-100 p-1">
+        {[['', 'Все'], ['new', 'Новые'], ['assembled', 'Собранные']].map(([k, l]) => (
+          <button key={k} onClick={() => setStatusFilter(k)} className={`rounded-xl px-4 py-2 text-sm transition ${statusFilter === k ? 'bg-white shadow-sm font-medium' : 'text-slate-500'}`}>{l}</button>
+        ))}
+      </div>
+    </header>
+
+    {loading && <div className="text-center py-12"><Spinner /></div>}
+
+    {!loading && totalCount === 0 && <Card className="p-12 text-center text-slate-500">
+      Заказов в работе нет. Молодцы 🎉
+    </Card>}
+
+    {!loading && groups.map(group => (
+      <Card key={group.key} className={`p-5 ${group.key === 'overdue' ? 'ring-2 ring-red-200' : ''}`}>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className={`text-lg font-semibold ${group.key === 'overdue' ? 'text-red-700' : ''}`}>{group.label}</h2>
+              <Pill color={group.color}>{group.orders.length}</Pill>
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5">{group.subtitle}</p>
+          </div>
+          <div className="text-sm font-semibold">{money(group.orders.reduce((s, o) => s + Number(o.total_amount || 0), 0))}</div>
+        </div>
+
+        <div className="space-y-2">
+          {group.orders.map(o => (
+            <InWorkOrderRow
+              key={o.order_id}
+              order={o}
+              client={clientById[o.client_id]}
+              point={pointById[o.point_id]}
+              expanded={expandedId === o.order_id}
+              items={expandedItems[o.order_id]}
+              onToggle={() => toggleExpand(o.order_id)}
+              onChangeStatus={updateStatus}
+              onEdit={() => onEditOrder(o.order_id)}
+              onDelete={() => deleteOrder(o)}
+              isOverdue={group.key === 'overdue'}
+            />
+          ))}
+        </div>
+      </Card>
+    ))}
+  </>;
+}
+
+function InWorkOrderRow({ order, client, point, expanded, items, onToggle, onChangeStatus, onEdit, onDelete, isOverdue }) {
+  const statusColor = { new: 'blue', assembled: 'amber' }[order.status] || 'slate';
+  const statusLabel = { new: 'Новый', assembled: 'Собран' }[order.status] || order.status;
+
+  const nextAction = order.status === 'new'
+    ? { label: 'Собран', status: 'assembled', variant: 'amber' }
+    : order.status === 'assembled'
+    ? { label: 'Отгружен', status: 'shipped', variant: 'success' }
+    : null;
+
+  return <div className={`rounded-2xl border overflow-hidden transition ${isOverdue ? 'border-red-200 bg-red-50/30' : 'border-slate-200 bg-white'}`}>
+    <div className="grid grid-cols-[24px_100px_90px_1fr_180px_70px_110px_110px_130px] gap-3 items-center px-4 py-3">
+      <button onClick={onToggle} className="text-slate-400 hover:text-slate-700">
+        <svg className={`transition ${expanded ? 'rotate-90' : ''}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+      <div className="text-sm text-slate-600">{displayDate(order.delivery_date) || <span className="text-slate-400">—</span>}</div>
+      <div className="font-mono text-xs text-slate-500">{order.order_no}</div>
+      <div className="min-w-0">
+        <div className="font-medium text-sm truncate">{client?.name || order.client_id}</div>
+        {point && <div className="text-xs text-slate-500 truncate">{point.address}</div>}
+      </div>
+      <div className="text-xs text-slate-500 truncate">{order.comment || ''}</div>
+      <div className="text-sm text-right">{order.total_qty_moti}</div>
+      <div className="text-sm text-right font-semibold">{money(order.total_amount)}</div>
+      <div><Pill color={statusColor}>{statusLabel}</Pill></div>
+      <div className="flex justify-end">
+        {nextAction && <Button onClick={() => onChangeStatus(order.order_id, nextAction.status)} variant={nextAction.variant} size="sm">
+          {nextAction.label}
+        </Button>}
+      </div>
+    </div>
+
+    {expanded && <div className="border-t border-slate-100 bg-slate-50 p-5">
+      <div className="grid grid-cols-2 gap-5">
+        <div>
+          <h4 className="font-semibold text-sm mb-2 text-slate-700">Позиции</h4>
+          {!items && <Spinner small />}
+          {items && <div className="space-y-1">
+            {items.filter(i => Number(i.qty) > 0).map(it => (
+              <div key={it.item_id} className="grid grid-cols-[1fr_60px_80px_80px] gap-2 text-sm rounded-lg bg-white px-3 py-1.5">
+                <span className="truncate">
+                  {it.name_snapshot}
+                  {it.type === 'extra' && <span className="ml-2 text-xs text-slate-400">упаковка</span>}
+                </span>
+                <span className="text-right">{it.qty}</span>
+                <span className="text-right text-slate-500">{it.price} ₽</span>
+                <span className="text-right font-semibold">{money(it.line_sum)}</span>
+              </div>
+            ))}
+          </div>}
+        </div>
+        <div>
+          <h4 className="font-semibold text-sm mb-2 text-slate-700">Информация</h4>
+          <div className="space-y-1.5 text-sm">
+            <div><span className="text-slate-500">Создан:</span> {displayDate(order.created_at)} {order.created_by && `· ${order.created_by}`}</div>
+            <div><span className="text-slate-500">Доставка:</span> {displayDate(order.delivery_date) || '—'}</div>
+            <div><span className="text-slate-500">Источник:</span> {order.source || '—'}</div>
+            {order.comment && <div className="rounded-xl bg-amber-50 px-3 py-2 text-amber-900 text-xs mt-2"><b>Комментарий:</b> {order.comment}</div>}
+          </div>
+
+          <h4 className="font-semibold text-sm mb-2 mt-4 text-slate-700">Изменить статус</h4>
+          <div className="flex flex-wrap gap-2">
+            {STATUS_OPTIONS.map(s => (
+              <button key={s.value}
+                onClick={() => onChangeStatus(order.order_id, s.value)}
+                disabled={order.status === s.value}
+                className={`rounded-xl px-3 py-1.5 text-xs font-medium transition ${order.status === s.value ? 'bg-slate-200 text-slate-500 cursor-default' : 'bg-white border border-slate-200 hover:bg-slate-100'}`}>
+                {s.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex gap-2 mt-4 pt-4 border-t border-slate-200">
+            <Button onClick={onEdit} variant="light" size="sm">Редактировать</Button>
+            <Button onClick={onDelete} variant="danger" size="sm">Удалить</Button>
+          </div>
+        </div>
+      </div>
+    </div>}
+  </div>;
+}
+
+
+// ===== Сборка / печать =====
+
+function AssemblyPage({ clients, points, showToast, onEditOrder }) {
+  const initialCache = getPageCache('assembly_new');
+  const [orders, setOrders] = useState(() => initialCache || []);
+  const [loading, setLoading] = useState(() => !initialCache);
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [dateFilter, setDateFilter] = useState('all'); // all / today / tomorrow / overdue / later
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const clientById = useMemo(() => { const m = {}; clients.forEach(c => { m[c.client_id] = c; }); return m; }, [clients]);
+  const pointById = useMemo(() => { const m = {}; points.forEach(p => { m[p.point_id] = p; }); return m; }, [points]);
+
+  const load = async () => {
+    const cacheKey = 'assembly_new';
+    const cached = getPageCache(cacheKey);
+    if (cached) {
+      setOrders(cached);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+    try {
+      let all = [];
+      try {
+        const res = await api('getInWorkWithItems', { limit: 500 });
+        all = res.orders || [];
+      } catch (fastErr) {
+        const res = await api('listOrders', { status: 'new', limit: 500 });
+        const headers = res.orders || [];
+        all = await Promise.all(headers.map(async (o) => {
+          try {
+            const full = await api('getOrder', { order_id: o.order_id });
+            return { ...o, items: full.items || [] };
+          } catch (e) {
+            return { ...o, items: [] };
+          }
+        }));
+      }
+      const newOrders = all
+        .filter(o => o.status === 'new')
+        .sort((a, b) => {
+          const d = dateOnly(a.delivery_date).localeCompare(dateOnly(b.delivery_date));
+          if (d !== 0) return d;
+          return String(a.order_no || '').localeCompare(String(b.order_no || ''));
+        });
+      setOrders(newOrders);
+      setPageCache(cacheKey, newOrders);
+      setSelectedIds(prev => {
+        const valid = new Set(newOrders.map(o => o.order_id));
+        return new Set([...prev].filter(id => valid.has(id)));
+      });
+    } catch (err) {
+      showToast('Ошибка загрузки сборки: ' + err.message, 'error');
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, [refreshKey]);
+
+  const filteredOrders = useMemo(() => {
+    const t = today();
+    const tm = tomorrow();
+    return orders.filter(o => {
+      const d = dateOnly(o.delivery_date);
+      if (dateFilter === 'today') return d === t;
+      if (dateFilter === 'tomorrow') return d === tm;
+      if (dateFilter === 'overdue') return d && d < t;
+      if (dateFilter === 'later') return d && d > tm;
+      return true;
+    });
+  }, [orders, dateFilter]);
+
+  const selectedVisible = filteredOrders.filter(o => selectedIds.has(o.order_id));
+  const printOrders = selectedVisible.length ? selectedVisible : filteredOrders;
+  const totalMoti = filteredOrders.reduce((s, o) => s + Number(o.total_qty_moti || 0), 0);
+  const printMoti = printOrders.reduce((s, o) => s + Number(o.total_qty_moti || 0), 0);
+
+  const toggleSelected = (orderId) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(orderId)) next.delete(orderId);
+      else next.add(orderId);
+      return next;
+    });
+  };
+
+  const selectAllVisible = () => setSelectedIds(new Set(filteredOrders.map(o => o.order_id)));
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const markAssembled = async (order) => {
+    try {
+      await api('updateOrder', { order_id: order.order_id, updates: { status: 'assembled' } });
+      clearPageCache('assembly');
+      clearPageCache('inwork');
+      clearPageCache('history');
+      setOrders(prev => prev.filter(o => o.order_id !== order.order_id));
+      setSelectedIds(prev => { const next = new Set(prev); next.delete(order.order_id); return next; });
+      showToast(`Заказ ${order.order_no} отмечен как собран`);
+    } catch (err) {
+      showToast('Ошибка: ' + err.message, 'error');
+    }
+  };
+
+  const printAssembly = () => {
+    if (printOrders.length === 0) {
+      showToast('Нет заказов для печати', 'warn');
+      return;
+    }
+    setTimeout(() => window.print(), 50);
+  };
+
+  return <>
+    <header className="screen-only flex items-center justify-between rounded-3xl bg-white p-5 shadow-sm">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Сборка / печать</h1>
+        <p className="mt-1 text-sm text-slate-500">
+          Новые заказы для сборки. Собранные, отгруженные и отменённые сюда не попадают.
+        </p>
+      </div>
+      <div className="flex gap-2">
+        <Button variant="light" onClick={() => setRefreshKey(k => k + 1)}>Обновить</Button>
+        <Button onClick={printAssembly}>Распечатать A4</Button>
+      </div>
+    </header>
+
+    <Card className="screen-only p-5">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex gap-2 rounded-2xl bg-slate-100 p-1">
+          {[
+            ['all', 'Все'],
+            ['overdue', 'Просрочено'],
+            ['today', 'Сегодня'],
+            ['tomorrow', 'Завтра'],
+            ['later', 'Позже'],
+          ].map(([k, l]) => (
+            <button key={k} onClick={() => setDateFilter(k)} className={`rounded-xl px-4 py-2 text-sm transition ${dateFilter === k ? 'bg-white shadow-sm font-medium' : 'text-slate-500'}`}>{l}</button>
+          ))}
+        </div>
+        <div className="text-sm text-slate-500">
+          {filteredOrders.length} заказов · {totalMoti} моти · к печати {printOrders.length} заказов / {printMoti} моти
+        </div>
+      </div>
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <Button variant="light" size="sm" onClick={selectAllVisible}>Выбрать все видимые</Button>
+        <Button variant="light" size="sm" onClick={clearSelection}>Снять выбор</Button>
+        <div className="text-xs text-slate-500">Если ничего не отмечено, печатаются все видимые заказы.</div>
+      </div>
+    </Card>
+
+    {loading && <div className="screen-only text-center py-12"><Spinner /></div>}
+
+    {!loading && filteredOrders.length === 0 && <Card className="screen-only p-12 text-center text-slate-500">
+      Заказов для сборки нет.
+    </Card>}
+
+    {!loading && filteredOrders.length > 0 && <div className="screen-only space-y-3">
+      {filteredOrders.map(order => (
+        <AssemblyOrderCard
+          key={order.order_id}
+          order={order}
+          client={clientById[order.client_id]}
+          point={pointById[order.point_id]}
+          selected={selectedIds.has(order.order_id)}
+          onSelect={() => toggleSelected(order.order_id)}
+          onAssembled={() => markAssembled(order)}
+          onEdit={() => onEditOrder(order.order_id)}
+        />
+      ))}
+    </div>}
+
+    <div className="print-area">
+      <PrintAssemblySheet orders={printOrders} clientById={clientById} pointById={pointById} />
+    </div>
+  </>;
+}
+
+function AssemblyOrderCard({ order, client, point, selected, onSelect, onAssembled, onEdit }) {
+  const motiItems = (order.items || []).filter(i => i.type === 'moti' && Number(i.qty) > 0);
+  const extraItems = (order.items || []).filter(i => i.type === 'extra' && Number(i.qty) > 0);
+  const isOverdue = dateOnly(order.delivery_date) && dateOnly(order.delivery_date) < today();
+  return <Card className={`p-4 ${selected ? 'ring-2 ring-slate-400' : ''} ${isOverdue ? 'border border-red-200' : ''}`}>
+    <div className="flex items-start gap-4">
+      <input type="checkbox" checked={selected} onChange={onSelect} className="mt-1 h-5 w-5 rounded border-slate-300" />
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="font-semibold">{order.order_no}</div>
+          <Pill color={isOverdue ? 'red' : 'blue'}>{displayDate(order.delivery_date) || 'без даты'}</Pill>
+          <div className="text-sm font-medium truncate">{client?.name || order.client_id}</div>
+        </div>
+        <div className="mt-1 text-sm text-slate-500 truncate">{point?.address || 'Адрес не указан'}</div>
+        {order.comment && <div className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-900">{order.comment}</div>}
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <div>
+            <div className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-400">Моти</div>
+            <div className="space-y-1">
+              {motiItems.map((it, idx) => (
+                <div key={it.item_id || idx} className="flex justify-between rounded-lg bg-slate-50 px-2 py-1 text-sm">
+                  <span className="truncate">{it.name_snapshot}</span>
+                  <span className="font-semibold">{it.qty}</span>
+                </div>
+              ))}
+              {motiItems.length === 0 && <div className="text-sm text-slate-400">Позиции не найдены</div>}
+            </div>
+          </div>
+          <div>
+            <div className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-400">Упаковка</div>
+            {extraItems.length > 0 ? <div className="space-y-1">
+              {extraItems.map((it, idx) => <div key={it.item_id || idx} className="flex justify-between rounded-lg bg-slate-50 px-2 py-1 text-sm"><span className="truncate">{it.name_snapshot}</span><span className="font-semibold">{it.qty}</span></div>)}
+            </div> : <div className="text-sm text-slate-400">—</div>}
+          </div>
+        </div>
+      </div>
+      <div className="flex shrink-0 flex-col gap-2">
+        <Button size="sm" variant="amber" onClick={onAssembled}>Собран</Button>
+        <Button size="sm" variant="light" onClick={onEdit}>Редактировать</Button>
+      </div>
+    </div>
+  </Card>;
+}
+
+function PrintAssemblySheet({ orders, clientById, pointById }) {
+  const printedAt = new Date().toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const totalMoti = (orders || []).reduce((s, o) => s + Number(o.total_qty_moti || 0), 0);
+  return <div>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+      <div>
+        <div style={{ fontSize: 22, fontWeight: 700 }}>OMOTI · Лист сборки</div>
+        <div className="print-muted" style={{ fontSize: 12 }}>Распечатано: {printedAt}</div>
+      </div>
+      <div style={{ textAlign: 'right', fontSize: 12 }}>
+        <div><b>Заказов:</b> {orders.length}</div>
+        <div><b>Моти:</b> {totalMoti} шт</div>
+      </div>
+    </div>
+
+    {(orders || []).map(order => {
+      const client = clientById[order.client_id];
+      const point = pointById[order.point_id];
+      const motiItems = (order.items || []).filter(i => i.type === 'moti' && Number(i.qty) > 0);
+      const extraItems = (order.items || []).filter(i => i.type === 'extra' && Number(i.qty) > 0);
+      return <div key={order.order_id} className="print-card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 8 }}>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 700 }}>{client?.name || order.client_id}</div>
+            <div style={{ fontSize: 12 }}><b>Адрес:</b> {point?.address || '—'}</div>
+            {order.comment && <div style={{ fontSize: 12, marginTop: 4 }}><b>Комментарий:</b> {order.comment}</div>}
+          </div>
+          <div style={{ textAlign: 'right', minWidth: 120 }}>
+            <div style={{ fontWeight: 700 }}>{order.order_no}</div>
+            <div style={{ fontSize: 12 }}>доставка: {displayDate(order.delivery_date) || '—'}</div>
+            <div style={{ fontSize: 12 }}>моти: {order.total_qty_moti || 0} шт</div>
+          </div>
+        </div>
+        <table className="print-table">
+          <thead><tr><th>Вкус / позиция</th><th style={{ width: 70, textAlign: 'right' }}>Кол-во</th><th style={{ width: 90 }}>Отметка</th></tr></thead>
+          <tbody>
+            {motiItems.map((it, idx) => <tr key={it.item_id || idx}><td>{it.name_snapshot}</td><td style={{ textAlign: 'right', fontWeight: 700 }}>{it.qty}</td><td></td></tr>)}
+            {motiItems.length === 0 && <tr><td colSpan="3">Позиции не найдены</td></tr>}
+            {extraItems.length > 0 && <tr><th colSpan="3">Упаковка</th></tr>}
+            {extraItems.map((it, idx) => <tr key={it.item_id || idx}><td>{it.name_snapshot}</td><td style={{ textAlign: 'right', fontWeight: 700 }}>{it.qty}</td><td></td></tr>)}
+          </tbody>
+        </table>
+      </div>;
+    })}
+  </div>;
+}
+
+// ===== История =====
+
+function HistoryPage({ clients, points, flavors, extras, showToast, onEditOrder }) {
+  const savedFilters = readLocalJson('omoti_history_filters_v1', null);
+  const [dateFrom, setDateFrom] = useState(() => savedFilters?.dateFrom || (() => { const d = new Date(); d.setDate(d.getDate() - 14); return d.toISOString().substring(0, 10); })());
+  const [dateTo, setDateTo] = useState(() => savedFilters?.dateTo || today());
+  const [filterClient, setFilterClient] = useState(() => savedFilters?.filterClient || '');
+  const [filterStatus, setFilterStatus] = useState(() => savedFilters?.filterStatus || '');
+  const initialHistoryCache = getPageCache(`history_${dateFrom}_${dateTo}_${filterClient || 'all'}_${filterStatus || 'all'}`);
+  const [orders, setOrders] = useState(() => initialHistoryCache || []);
+  const [loading, setLoading] = useState(() => !initialHistoryCache);
+  const [expandedId, setExpandedId] = useState(null);
+  const [expandedItems, setExpandedItems] = useState(() => initialHistoryCache ? itemsMapFromOrders(initialHistoryCache) : {});
+
+  const load = async () => {
+    const cacheKey = `history_${dateFrom}_${dateTo}_${filterClient || 'all'}_${filterStatus || 'all'}`;
+    const cached = getPageCache(cacheKey);
+    if (cached) {
+      setOrders(cached);
+      setExpandedItems(prev => ({ ...itemsMapFromOrders(cached), ...prev }));
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+    try {
+      let nextOrders = [];
+      try {
+        const res = await api('getHistoryWithItems', {
+          delivery_from: dateFrom, delivery_to: dateTo,
+          client_id: filterClient || undefined,
+          status: filterStatus || undefined,
+          limit: 200,
+        });
+        nextOrders = res.orders || [];
+      } catch (fastErr) {
+        const res = await api('listOrders', {
+          delivery_from: dateFrom, delivery_to: dateTo,
+          client_id: filterClient || undefined,
+          status: filterStatus || undefined,
+          limit: 200,
+        });
+        nextOrders = res.orders || [];
+      }
+      setOrders(nextOrders);
+      setExpandedItems(prev => ({ ...itemsMapFromOrders(nextOrders), ...prev }));
+      setPageCache(cacheKey, nextOrders);
+    } catch (err) {
+      showToast('Ошибка: ' + err.message, 'error');
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    writeLocalJson('omoti_history_filters_v1', { dateFrom, dateTo, filterClient, filterStatus });
+    load();
+  }, [dateFrom, dateTo, filterClient, filterStatus]);
+
+  const clientById = useMemo(() => { const m = {}; clients.forEach(c => { m[c.client_id] = c; }); return m; }, [clients]);
+  const pointById = useMemo(() => { const m = {}; points.forEach(p => { m[p.point_id] = p; }); return m; }, [points]);
+
+  const toggleExpand = async (orderId) => {
+    if (expandedId === orderId) { setExpandedId(null); return; }
+    setExpandedId(orderId);
+    if (!expandedItems[orderId]) {
+      try {
+        const res = await api('getOrder', { order_id: orderId });
+        setExpandedItems(prev => ({ ...prev, [orderId]: res.items }));
+      } catch (err) {
+        showToast('Ошибка загрузки заказа: ' + err.message, 'error');
+      }
+    }
+  };
+
+  const updateStatus = async (orderId, newStatus) => {
+    const order = orders.find(o => o.order_id === orderId);
+    const updates = { status: newStatus };
+
+    // Если возвращаем старый заказ в работу из истории, предлагаем сразу поставить сегодняшнюю дату.
+    if ((newStatus === 'new' || newStatus === 'assembled') && order) {
+      const oldDeliveryDate = dateOnly(order.delivery_date);
+      const todayStr = today();
+      if (oldDeliveryDate && oldDeliveryDate < todayStr) {
+        const ok = confirm(`У заказа ${order.order_no || ''} старая дата доставки ${displayDate(oldDeliveryDate)}.\nПоставить дату доставки на сегодня ${displayDate(todayStr)}?`);
+        if (ok) updates.delivery_date = todayStr;
+      }
+    }
+
+    setOrders(prev => prev.map(o => o.order_id === orderId ? { ...o, ...updates } : o));
+    try {
+      await api('updateOrder', { order_id: orderId, updates });
+      clearPageCache('history');
+      clearPageCache('inwork');
+      showToast('Статус обновлён');
+    } catch (err) {
+      showToast('Ошибка: ' + err.message, 'error');
+    }
+  };
+
+  const deleteOrder = async (order) => {
+    const client = clientById[order.client_id];
+    if (!confirm(`Удалить заказ ${order.order_no} (${client?.name || order.client_id})?\n\nЗаказ будет помечен как отменён, в Google Таблице останется для истории.`)) return;
+    try {
+      await api('updateOrder', {
+        order_id: order.order_id,
+        updates: {
+          status: 'cancelled',
+          comment: '[УДАЛЁН] ' + (order.comment || ''),
+        }
+      });
+      clearPageCache('history');
+      clearPageCache('inwork');
+      setOrders(prev => prev.map(o => o.order_id === order.order_id ? { ...o, status: 'cancelled' } : o));
+      showToast(`Заказ ${order.order_no} удалён`);
+    } catch (err) {
+      showToast('Ошибка: ' + err.message, 'error');
+    }
+  };
+
+  return <>
+    <header className="flex items-center justify-between rounded-3xl bg-white p-5 shadow-sm">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">История заказов</h1>
+        <p className="mt-1 text-sm text-slate-500">Все заказы за выбранный период · {orders.length} {orders.length === 1 ? 'заказ' : orders.length < 5 ? 'заказа' : 'заказов'}</p>
+      </div>
+    </header>
+
+    <Card className="p-5">
+      <div className="grid grid-cols-[1fr_1fr_2fr_1fr_auto] gap-4 mb-5">
+        <div><Label>С</Label><Input type="date" value={dateFrom} onChange={setDateFrom} /></div>
+        <div><Label>По</Label><Input type="date" value={dateTo} onChange={setDateTo} /></div>
+        <div><Label>Клиент</Label><Combobox value={filterClient} onChange={setFilterClient}
+          options={[{ value: '', label: 'Все клиенты' }, ...clients.map(c => ({ value: c.client_id, label: c.name }))]} placeholder="Все клиенты" /></div>
+        <div><Label>Статус</Label><Combobox value={filterStatus} onChange={setFilterStatus}
+          options={[{ value: '', label: 'Все' }, ...STATUS_OPTIONS]} placeholder="Все статусы" /></div>
+        <div className="self-end"><Button onClick={load} variant="light">Обновить</Button></div>
+      </div>
+
+      {loading && <div className="text-center py-12"><Spinner /></div>}
+      {!loading && orders.length === 0 && <div className="text-center py-12 text-slate-500">Заказов за этот период нет</div>}
+      {!loading && orders.length > 0 && <div className="space-y-2">
+        {orders.map(o => (
+          <HistoryOrderRow key={o.order_id}
+            order={o}
+            client={clientById[o.client_id]}
+            point={pointById[o.point_id]}
+            expanded={expandedId === o.order_id}
+            items={expandedItems[o.order_id]}
+            onToggle={() => toggleExpand(o.order_id)}
+            onChangeStatus={updateStatus}
+            onEdit={() => onEditOrder(o.order_id)}
+            onDelete={() => deleteOrder(o)}
+          />
+        ))}
+      </div>}
+    </Card>
+  </>;
+}
+
+const STATUS_OPTIONS = [
+  { value: 'draft', label: 'Черновик' },
+  { value: 'new', label: 'Новый' },
+  { value: 'assembled', label: 'Собран' },
+  { value: 'shipped', label: 'Отгружен' },
+  { value: 'cancelled', label: 'Отменён' },
+];
+
+function HistoryOrderRow({ order, client, point, expanded, items, onToggle, onChangeStatus, onEdit, onDelete }) {
+  return <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+    <button onClick={onToggle} className="w-full flex items-center gap-4 p-4 hover:bg-slate-50 text-left transition">
+      <svg className={`text-slate-400 transition flex-shrink-0 ${expanded ? 'rotate-90' : ''}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+      <div className="grid grid-cols-[100px_100px_1fr_200px_80px_120px_120px] gap-3 items-center flex-1">
+        <div className="text-sm text-slate-600">{displayDate(order.delivery_date)}</div>
+        <div className="font-mono text-xs text-slate-500">{order.order_no}</div>
+        <div className="font-medium text-sm truncate">{client?.name || order.client_id}</div>
+        <div className="text-sm text-slate-500 truncate">{point?.address || '—'}</div>
+        <div className="text-sm text-right">{order.total_qty_moti}</div>
+        <div className="text-sm text-right font-semibold">{money(order.total_amount)}</div>
+        <div><StatusPill status={order.status} /></div>
+      </div>
+    </button>
+
+    {expanded && <div className="border-t border-slate-100 bg-slate-50 p-5">
+      <div className="grid grid-cols-2 gap-5">
+        <div>
+          <h4 className="font-semibold text-sm mb-2 text-slate-700">Позиции</h4>
+          {!items && <Spinner small />}
+          {items && <div className="space-y-1">
+            {items.filter(i => Number(i.qty) > 0).map(it => (
+              <div key={it.item_id} className="grid grid-cols-[1fr_60px_80px_80px] gap-2 text-sm rounded-lg bg-white px-3 py-1.5">
+                <span className="truncate">
+                  {it.name_snapshot}
+                  {it.type === 'extra' && <span className="ml-2 text-xs text-slate-400">упаковка</span>}
+                </span>
+                <span className="text-right">{it.qty}</span>
+                <span className="text-right text-slate-500">{it.price} ₽</span>
+                <span className="text-right font-semibold">{money(it.line_sum)}</span>
+              </div>
+            ))}
+          </div>}
+        </div>
+        <div>
+          <h4 className="font-semibold text-sm mb-2 text-slate-700">Информация</h4>
+          <div className="space-y-1.5 text-sm">
+            <div><span className="text-slate-500">Дата заказа:</span> {displayDate(order.order_date)}</div>
+            <div><span className="text-slate-500">Создал:</span> {order.created_by || '—'}</div>
+            <div><span className="text-slate-500">Источник:</span> {order.source || '—'}</div>
+            {order.comment && <div className="rounded-xl bg-amber-50 px-3 py-2 text-amber-900 text-xs mt-2"><b>Комментарий:</b> {order.comment}</div>}
+          </div>
+
+          <h4 className="font-semibold text-sm mb-2 mt-4 text-slate-700">Изменить статус</h4>
+          <div className="flex flex-wrap gap-2">
+            {STATUS_OPTIONS.map(s => (
+              <button key={s.value}
+                onClick={() => onChangeStatus(order.order_id, s.value)}
+                disabled={order.status === s.value}
+                className={`rounded-xl px-3 py-1.5 text-xs font-medium transition ${order.status === s.value ? 'bg-slate-200 text-slate-500 cursor-default' : 'bg-white border border-slate-200 hover:bg-slate-100'}`}>
+                {s.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex gap-2 mt-4 pt-4 border-t border-slate-200">
+            <Button onClick={onEdit} variant="light" size="sm">Редактировать</Button>
+            <Button onClick={onDelete} variant="danger" size="sm">Удалить</Button>
+          </div>
+        </div>
+      </div>
+    </div>}
+  </div>;
+}
+
+function StatusPill({ status }) {
+  const map = {
+    draft: ['Черновик', 'slate'],
+    new: ['Новый', 'blue'],
+    assembled: ['Собран', 'amber'],
+    shipped: ['Отгружен', 'green'],
+    cancelled: ['Отменён', 'red'],
+  };
+  const [label, color] = map[status] || [status, 'slate'];
+  return <Pill color={color}>{label}</Pill>;
+}
+
+// ===== Экспорт =====
+
+function ExportPage({ showToast }) {
+  const [rows, setRows] = useState([]);
+  const [columns, setColumns] = useState([]);
+  const [selectedKeys, setSelectedKeys] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [dateFrom, setDateFrom] = useState(today());
+  const [dateTo, setDateTo] = useState(today());
+
+  const rowKey = (row, index) => row.meta_order_id || row.order_id || `${index}_${row['L_Заказчик'] || ''}_${row['K_Примечание'] || ''}_${row['M_На какое число'] || ''}`;
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const res = await api('getOrdersForExport', { delivery_from: dateFrom, delivery_to: dateTo });
+      const nextRows = res.rows || [];
+      setRows(nextRows);
+      setColumns(res.columns || []);
+      const nextSelected = {};
+      nextRows.forEach((row, index) => { nextSelected[rowKey(row, index)] = true; });
+      setSelectedKeys(nextSelected);
+    } catch (err) {
+      showToast('Ошибка: ' + err.message, 'error');
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, [dateFrom, dateTo]);
+
+  const visibleColumns = columns.filter(c => !c.startsWith('meta_'));
+  const selectedRows = rows.filter((row, index) => selectedKeys[rowKey(row, index)]);
+  const allSelected = rows.length > 0 && selectedRows.length === rows.length;
+
+  const toggleRow = (row, index) => {
+    const key = rowKey(row, index);
+    setSelectedKeys(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const setAllRows = (checked) => {
+    const next = {};
+    rows.forEach((row, index) => { next[rowKey(row, index)] = checked; });
+    setSelectedKeys(next);
+  };
+
+  const copyToClipboard = () => {
+    if (selectedRows.length === 0) {
+      showToast('Отметь хотя бы одну строку для экспорта', 'warn');
+      return;
+    }
+    const lines = selectedRows.map(row => visibleColumns.map(c => row[c] ?? '').join('\t'));
+    navigator.clipboard.writeText(lines.join('\n')).then(
+      () => showToast(`Скопировано ${selectedRows.length} строк. Вставь в Excel в колонку I.`),
+      () => showToast('Не удалось скопировать. Попробуй вручную.', 'error')
+    );
+  };
+
+  return <>
+    <header className="flex items-center justify-between rounded-3xl bg-white p-5 shadow-sm">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Экспорт в Excel</h1>
+        <p className="mt-1 text-sm text-slate-500">
+          Строки под текущую вкладку «Заказы» · выбрано {selectedRows.length} из {rows.length}
+        </p>
+      </div>
+      <Button onClick={copyToClipboard} disabled={selectedRows.length === 0} size="lg">
+        Скопировать выбранные
+      </Button>
+    </header>
+
+    <Card className="p-5">
+      <div className="grid grid-cols-[1fr_1fr_auto] gap-4 mb-5">
+        <div><Label>Доставка с</Label><Input type="date" value={dateFrom} onChange={setDateFrom} /></div>
+        <div><Label>По</Label><Input type="date" value={dateTo} onChange={setDateTo} /></div>
+        <div className="self-end"><Button onClick={load} variant="light">Обновить</Button></div>
+      </div>
+
+      <div className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-900 mb-5">
+        Колонки идут в порядке Excel: I, J, K, L, M, N..AO, AP, AR. AQ «Количество» пропущена — её считает формула.
+        Отметь нужные строки галочками, скопируй и вставь в Excel начиная с пустой строки в колонку I.
+      </div>
+
+      {!loading && rows.length > 0 && <div className="mb-3 flex items-center justify-between gap-3">
+        <label className="inline-flex items-center gap-2 text-sm text-slate-600 select-none">
+          <input
+            type="checkbox"
+            checked={allSelected}
+            onChange={(e) => setAllRows(e.target.checked)}
+            className="h-4 w-4 rounded border-slate-300"
+          />
+          Выбрать все строки
+        </label>
+        <div className="text-sm text-slate-500">Копируется только то, что отмечено</div>
+      </div>}
+
+      {loading && <div className="text-center py-12"><Spinner /></div>}
+      {!loading && rows.length === 0 && <div className="text-center py-12 text-slate-500">Заказов на эти даты нет</div>}
+      {!loading && rows.length > 0 && <div className="overflow-x-auto rounded-2xl border border-slate-200">
+        <table className="w-full text-left text-xs whitespace-nowrap">
+          <thead className="bg-slate-50 text-slate-500">
+            <tr>
+              <th className="p-2 border-r border-slate-100 w-10 text-center">✓</th>
+              {visibleColumns.map(c => <th key={c} className="p-2 border-r border-slate-100 last:border-r-0">{c.replace(/^[A-Z]+_/, '')}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, i) => {
+              const key = rowKey(row, i);
+              const checked = !!selectedKeys[key];
+              return (
+                <tr key={key} className={`border-t border-slate-100 ${checked ? 'bg-white' : 'bg-slate-50 text-slate-400'}`}>
+                  <td className="p-2 border-r border-slate-100 text-center">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleRow(row, i)}
+                      className="h-4 w-4 rounded border-slate-300"
+                    />
+                  </td>
+                  {visibleColumns.map(c => <td key={c} className="p-2 border-r border-slate-100 last:border-r-0">{row[c] || ''}</td>)}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>}
+    </Card>
+  </>;
+}
+
+// ===== Справочники =====
+
+function CatalogPage({ clients, points, legals, flavors, extras, priceOverrides, reload, showToast }) {
+  const [tab, setTab] = useState('clients');
+  const [modalType, setModalType] = useState(null);
+  const [modalData, setModalData] = useState({});
+  const [search, setSearch] = useState('');
+
+  const closeModal = () => { setModalType(null); setModalData({}); };
+
+  const pointUpdates = (d) => ({
+    address: d.address || '',
+    label: d.label || '',
+    working_hours: d.working_hours || '',
+    contact_person: d.contact_person || '',
+    delivery_comment: d.delivery_comment || '',
+  });
+
+  const legalUpdates = (d) => ({
+    legal_name: d.legal_name || '',
+    inn: String(d.inn || ''),
+    kpp: d.kpp || '',
+    has_contract: d.has_contract === true,
+    needs_invoice: d.needs_invoice !== false,
+    needs_waybill: d.needs_waybill !== false,
+    payment_terms_days: Number(d.payment_terms_days || 0),
+    documents_comment: d.documents_comment || '',
+  });
+
+  const clientUpdates = (d) => ({
+    name: d.name || '',
+    aliases: d.aliases || '',
+    main_contact: d.main_contact || '',
+    comment: d.comment || '',
+  });
+
+  const submitModal = async () => {
+    try {
+      if (modalType === 'client') await api('addClient', { ...modalData, created_by: CURRENT_USER });
+      else if (modalType === 'edit_client') await api('updateRecord', {
+        sheet: 'clients',
+        id_field: 'client_id',
+        id_value: modalData.client_id,
+        updates: clientUpdates(modalData),
+      });
+      else if (modalType === 'point') await api('addPoint', { ...modalData, created_by: CURRENT_USER });
+      else if (modalType === 'legal') await api('addLegal', { ...modalData, created_by: CURRENT_USER });
+      else if (modalType === 'edit_point') await api('updateRecord', {
+        sheet: 'points',
+        id_field: 'point_id',
+        id_value: modalData.point_id,
+        updates: pointUpdates(modalData),
+      });
+      else if (modalType === 'edit_legal') await api('updateRecord', {
+        sheet: 'legals',
+        id_field: 'legal_id',
+        id_value: modalData.legal_id,
+        updates: legalUpdates(modalData),
+      });
+      else if (modalType === 'flavor') await api('addFlavor', { ...modalData, created_by: CURRENT_USER });
+      else if (modalType === 'extra') await api('addExtra', { ...modalData, created_by: CURRENT_USER });
+      showToast(modalType && modalType.startsWith('edit_') ? 'Сохранено' : 'Добавлено');
+      closeModal();
+      reload();
+    } catch (err) {
+      showToast('Ошибка: ' + err.message, 'error');
+    }
+  };
+
+  const deactivate = async (sheet, id_field, id_value, name) => {
+    if (!confirm(`Перевести "${name}" в архив? Запись не удалится из таблицы и истории.`)) return;
+    try {
+      await api('deactivateRecord', { sheet, id_field, id_value });
+      showToast(`"${name}" в архиве`);
+      reload();
+    } catch (err) {
+      showToast('Ошибка: ' + err.message, 'error');
+    }
+  };
+
+  const restore = async (sheet, id_field, id_value, name) => {
+    try {
+      await api('updateRecord', { sheet, id_field, id_value, updates: { is_active: true } });
+      showToast(`"${name}" снова активен`);
+      reload();
+    } catch (err) {
+      showToast('Ошибка: ' + err.message, 'error');
+    }
+  };
+
+  return <>
+    <header className="flex items-center justify-between rounded-3xl bg-white p-5 shadow-sm">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Справочники</h1>
+        <p className="mt-1 text-sm text-slate-500">Клиенты и их данные · вкусы · упаковка</p>
+      </div>
+    </header>
+
+    <Card className="p-5">
+      <div className="mb-5 flex items-center gap-3 flex-wrap">
+        <div className="flex gap-1 rounded-2xl bg-slate-100 p-1">
+          {[
+            ['clients', `Клиенты (${clients.length})`],
+            ['flavors', `Вкусы (${flavors.length})`],
+            ['extras', `Упаковка (${extras.length})`],
+            ['prices', `Цены (${priceOverrides.length})`],
+          ].map(([k, label]) => (
+            <button key={k} onClick={() => { setTab(k); setSearch(''); }}
+              className={`rounded-xl px-4 py-2 text-sm transition ${tab === k ? 'bg-white shadow-sm font-medium' : 'text-slate-500 hover:text-slate-900'}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="ml-auto flex gap-2">
+          <Input value={search} onChange={setSearch} placeholder="Поиск..." className="w-64" />
+          {tab === 'clients' && <Button onClick={() => setModalType('client_wizard')}>+ Клиент</Button>}
+          {tab === 'flavors' && <Button onClick={() => setModalType('flavor')}>+ Вкус</Button>}
+          {tab === 'extras' && <Button onClick={() => setModalType('extra')}>+ Упаковка</Button>}
+          {tab === 'prices' && <Button onClick={() => setModalType('price')}>+ Индив. цена</Button>}
+        </div>
+      </div>
+
+      {tab === 'clients' && <ClientsCatalog
+        clients={clients} points={points} legals={legals} search={search}
+        onEditClient={(client) => {
+          setModalData({
+            client,
+            points: points.filter(p => p.client_id === client.client_id),
+            legals: legals.filter(l => l.client_id === client.client_id),
+          });
+          setModalType('edit_client_wizard');
+        }}
+        onAddPoint={(cid) => { setModalData({ client_id: cid }); setModalType('point'); }}
+        onAddLegal={(cid) => { setModalData({ client_id: cid }); setModalType('legal'); }}
+        onEditPoint={(point) => { setModalData({ ...point }); setModalType('edit_point'); }}
+        onEditLegal={(legal) => { setModalData({ ...legal }); setModalType('edit_legal'); }}
+        onDeactivate={deactivate}
+        onRestore={restore}
+      />}
+
+      {tab === 'flavors' && <FlavorsTable flavors={flavors} search={search} onDeactivate={deactivate} />}
+      {tab === 'extras' && <ExtrasTable extras={extras} search={search} onDeactivate={deactivate} />}
+      {tab === 'prices' && <PricesTable overrides={priceOverrides} clients={clients} points={points} legals={legals} flavors={flavors} search={search} onDeactivate={deactivate} />}
+    </Card>
+
+    {modalType === 'client_wizard' && <Modal open={true} onClose={closeModal} title="Новый клиент" size="xl"><AddClientWizard onDone={() => { closeModal(); reload(); }} onCancel={closeModal} showToast={showToast} /></Modal>}
+    {modalType === 'edit_client_wizard' && <Modal open={true} onClose={closeModal} title="Редактировать клиента" size="xl"><EditClientWizard client={modalData.client} points={modalData.points || []} legals={modalData.legals || []} onDone={() => { closeModal(); reload(); }} onCancel={closeModal} showToast={showToast} /></Modal>}
+    {modalType === 'client' && <Modal open={true} onClose={closeModal} title="Новый клиент"><AddClientForm data={modalData} setData={setModalData} onSubmit={submitModal} onCancel={closeModal} /></Modal>}
+    {modalType === 'point' && <Modal open={true} onClose={closeModal} title="Новый адрес"><AddPointForm data={modalData} setData={setModalData} clients={clients} onSubmit={submitModal} onCancel={closeModal} /></Modal>}
+    {modalType === 'edit_point' && <Modal open={true} onClose={closeModal} title="Редактировать адрес"><AddPointForm data={modalData} setData={setModalData} clients={clients} onSubmit={submitModal} onCancel={closeModal} submitLabel="Сохранить" lockClient={true} /></Modal>}
+    {modalType === 'legal' && <Modal open={true} onClose={closeModal} title="Новое юрлицо"><AddLegalForm data={modalData} setData={setModalData} clients={clients} onSubmit={submitModal} onCancel={closeModal} /></Modal>}
+    {modalType === 'edit_legal' && <Modal open={true} onClose={closeModal} title="Редактировать юрлицо"><AddLegalForm data={modalData} setData={setModalData} clients={clients} onSubmit={submitModal} onCancel={closeModal} submitLabel="Сохранить" lockClient={true} /></Modal>}
+    {modalType === 'flavor' && <Modal open={true} onClose={closeModal} title="Новый вкус"><AddFlavorForm data={modalData} setData={setModalData} onSubmit={submitModal} onCancel={closeModal} /></Modal>}
+    {modalType === 'extra' && <Modal open={true} onClose={closeModal} title="Новая упаковка"><AddExtraForm data={modalData} setData={setModalData} onSubmit={submitModal} onCancel={closeModal} /></Modal>}
+    {modalType === 'price' && <Modal open={true} onClose={closeModal} title="Индивидуальная цена"><AddPriceForm data={modalData} setData={setModalData} clients={clients} points={points} legals={legals} flavors={flavors} onSubmit={submitModal} onCancel={closeModal} /></Modal>}
+  </>;
+}
+
+function ClientsCatalog({ clients, points, legals, search, onEditClient, onAddPoint, onAddLegal, onEditPoint, onEditLegal, onDeactivate, onRestore }) {
+  const [manualExpandedId, setManualExpandedId] = useState(null);
+  const [showArchive, setShowArchive] = useState(false);
+
+  const q = (search || '').toLowerCase().trim();
+
+  // ищем по клиенту, его адресам, юрлицам и комментарию
+  const { filtered, autoExpand } = useMemo(() => {
+    let list = showArchive ? clients : clients.filter(c => isTrue(c.is_active));
+
+    if (!q) return { filtered: [...list].sort((a, b) => a.name.localeCompare(b.name, 'ru')), autoExpand: new Set() };
+
+    const auto = new Set();
+    const result = list.filter(c => {
+      const inClient = c.name.toLowerCase().includes(q) ||
+        (c.aliases || '').toLowerCase().includes(q) ||
+        (c.comment || '').toLowerCase().includes(q) ||
+        (c.main_contact || '').toLowerCase().includes(q);
+
+      const cPoints = points.filter(p => p.client_id === c.client_id);
+      const inPoint = cPoints.some(p =>
+        (p.address || '').toLowerCase().includes(q) ||
+        (p.contact_person || '').toLowerCase().includes(q) ||
+        (p.working_hours || '').toLowerCase().includes(q) ||
+        (p.delivery_comment || '').toLowerCase().includes(q)
+      );
+
+      const cLegals = legals.filter(l => l.client_id === c.client_id);
+      const inLegal = cLegals.some(l =>
+        (l.legal_name || '').toLowerCase().includes(q) ||
+        String(l.inn || '').includes(q) ||
+        String(l.kpp || '').includes(q) ||
+        (l.documents_comment || '').toLowerCase().includes(q)
+      );
+
+      if (inPoint || inLegal) auto.add(c.client_id);
+      return inClient || inPoint || inLegal;
+    });
+
+    return { filtered: result.sort((a, b) => a.name.localeCompare(b.name, 'ru')), autoExpand: auto };
+  }, [clients, points, legals, q, showArchive]);
+
+  const expandedId = q ? (manualExpandedId || (autoExpand.size > 0 ? [...autoExpand][0] : null)) : manualExpandedId;
+  const isExpanded = (cid) => expandedId === cid || (q && autoExpand.has(cid));
+
+  const highlight = (text) => {
+    if (!q || !text) return text;
+    const str = String(text);
+    const idx = str.toLowerCase().indexOf(q);
+    if (idx === -1) return str;
+    return <>{str.substring(0, idx)}<mark className="bg-amber-200 rounded px-0.5">{str.substring(idx, idx + q.length)}</mark>{str.substring(idx + q.length)}</>;
+  };
+
+  return <div>
+    <div className="mb-3 flex items-center justify-between text-sm">
+      <span className="text-slate-500">{filtered.length} {filtered.length === 1 ? 'клиент' : filtered.length < 5 ? 'клиента' : 'клиентов'}</span>
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input type="checkbox" checked={showArchive} onChange={(e) => setShowArchive(e.target.checked)} />
+        <span className="text-slate-600">Показать архив</span>
+      </label>
+    </div>
+    <div className="space-y-2">
+      {filtered.length === 0 && <div className="text-center py-12 text-slate-400 text-sm">Ничего не найдено</div>}
+      {filtered.map(c => {
+        const cPoints = points.filter(p => p.client_id === c.client_id);
+        const cLegals = legals.filter(l => l.client_id === c.client_id);
+        const expanded = isExpanded(c.client_id);
+        const active = isTrue(c.is_active);
+        return <div key={c.client_id} className={`rounded-2xl border overflow-hidden ${active ? 'border-slate-200 bg-white' : 'border-slate-200 bg-slate-50'}`}>
+          <button onClick={() => setManualExpandedId(expanded ? null : c.client_id)} className={`w-full flex items-center gap-3 p-3 text-left transition ${active ? 'hover:bg-slate-50' : 'opacity-70'}`}>
+            <svg className={`text-slate-400 transition flex-shrink-0 ${expanded ? 'rotate-90' : ''}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+            <div className="flex-1 min-w-0">
+              <div className="font-medium truncate">{highlight(c.name)}</div>
+              {c.comment && <div className="text-xs text-slate-500 truncate">{highlight(c.comment)}</div>}
+            </div>
+            <div className="text-xs text-slate-400 flex-shrink-0">
+              {cPoints.length} {cPoints.length === 1 ? 'адрес' : cPoints.length < 5 ? 'адреса' : 'адресов'} · {cLegals.length} {cLegals.length === 1 ? 'юрлицо' : 'юрлиц'}
+            </div>
+            {!active && <Pill color="red">архив</Pill>}
+          </button>
+
+          {expanded && <div className="border-t border-slate-100 bg-slate-50/50 p-4 space-y-3">
+            {c.aliases && <div className="text-xs"><span className="text-slate-500">Алиасы:</span> {highlight(c.aliases)}</div>}
+            {c.main_contact && <div className="text-xs"><span className="text-slate-500">Контакт:</span> {highlight(c.main_contact)}</div>}
+            <div className="flex gap-2">
+              <Button onClick={() => onEditClient(c)} variant="light" size="sm">Редактировать клиента</Button>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-semibold">Адреса</h4>
+                <Button onClick={() => onAddPoint(c.client_id)} variant="light" size="sm">+ Адрес</Button>
+              </div>
+              {cPoints.length === 0 && <div className="text-xs text-slate-400 py-2">Адресов нет</div>}
+              <div className="space-y-1">
+                {cPoints.map(p => {
+                  const pointActive = isTrue(p.is_active);
+                  return <div key={p.point_id} className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm ${pointActive ? 'bg-white' : 'bg-slate-100 text-slate-400'}`}>
+                    <div className="flex-1 min-w-0">
+                      <div className="truncate">{highlight(p.address)}</div>
+                      {(p.working_hours || p.contact_person || p.delivery_comment) && (
+                        <div className="text-xs text-slate-500 truncate">
+                          {p.working_hours && highlight(p.working_hours)} {p.contact_person && <>· {highlight(p.contact_person)}</>} {p.delivery_comment && <>· {highlight(p.delivery_comment)}</>}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <button onClick={() => onEditPoint(p)} className="text-xs text-slate-500 hover:text-slate-900">изменить</button>
+                      {pointActive
+                        ? <button onClick={() => onDeactivate('points', 'point_id', p.point_id, p.address)} className="text-xs text-slate-400 hover:text-red-600">в архив</button>
+                        : <button onClick={() => onRestore('points', 'point_id', p.point_id, p.address)} className="text-xs text-emerald-600 hover:underline">вернуть</button>
+                      }
+                    </div>
+                  </div>;
+                })}
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-semibold">Юрлица</h4>
+                <Button onClick={() => onAddLegal(c.client_id)} variant="light" size="sm">+ Юрлицо</Button>
+              </div>
+              {cLegals.length === 0 && <div className="text-xs text-slate-400 py-2">Юрлиц нет</div>}
+              <div className="space-y-1">
+                {cLegals.map(l => {
+                  const legalActive = isTrue(l.is_active);
+                  return <div key={l.legal_id} className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm ${legalActive ? 'bg-white' : 'bg-slate-100 text-slate-400'}`}>
+                    <div className="flex-1 min-w-0">
+                      <div className="truncate">{highlight(l.legal_name)}</div>
+                      <div className="text-xs text-slate-500">ИНН {highlight(String(l.inn || ''))}{l.kpp ? ` · КПП ${l.kpp}` : ''}{isTrue(l.has_contract) ? ' · договор' : ''}</div>
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <button onClick={() => onEditLegal(l)} className="text-xs text-slate-500 hover:text-slate-900">изменить</button>
+                      {legalActive
+                        ? <button onClick={() => onDeactivate('legals', 'legal_id', l.legal_id, l.legal_name)} className="text-xs text-slate-400 hover:text-red-600">в архив</button>
+                        : <button onClick={() => onRestore('legals', 'legal_id', l.legal_id, l.legal_name)} className="text-xs text-emerald-600 hover:underline">вернуть</button>
+                      }
+                    </div>
+                  </div>;
+                })}
+              </div>
+            </div>
+
+            {active && <div className="pt-2 border-t border-slate-200">
+              <button onClick={() => onDeactivate('clients', 'client_id', c.client_id, c.name)} className="text-xs text-red-600 hover:underline">Перевести клиента в архив</button>
+            </div>}
+          </div>}
+        </div>;
+      })}
+    </div>
+  </div>;
+}
+
+function FlavorsTable({ flavors, search, onDeactivate }) {
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return [...flavors]
+      .filter(f => !q || f.name.toLowerCase().includes(q))
+      .sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0));
+  }, [flavors, search]);
+
+  return <SimpleTable items={filtered} columns={[
+    { key: 'name', label: 'Название', flex: 2 },
+    { key: 'default_price', label: 'Цена', format: (v) => `${v} ₽` },
+    { key: 'excel_column', label: 'Excel' },
+    { key: 'is_premium', label: 'Премиум', format: (v) => isTrue(v) ? '⭐' : '' },
+    { key: 'is_seasonal', label: 'Сезонный', format: (v) => isTrue(v) ? '🍂' : '' },
+  ]} onDeactivate={(it) => onDeactivate('flavors', 'flavor_id', it.flavor_id, it.name)} />;
+}
+
+function ExtrasTable({ extras, search, onDeactivate }) {
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return [...extras]
+      .filter(e => !q || e.name.toLowerCase().includes(q))
+      .sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0));
+  }, [extras, search]);
+
+  return <SimpleTable items={filtered} columns={[
+    { key: 'name', label: 'Название', flex: 2 },
+    { key: 'default_price', label: 'Цена', format: (v) => `${v} ₽` },
+  ]} onDeactivate={(it) => onDeactivate('extras', 'extra_id', it.extra_id, it.name)} />;
+}
+
+function PricesTable({ overrides, clients, points, legals, flavors, search, onDeactivate }) {
+  const clientById = useMemo(() => Object.fromEntries(clients.map(c => [c.client_id, c.name])), [clients]);
+  const pointById = useMemo(() => Object.fromEntries(points.map(p => [p.point_id, p.address])), [points]);
+  const legalById = useMemo(() => Object.fromEntries(legals.map(l => [l.legal_id, l.legal_name])), [legals]);
+  const flavorById = useMemo(() => Object.fromEntries(flavors.map(f => [f.flavor_id, f.name])), [flavors]);
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return overrides.filter(o => {
+      if (!q) return true;
+      const scopeName = o.scope === 'point' ? pointById[o.scope_id] : o.scope === 'legal' ? legalById[o.scope_id] : clientById[o.scope_id];
+      return (scopeName || '').toLowerCase().includes(q) || (flavorById[o.flavor_id] || '').toLowerCase().includes(q);
+    });
+  }, [overrides, search, clientById, pointById, legalById, flavorById]);
+
+  return <div className="overflow-x-auto rounded-2xl border border-slate-200">
+    <table className="w-full text-left text-sm">
+      <thead className="bg-slate-50 text-slate-500">
+        <tr>
+          <th className="p-3">Тип</th>
+          <th className="p-3">Кому</th>
+          <th className="p-3">Вкус</th>
+          <th className="p-3 text-right">Цена</th>
+          <th className="p-3">Действует</th>
+          <th className="p-3">Комментарий</th>
+          <th className="p-3 w-32">Статус</th>
+        </tr>
+      </thead>
+      <tbody>
+        {filtered.map((o, i) => {
+          const scopeName = o.scope === 'point' ? pointById[o.scope_id] : o.scope === 'legal' ? legalById[o.scope_id] : clientById[o.scope_id];
+          const scopeLabel = { point: 'Точка', legal: 'Юрлицо', client: 'Клиент' }[o.scope] || o.scope;
+          const flavorName = o.flavor_id ? flavorById[o.flavor_id] : 'Все вкусы';
+          const active = isTrue(o.is_active);
+          return <tr key={o.override_id} className={`border-t border-slate-100 ${!active ? 'bg-slate-50 text-slate-400' : ''}`}>
+            <td className="p-3"><Pill color="indigo">{scopeLabel}</Pill></td>
+            <td className="p-3">{scopeName || o.scope_id}</td>
+            <td className="p-3">{flavorName}</td>
+            <td className="p-3 text-right font-semibold">{o.price} ₽</td>
+            <td className="p-3 text-xs text-slate-500">{o.valid_from ? `${displayDate(o.valid_from)} →` : 'без огр.'} {o.valid_to ? displayDate(o.valid_to) : ''}</td>
+            <td className="p-3 text-xs text-slate-500">{o.comment || ''}</td>
+            <td className="p-3">
+              {active
+                ? <button onClick={() => onDeactivate('priceOverrides', 'override_id', o.override_id, `${scopeName} / ${flavorName}`)} className="text-xs text-slate-400 hover:text-red-600">в архив</button>
+                : <Pill color="red">архив</Pill>
+              }
+            </td>
+          </tr>;
+        })}
+      </tbody>
+    </table>
+  </div>;
+}
+
+function SimpleTable({ items, columns, onDeactivate }) {
+  return <div className="overflow-x-auto rounded-2xl border border-slate-200">
+    <table className="w-full text-left text-sm">
+      <thead className="bg-slate-50 text-slate-500">
+        <tr>
+          {columns.map(c => <th key={c.key} className="p-3">{c.label}</th>)}
+          <th className="p-3 w-24">Статус</th>
+        </tr>
+      </thead>
+      <tbody>
+        {items.map((it, i) => {
+          const active = isTrue(it.is_active);
+          return <tr key={i} className={`border-t border-slate-100 ${!active ? 'bg-slate-50 text-slate-400' : ''}`}>
+            {columns.map(c => (
+              <td key={c.key} className="p-3">{c.format ? c.format(it[c.key]) : (it[c.key] || '—')}</td>
+            ))}
+            <td className="p-3">
+              {active
+                ? <button onClick={() => onDeactivate(it)} className="text-xs text-slate-400 hover:text-red-600">в архив</button>
+                : <Pill color="red">архив</Pill>
+              }
+            </td>
+          </tr>;
+        })}
+      </tbody>
+    </table>
+  </div>;
+}
+
+// ===== Формы добавления =====
+
+function FormActions({ onSubmit, onCancel, submitLabel = 'Сохранить' }) {
+  return <div className="flex justify-end gap-2 pt-4 border-t border-slate-100 -mx-6 px-6 -mb-6 pb-6 mt-6">
+    <Button variant="light" onClick={onCancel}>Отмена</Button>
+    <Button onClick={onSubmit}>{submitLabel}</Button>
+  </div>;
+}
+
+
+function AddClientWizard({ onDone, onCancel, showToast }) {
+  const emptyPoint = () => ({ address: '', label: '', working_hours: '', contact_person: '', delivery_comment: '' });
+  const emptyLegal = () => ({
+    legal_name: '', inn: '', kpp: '', has_contract: false,
+    needs_invoice: true, needs_waybill: true, payment_terms_days: 0, documents_comment: '',
+  });
+
+  const [step, setStep] = useState(1);
+  const [clientData, setClientData] = useState({ name: '', aliases: '', main_contact: '', comment: '' });
+  const [pointsData, setPointsData] = useState([emptyPoint()]);
+  const [legalsData, setLegalsData] = useState([emptyLegal()]);
+  const [saving, setSaving] = useState(false);
+
+  const filledPoints = pointsData.filter(p => String(p.address || '').trim());
+  const legalTouched = (l) => Boolean(String(l.legal_name || '').trim() || String(l.inn || '').trim() || String(l.kpp || '').trim() || String(l.documents_comment || '').trim() || Number(l.payment_terms_days || 0) > 0);
+  const touchedLegals = legalsData.filter(legalTouched);
+  const filledLegals = touchedLegals.filter(l => String(l.legal_name || '').trim() && String(l.inn || '').trim());
+
+  const updatePoint = (idx, updates) => setPointsData(prev => prev.map((p, i) => i === idx ? { ...p, ...updates } : p));
+  const updateLegal = (idx, updates) => setLegalsData(prev => prev.map((l, i) => i === idx ? { ...l, ...updates } : l));
+  const removePoint = (idx) => setPointsData(prev => prev.length > 1 ? prev.filter((_, i) => i !== idx) : [emptyPoint()]);
+  const removeLegal = (idx) => setLegalsData(prev => prev.length > 1 ? prev.filter((_, i) => i !== idx) : [emptyLegal()]);
+
+  const validate = () => {
+    if (!String(clientData.name || '').trim()) return 'Укажи название клиента';
+    for (let i = 0; i < pointsData.length; i++) {
+      const p = pointsData[i];
+      const touched = Object.values(p).some(v => String(v || '').trim());
+      if (touched && !String(p.address || '').trim()) return `В адресе №${i + 1} не заполнен адрес`;
+    }
+    for (let i = 0; i < legalsData.length; i++) {
+      const l = legalsData[i];
+      const touched = legalTouched(l);
+      if (touched && !String(l.legal_name || '').trim()) return `В юрлице №${i + 1} не заполнено название`;
+      if (touched && !String(l.inn || '').trim()) return `В юрлице №${i + 1} не заполнен ИНН`;
+    }
+    return null;
+  };
+
+  const saveAll = async () => {
+    const error = validate();
+    if (error) { showToast(error, 'warn'); return; }
+    if (saving) return;
+    setSaving(true);
+    try {
+      const c = await api('addClient', { ...clientData, created_by: CURRENT_USER });
+      const clientId = c.client_id;
+
+      for (const p of filledPoints) {
+        await api('addPoint', { ...p, client_id: clientId, created_by: CURRENT_USER });
+      }
+
+      for (const l of filledLegals) {
+        await api('addLegal', { ...l, client_id: clientId, created_by: CURRENT_USER });
+      }
+
+      showToast(`Клиент добавлен: ${clientData.name}`);
+      onDone();
+    } catch (err) {
+      showToast('Ошибка: ' + err.message, 'error');
+    }
+    setSaving(false);
+  };
+
+  const stepClass = (n) => step === n ? 'bg-slate-950 text-white' : 'bg-slate-100 text-slate-600';
+
+  return <div className="space-y-5">
+    <div className="flex gap-2 rounded-2xl bg-slate-50 p-2">
+      <button onClick={() => setStep(1)} className={`flex-1 rounded-xl px-4 py-2 text-sm font-medium ${stepClass(1)}`}>1. Клиент</button>
+      <button onClick={() => setStep(2)} className={`flex-1 rounded-xl px-4 py-2 text-sm font-medium ${stepClass(2)}`}>2. Адреса <span className="opacity-70">({filledPoints.length})</span></button>
+      <button onClick={() => setStep(3)} className={`flex-1 rounded-xl px-4 py-2 text-sm font-medium ${stepClass(3)}`}>3. ИП / ООО <span className="opacity-70">({filledLegals.length})</span></button>
+      <button onClick={() => setStep(4)} className={`flex-1 rounded-xl px-4 py-2 text-sm font-medium ${stepClass(4)}`}>4. Проверка</button>
+    </div>
+
+    {step === 1 && <div className="space-y-4">
+      <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
+        Клиент - это бренд или сеть. Например: Sayori суши, Uji, Макитория. Адреса и ИП/ООО добавим следующими шагами.
+      </div>
+      <div><Label>Название клиента *</Label><Input value={clientData.name} onChange={(v) => setClientData({ ...clientData, name: v })} placeholder="Например: Азер" /></div>
+      <div><Label>Алиасы для поиска</Label><Input value={clientData.aliases} onChange={(v) => setClientData({ ...clientData, aliases: v })} placeholder="азер|azer|азер суши" /></div>
+      <div><Label>Основной контакт</Label><Input value={clientData.main_contact} onChange={(v) => setClientData({ ...clientData, main_contact: v })} placeholder="Имя, телефон" /></div>
+      <div><Label>Комментарий по клиенту</Label><Input value={clientData.comment} onChange={(v) => setClientData({ ...clientData, comment: v })} placeholder="Например: часто пишет по адресам, проверять филиал" /></div>
+    </div>}
+
+    {step === 2 && <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-semibold">Адреса / филиалы</h3>
+          <p className="text-sm text-slate-500">Можно добавить один адрес или несколько. Пустые строки не сохранятся.</p>
+        </div>
+        <Button variant="light" onClick={() => setPointsData(prev => [...prev, emptyPoint()])}>+ Адрес</Button>
+      </div>
+      <div className="space-y-3">
+        {pointsData.map((p, idx) => <div key={idx} className="rounded-2xl border border-slate-200 bg-white p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="font-medium">Адрес №{idx + 1}</div>
+            <button onClick={() => removePoint(idx)} className="text-xs text-slate-400 hover:text-red-600">убрать</button>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div><Label>Адрес *</Label><Input value={p.address} onChange={(v) => updatePoint(idx, { address: v })} placeholder="Например: Курчатова, 1" /></div>
+            <div><Label>Короткое название</Label><Input value={p.label} onChange={(v) => updatePoint(idx, { label: v })} placeholder="Курчатова" /></div>
+            <div><Label>Время работы</Label><Input value={p.working_hours} onChange={(v) => updatePoint(idx, { working_hours: v })} placeholder="с 10:00 до 21:00" /></div>
+            <div><Label>Контакт на точке</Label><Input value={p.contact_person} onChange={(v) => updatePoint(idx, { contact_person: v })} placeholder="Имя, телефон" /></div>
+            <div className="col-span-2"><Label>Комментарий по доставке</Label><Input value={p.delivery_comment} onChange={(v) => updatePoint(idx, { delivery_comment: v })} placeholder="Вход со двора, оставить у администратора" /></div>
+          </div>
+        </div>)}
+      </div>
+    </div>}
+
+    {step === 3 && <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-semibold">ИП / ООО для документов</h3>
+          <p className="text-sm text-slate-500">Можно не заполнять, если клиент работает без документов.</p>
+        </div>
+        <Button variant="light" onClick={() => setLegalsData(prev => [...prev, emptyLegal()])}>+ ИП / ООО</Button>
+      </div>
+      <div className="space-y-3">
+        {legalsData.map((l, idx) => <div key={idx} className="rounded-2xl border border-slate-200 bg-white p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="font-medium">Юрлицо №{idx + 1}</div>
+            <button onClick={() => removeLegal(idx)} className="text-xs text-slate-400 hover:text-red-600">убрать</button>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2"><Label>Название ИП / ООО *</Label><Input value={l.legal_name} onChange={(v) => updateLegal(idx, { legal_name: v })} placeholder="ИП Иванов Иван Иванович" /></div>
+            <div><Label>ИНН *</Label><Input value={l.inn} onChange={(v) => updateLegal(idx, { inn: v })} placeholder="540312345678" /></div>
+            <div><Label>КПП</Label><Input value={l.kpp} onChange={(v) => updateLegal(idx, { kpp: v })} placeholder="для ООО" /></div>
+            <div><Label>Отсрочка, дней</Label><Input type="number" value={l.payment_terms_days || 0} onChange={(v) => updateLegal(idx, { payment_terms_days: v })} /></div>
+            <div className="flex items-end gap-4 pb-3 text-sm">
+              <label className="flex items-center gap-2"><input type="checkbox" checked={l.has_contract || false} onChange={(e) => updateLegal(idx, { has_contract: e.target.checked })} /> договор</label>
+              <label className="flex items-center gap-2"><input type="checkbox" checked={l.needs_invoice !== false} onChange={(e) => updateLegal(idx, { needs_invoice: e.target.checked })} /> счёт</label>
+              <label className="flex items-center gap-2"><input type="checkbox" checked={l.needs_waybill !== false} onChange={(e) => updateLegal(idx, { needs_waybill: e.target.checked })} /> накладная</label>
+            </div>
+            <div className="col-span-2"><Label>Реквизиты / комментарий по документам</Label><Input value={l.documents_comment} onChange={(v) => updateLegal(idx, { documents_comment: v })} placeholder="Оригинальная подпись, договор, особые реквизиты" /></div>
+          </div>
+        </div>)}
+      </div>
+    </div>}
+
+    {step === 4 && <div className="space-y-4">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <h3 className="mb-3 font-semibold">Проверка перед сохранением</h3>
+        <div className="space-y-3 text-sm">
+          <div><span className="text-slate-500">Клиент:</span> <b>{clientData.name || 'не заполнен'}</b></div>
+          <div><span className="text-slate-500">Алиасы:</span> {clientData.aliases || '—'}</div>
+          <div><span className="text-slate-500">Адреса:</span> {filledPoints.length ? filledPoints.map(p => p.address).join('; ') : 'нет'}</div>
+          <div><span className="text-slate-500">ИП / ООО:</span> {filledLegals.length ? filledLegals.map(l => `${l.legal_name} · ИНН ${l.inn}`).join('; ') : 'нет'}</div>
+        </div>
+      </div>
+      <div className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-900">
+        Сначала создаётся клиент, потом к нему добавляются адреса и юрлица. Если что-то забудешь, можно будет добавить позже из карточки клиента.
+      </div>
+    </div>}
+
+    <div className="flex items-center justify-between border-t border-slate-100 pt-5">
+      <Button variant="light" onClick={onCancel}>Отмена</Button>
+      <div className="flex gap-2">
+        {step > 1 && <Button variant="light" onClick={() => setStep(step - 1)}>Назад</Button>}
+        {step < 4 && <Button onClick={() => {
+          const error = validate();
+          if (step === 1 && error === 'Укажи название клиента') { showToast(error, 'warn'); return; }
+          setStep(step + 1);
+        }}>Дальше</Button>}
+        {step === 4 && <Button onClick={saveAll} disabled={saving}>{saving ? <><Spinner /> Сохранение...</> : 'Сохранить клиента'}</Button>}
+      </div>
+    </div>
+  </div>;
+}
+
+
+function EditClientWizard({ client, points, legals, onDone, onCancel, showToast }) {
+  const emptyPoint = () => ({ address: '', label: '', working_hours: '', contact_person: '', delivery_comment: '' });
+  const emptyLegal = () => ({
+    legal_name: '', inn: '', kpp: '', has_contract: false,
+    needs_invoice: true, needs_waybill: true, payment_terms_days: 0, documents_comment: '',
+  });
+
+  const [step, setStep] = useState(1);
+  const [clientData, setClientData] = useState({
+    client_id: client?.client_id || '',
+    name: client?.name || '',
+    aliases: client?.aliases || '',
+    main_contact: client?.main_contact || '',
+    comment: client?.comment || '',
+  });
+  const [pointsData, setPointsData] = useState((points && points.length ? points : [emptyPoint()]).map(p => ({
+    point_id: p.point_id || '',
+    address: p.address || '',
+    label: p.label || '',
+    working_hours: p.working_hours || '',
+    contact_person: p.contact_person || '',
+    delivery_comment: p.delivery_comment || '',
+    is_active: p.is_active,
+  })));
+  const [legalsData, setLegalsData] = useState((legals && legals.length ? legals : [emptyLegal()]).map(l => ({
+    legal_id: l.legal_id || '',
+    legal_name: l.legal_name || '',
+    inn: l.inn || '',
+    kpp: l.kpp || '',
+    has_contract: isTrue(l.has_contract),
+    needs_invoice: l.needs_invoice !== false && String(l.needs_invoice).toUpperCase() !== 'FALSE',
+    needs_waybill: l.needs_waybill !== false && String(l.needs_waybill).toUpperCase() !== 'FALSE',
+    payment_terms_days: Number(l.payment_terms_days || 0),
+    documents_comment: l.documents_comment || '',
+    is_active: l.is_active,
+  })));
+  const [saving, setSaving] = useState(false);
+
+  const filledPoints = pointsData.filter(p => String(p.address || '').trim());
+  const legalTouched = (l) => Boolean(String(l.legal_name || '').trim() || String(l.inn || '').trim() || String(l.kpp || '').trim() || String(l.documents_comment || '').trim() || Number(l.payment_terms_days || 0) > 0);
+  const touchedLegals = legalsData.filter(legalTouched);
+  const filledLegals = touchedLegals.filter(l => String(l.legal_name || '').trim() && String(l.inn || '').trim());
+
+  const updatePoint = (idx, updates) => setPointsData(prev => prev.map((p, i) => i === idx ? { ...p, ...updates } : p));
+  const updateLegal = (idx, updates) => setLegalsData(prev => prev.map((l, i) => i === idx ? { ...l, ...updates } : l));
+  const removePoint = (idx) => setPointsData(prev => prev.length > 1 ? prev.filter((_, i) => i !== idx) : [emptyPoint()]);
+  const removeLegal = (idx) => setLegalsData(prev => prev.length > 1 ? prev.filter((_, i) => i !== idx) : [emptyLegal()]);
+
+  const validate = () => {
+    if (!String(clientData.name || '').trim()) return 'Укажи название клиента';
+    for (let i = 0; i < pointsData.length; i++) {
+      const p = pointsData[i];
+      const touched = Object.keys(p).some(k => !['point_id', 'is_active'].includes(k) && String(p[k] || '').trim());
+      if (touched && !String(p.address || '').trim()) return `В адресе №${i + 1} не заполнен адрес`;
+    }
+    for (let i = 0; i < legalsData.length; i++) {
+      const l = legalsData[i];
+      const touched = legalTouched(l);
+      if (touched && !String(l.legal_name || '').trim()) return `В юрлице №${i + 1} не заполнено название`;
+      if (touched && !String(l.inn || '').trim()) return `В юрлице №${i + 1} не заполнен ИНН`;
+    }
+    return null;
+  };
+
+  const saveAll = async () => {
+    const error = validate();
+    if (error) { showToast(error, 'warn'); return; }
+    if (saving) return;
+    setSaving(true);
+    try {
+      await api('updateRecord', {
+        sheet: 'clients',
+        id_field: 'client_id',
+        id_value: clientData.client_id,
+        updates: {
+          name: clientData.name || '',
+          aliases: clientData.aliases || '',
+          main_contact: clientData.main_contact || '',
+          comment: clientData.comment || '',
+        },
+      });
+
+      for (const p of filledPoints) {
+        const payload = {
+          address: p.address || '',
+          label: p.label || '',
+          working_hours: p.working_hours || '',
+          contact_person: p.contact_person || '',
+          delivery_comment: p.delivery_comment || '',
+        };
+        if (p.point_id) {
+          await api('updateRecord', { sheet: 'points', id_field: 'point_id', id_value: p.point_id, updates: payload });
+        } else {
+          await api('addPoint', { ...payload, client_id: clientData.client_id, created_by: CURRENT_USER });
+        }
+      }
+
+      for (const l of filledLegals) {
+        const payload = {
+          legal_name: l.legal_name || '',
+          inn: String(l.inn || ''),
+          kpp: l.kpp || '',
+          has_contract: l.has_contract === true,
+          needs_invoice: l.needs_invoice !== false,
+          needs_waybill: l.needs_waybill !== false,
+          payment_terms_days: Number(l.payment_terms_days || 0),
+          documents_comment: l.documents_comment || '',
+        };
+        if (l.legal_id) {
+          await api('updateRecord', { sheet: 'legals', id_field: 'legal_id', id_value: l.legal_id, updates: payload });
+        } else {
+          await api('addLegal', { ...payload, client_id: clientData.client_id, created_by: CURRENT_USER });
+        }
+      }
+
+      clearPageCache();
+      showToast(`Клиент сохранён: ${clientData.name}`);
+      onDone();
+    } catch (err) {
+      showToast('Ошибка: ' + err.message, 'error');
+    }
+    setSaving(false);
+  };
+
+  const stepClass = (n) => step === n ? 'bg-slate-950 text-white' : 'bg-slate-100 text-slate-600';
+
+  return <div className="space-y-5">
+    <div className="flex gap-2 rounded-2xl bg-slate-50 p-2">
+      <button onClick={() => setStep(1)} className={`flex-1 rounded-xl px-4 py-2 text-sm font-medium ${stepClass(1)}`}>1. Клиент</button>
+      <button onClick={() => setStep(2)} className={`flex-1 rounded-xl px-4 py-2 text-sm font-medium ${stepClass(2)}`}>2. Адреса <span className="opacity-70">({filledPoints.length})</span></button>
+      <button onClick={() => setStep(3)} className={`flex-1 rounded-xl px-4 py-2 text-sm font-medium ${stepClass(3)}`}>3. ИП / ООО <span className="opacity-70">({filledLegals.length})</span></button>
+      <button onClick={() => setStep(4)} className={`flex-1 rounded-xl px-4 py-2 text-sm font-medium ${stepClass(4)}`}>4. Проверка</button>
+    </div>
+
+    {step === 1 && <div className="space-y-4">
+      <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">Меняем данные клиента. ID не меняется, старые заказы не ломаются.</div>
+      <div><Label>Название клиента *</Label><Input value={clientData.name} onChange={(v) => setClientData({ ...clientData, name: v })} /></div>
+      <div><Label>Алиасы для поиска</Label><Input value={clientData.aliases} onChange={(v) => setClientData({ ...clientData, aliases: v })} placeholder="азер|azer|азер суши" /></div>
+      <div><Label>Основной контакт</Label><Input value={clientData.main_contact} onChange={(v) => setClientData({ ...clientData, main_contact: v })} placeholder="Имя, телефон" /></div>
+      <div><Label>Комментарий по клиенту</Label><Input value={clientData.comment} onChange={(v) => setClientData({ ...clientData, comment: v })} /></div>
+    </div>}
+
+    {step === 2 && <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div><h3 className="font-semibold">Адреса / филиалы</h3><p className="text-sm text-slate-500">Можно редактировать текущие и добавить новые. Закрытые адреса отправляй в архив из карточки клиента.</p></div>
+        <Button variant="light" onClick={() => setPointsData(prev => [...prev, emptyPoint()])}>+ Адрес</Button>
+      </div>
+      <div className="space-y-3">
+        {pointsData.map((p, idx) => <div key={p.point_id || idx} className="rounded-2xl border border-slate-200 bg-white p-4">
+          <div className="mb-3 flex items-center justify-between"><div className="font-medium">{p.point_id ? `Адрес №${idx + 1}` : `Новый адрес №${idx + 1}`}</div><button onClick={() => removePoint(idx)} className="text-xs text-slate-400 hover:text-red-600">убрать из формы</button></div>
+          <div className="grid grid-cols-2 gap-4">
+            <div><Label>Адрес *</Label><Input value={p.address} onChange={(v) => updatePoint(idx, { address: v })} /></div>
+            <div><Label>Короткое название</Label><Input value={p.label} onChange={(v) => updatePoint(idx, { label: v })} /></div>
+            <div><Label>Время работы</Label><Input value={p.working_hours} onChange={(v) => updatePoint(idx, { working_hours: v })} /></div>
+            <div><Label>Контакт на точке</Label><Input value={p.contact_person} onChange={(v) => updatePoint(idx, { contact_person: v })} /></div>
+            <div className="col-span-2"><Label>Комментарий по доставке</Label><Input value={p.delivery_comment} onChange={(v) => updatePoint(idx, { delivery_comment: v })} /></div>
+          </div>
+        </div>)}
+      </div>
+    </div>}
+
+    {step === 3 && <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div><h3 className="font-semibold">ИП / ООО для документов</h3><p className="text-sm text-slate-500">Можно редактировать текущие и добавить новые. Старые юрлица отправляй в архив из карточки клиента.</p></div>
+        <Button variant="light" onClick={() => setLegalsData(prev => [...prev, emptyLegal()])}>+ ИП / ООО</Button>
+      </div>
+      <div className="space-y-3">
+        {legalsData.map((l, idx) => <div key={l.legal_id || idx} className="rounded-2xl border border-slate-200 bg-white p-4">
+          <div className="mb-3 flex items-center justify-between"><div className="font-medium">{l.legal_id ? `Юрлицо №${idx + 1}` : `Новое юрлицо №${idx + 1}`}</div><button onClick={() => removeLegal(idx)} className="text-xs text-slate-400 hover:text-red-600">убрать из формы</button></div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2"><Label>Название ИП / ООО *</Label><Input value={l.legal_name} onChange={(v) => updateLegal(idx, { legal_name: v })} /></div>
+            <div><Label>ИНН *</Label><Input value={l.inn} onChange={(v) => updateLegal(idx, { inn: v })} /></div>
+            <div><Label>КПП</Label><Input value={l.kpp} onChange={(v) => updateLegal(idx, { kpp: v })} /></div>
+            <div><Label>Отсрочка, дней</Label><Input type="number" value={l.payment_terms_days || 0} onChange={(v) => updateLegal(idx, { payment_terms_days: v })} /></div>
+            <div className="flex items-end gap-4 pb-3 text-sm">
+              <label className="flex items-center gap-2"><input type="checkbox" checked={l.has_contract || false} onChange={(e) => updateLegal(idx, { has_contract: e.target.checked })} /> договор</label>
+              <label className="flex items-center gap-2"><input type="checkbox" checked={l.needs_invoice !== false} onChange={(e) => updateLegal(idx, { needs_invoice: e.target.checked })} /> счёт</label>
+              <label className="flex items-center gap-2"><input type="checkbox" checked={l.needs_waybill !== false} onChange={(e) => updateLegal(idx, { needs_waybill: e.target.checked })} /> накладная</label>
+            </div>
+            <div className="col-span-2"><Label>Реквизиты / комментарий по документам</Label><Input value={l.documents_comment} onChange={(v) => updateLegal(idx, { documents_comment: v })} /></div>
+          </div>
+        </div>)}
+      </div>
+    </div>}
+
+    {step === 4 && <div className="space-y-4">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <h3 className="mb-3 font-semibold">Проверка перед сохранением</h3>
+        <div className="space-y-3 text-sm">
+          <div><span className="text-slate-500">Клиент:</span> <b>{clientData.name || 'не заполнен'}</b></div>
+          <div><span className="text-slate-500">Алиасы:</span> {clientData.aliases || '—'}</div>
+          <div><span className="text-slate-500">Адреса:</span> {filledPoints.length ? filledPoints.map(p => p.address).join('; ') : 'нет'}</div>
+          <div><span className="text-slate-500">ИП / ООО:</span> {filledLegals.length ? filledLegals.map(l => `${l.legal_name} · ИНН ${l.inn}`).join('; ') : 'нет'}</div>
+        </div>
+      </div>
+      <div className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-900">Сохраняем изменения в справочниках. Старые заказы останутся связаны через ID.</div>
+    </div>}
+
+    <div className="flex items-center justify-between border-t border-slate-100 pt-5">
+      <Button variant="light" onClick={onCancel}>Отмена</Button>
+      <div className="flex gap-2">
+        {step > 1 && <Button variant="light" onClick={() => setStep(step - 1)}>Назад</Button>}
+        {step < 4 && <Button onClick={() => { const error = validate(); if (step === 1 && error === 'Укажи название клиента') { showToast(error, 'warn'); return; } setStep(step + 1); }}>Дальше</Button>}
+        {step === 4 && <Button onClick={saveAll} disabled={saving}>{saving ? <><Spinner /> Сохранение...</> : 'Сохранить изменения'}</Button>}
+      </div>
+    </div>
+  </div>;
+}
+
+function AddClientForm({ data, setData, onSubmit, onCancel }) {
+  return <div className="space-y-4">
+    <div><Label>Название *</Label><Input value={data.name} onChange={(v) => setData({ ...data, name: v })} placeholder="Например: Имбирь" /></div>
+    <div><Label>Алиасы (через |)</Label><Input value={data.aliases} onChange={(v) => setData({ ...data, aliases: v })} placeholder="имбирь|imbir" /></div>
+    <div><Label>Основной контакт</Label><Input value={data.main_contact} onChange={(v) => setData({ ...data, main_contact: v })} placeholder="Имя, телефон" /></div>
+    <div><Label>Комментарий</Label><Input value={data.comment} onChange={(v) => setData({ ...data, comment: v })} /></div>
+    <FormActions onSubmit={onSubmit} onCancel={onCancel} />
+  </div>;
+}
+
+function AddPointForm({ data, setData, clients, onSubmit, onCancel, submitLabel = 'Сохранить', lockClient = false }) {
+  const clientName = clients.find(c => c.client_id === data.client_id)?.name || data.client_id || '—';
+  return <div className="space-y-4">
+    <div><Label>Клиент *</Label>{lockClient
+      ? <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">{clientName}</div>
+      : <Combobox value={data.client_id} onChange={(v) => setData({ ...data, client_id: v })}
+        options={clients.map(c => ({ value: c.client_id, label: c.name }))} placeholder="Выбрать клиента..." />}
+    </div>
+    <div><Label>Адрес *</Label><Input value={data.address} onChange={(v) => setData({ ...data, address: v })} placeholder="Например: Ватутина, 11/3" /></div>
+    <div><Label>Время работы</Label><Input value={data.working_hours} onChange={(v) => setData({ ...data, working_hours: v })} placeholder="с 10:00 до 22:00" /></div>
+    <div><Label>Контактное лицо</Label><Input value={data.contact_person} onChange={(v) => setData({ ...data, contact_person: v })} placeholder="Имя, телефон" /></div>
+    <div><Label>Комментарий по доставке</Label><Input value={data.delivery_comment} onChange={(v) => setData({ ...data, delivery_comment: v })} /></div>
+    <FormActions onSubmit={onSubmit} onCancel={onCancel} submitLabel={submitLabel} />
+  </div>;
+}
+
+function AddLegalForm({ data, setData, clients, onSubmit, onCancel, submitLabel = 'Сохранить', lockClient = false }) {
+  const clientName = clients.find(c => c.client_id === data.client_id)?.name || data.client_id || '—';
+  return <div className="space-y-4">
+    <div><Label>Клиент *</Label>{lockClient
+      ? <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">{clientName}</div>
+      : <Combobox value={data.client_id} onChange={(v) => setData({ ...data, client_id: v })}
+        options={clients.map(c => ({ value: c.client_id, label: c.name }))} placeholder="Выбрать клиента..." />}
+    </div>
+    <div><Label>Название юрлица *</Label><Input value={data.legal_name} onChange={(v) => setData({ ...data, legal_name: v })} placeholder="ИП Иванов И.И." /></div>
+    <div className="grid grid-cols-2 gap-4">
+      <div><Label>ИНН *</Label><Input value={data.inn} onChange={(v) => setData({ ...data, inn: v })} placeholder="540312345678" /></div>
+      <div><Label>КПП</Label><Input value={data.kpp} onChange={(v) => setData({ ...data, kpp: v })} /></div>
+    </div>
+    <div className="flex gap-4 text-sm flex-wrap">
+      <label className="flex items-center gap-2"><input type="checkbox" checked={data.has_contract || false} onChange={(e) => setData({ ...data, has_contract: e.target.checked })} /> Есть договор</label>
+      <label className="flex items-center gap-2"><input type="checkbox" checked={data.needs_invoice !== false} onChange={(e) => setData({ ...data, needs_invoice: e.target.checked })} /> Нужен счёт</label>
+      <label className="flex items-center gap-2"><input type="checkbox" checked={data.needs_waybill !== false} onChange={(e) => setData({ ...data, needs_waybill: e.target.checked })} /> Нужна накладная</label>
+    </div>
+    <div><Label>Отсрочка платежа (дней)</Label><Input type="number" value={data.payment_terms_days || 0} onChange={(v) => setData({ ...data, payment_terms_days: v })} /></div>
+    <div><Label>Комментарий по документам</Label><Input value={data.documents_comment} onChange={(v) => setData({ ...data, documents_comment: v })} /></div>
+    <FormActions onSubmit={onSubmit} onCancel={onCancel} submitLabel={submitLabel} />
+  </div>;
+}
+
+function AddFlavorForm({ data, setData, onSubmit, onCancel }) {
+  return <div className="space-y-4">
+    <div><Label>Название *</Label><Input value={data.name} onChange={(v) => setData({ ...data, name: v })} placeholder="Например: Маракуйя-Манго" /></div>
+    <div className="grid grid-cols-2 gap-4">
+      <div><Label>Цена *</Label><Input type="number" value={data.default_price} onChange={(v) => setData({ ...data, default_price: v })} placeholder="100" /></div>
+      <div><Label>Колонка в Excel</Label><Input value={data.excel_column} onChange={(v) => setData({ ...data, excel_column: v })} placeholder="AM, AN, AO" /></div>
+    </div>
+    <div><Label>Алиасы</Label><Input value={data.aliases} onChange={(v) => setData({ ...data, aliases: v })} placeholder="маракуйя|манго" /></div>
+    <div className="flex gap-4 text-sm">
+      <label className="flex items-center gap-2"><input type="checkbox" checked={data.is_premium || false} onChange={(e) => setData({ ...data, is_premium: e.target.checked })} /> Премиум</label>
+      <label className="flex items-center gap-2"><input type="checkbox" checked={data.is_seasonal || false} onChange={(e) => setData({ ...data, is_seasonal: e.target.checked })} /> Сезонный</label>
+    </div>
+    <FormActions onSubmit={onSubmit} onCancel={onCancel} />
+  </div>;
+}
+
+function AddExtraForm({ data, setData, onSubmit, onCancel }) {
+  return <div className="space-y-4">
+    <div><Label>Название *</Label><Input value={data.name} onChange={(v) => setData({ ...data, name: v })} placeholder="Например: Коробка на 10 шт" /></div>
+    <div><Label>Цена *</Label><Input type="number" value={data.default_price} onChange={(v) => setData({ ...data, default_price: v })} placeholder="20" /></div>
+    <FormActions onSubmit={onSubmit} onCancel={onCancel} />
+  </div>;
+}
+
+function AddPriceForm({ data, setData, clients, points, legals, flavors, onSubmit, onCancel }) {
+  const scope = data.scope || 'client';
+  const scopeOptions = scope === 'point'
+    ? points.filter(p => isTrue(p.is_active)).map(p => ({ value: p.point_id, label: p.address, hint: clients.find(c => c.client_id === p.client_id)?.name }))
+    : scope === 'legal'
+      ? legals.filter(l => isTrue(l.is_active)).map(l => ({ value: l.legal_id, label: l.legal_name, hint: clients.find(c => c.client_id === l.client_id)?.name }))
+      : clients.filter(c => isTrue(c.is_active)).map(c => ({ value: c.client_id, label: c.name }));
+
+  return <div className="space-y-4">
+    <div>
+      <Label>Уровень действия *</Label>
+      <div className="flex gap-2">
+        {[['client', 'Клиент'], ['legal', 'Юрлицо'], ['point', 'Точка']].map(([v, l]) => (
+          <button key={v} onClick={() => setData({ ...data, scope: v, scope_id: '' })}
+            className={`flex-1 rounded-2xl px-4 py-2 text-sm transition ${scope === v ? 'bg-slate-950 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>{l}</button>
+        ))}
+      </div>
+      <div className="mt-2 text-xs text-slate-500">Приоритет: точка → юрлицо → клиент → обычная цена</div>
+    </div>
+    <div><Label>{scope === 'point' ? 'Адрес' : scope === 'legal' ? 'Юрлицо' : 'Клиент'} *</Label>
+      <Combobox value={data.scope_id} onChange={(v) => setData({ ...data, scope_id: v })} options={scopeOptions} placeholder="Выбрать..." /></div>
+    <div><Label>Вкус (пусто = все вкусы)</Label>
+      <Combobox value={data.flavor_id} onChange={(v) => setData({ ...data, flavor_id: v })}
+        options={[{ value: '', label: 'Все вкусы' }, ...flavors.map(f => ({ value: f.flavor_id, label: f.name }))]} placeholder="Все вкусы" /></div>
+    <div><Label>Цена *</Label><Input type="number" value={data.price} onChange={(v) => setData({ ...data, price: v })} placeholder="95" /></div>
+    <div className="grid grid-cols-2 gap-4">
+      <div><Label>Действует с</Label><Input type="date" value={data.valid_from} onChange={(v) => setData({ ...data, valid_from: v })} /></div>
+      <div><Label>По (опционально)</Label><Input type="date" value={data.valid_to} onChange={(v) => setData({ ...data, valid_to: v })} /></div>
+    </div>
+    <div><Label>Комментарий</Label><Input value={data.comment} onChange={(v) => setData({ ...data, comment: v })} placeholder="По договору, скидка..." /></div>
+    <FormActions onSubmit={onSubmit} onCancel={onCancel} />
+  </div>;
+}
+
+// ===== Запуск =====
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>
