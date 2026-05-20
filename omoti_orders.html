@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OMOTI — Заказы B2B</title>
+<title>OMOTI — Заказы B2B v30</title>
 <!-- v29: aggregate duplicate parsed items -->
-<script src="https://cdn.tailwindcss.com"></script>
+<script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=seYpl0vmjEbdDcN2d3EF4ii58cxWI372SHIGlXrb6R3XMSjyw1lC-fXxzu7fIMtOWCUp33JOtqnMks8YzrhSTNUc-5njjjd7yZCLc7P9-X2tKuVd8TKtcynbm8GtmGrfDhPnqV4_D8kPzxOdsDWbxDOOyI6MpPt4R28ivKaL1IpBpa6C88wu-T03lQtAXgE7y8spqF8d1Rftsp53eNy41qRtYgCyBEFFHkti6kMIUcaQ4zrjbM-LNBkI3h4o4DuFBaCyN8AANrjwkwxwhT9JbDCFvZceRjfw2fYlUrICQ0BtDKf9PMbRM4SV_ZadH6iseNnCRHXulvQoko7_PPz6LT-Q8bpvTno0hLsCb4-Ga5U" charset="UTF-8"></script><script src="https://cdn.tailwindcss.com"></script>
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -1856,7 +1856,7 @@ function InWorkOrderRow({ order, client, point, legal, expanded, items, onToggle
           </div>
 
           <div className="mt-4">
-            <ElbaDocumentsBlock order={order} legal={legal} onCreated={onDocumentsCreated} showToast={showToast} />
+            <ElbaDocumentsBlock order={order} client={client} point={point} legal={legal} onCreated={onDocumentsCreated} showToast={showToast} />
           </div>
 
           <h4 className="font-semibold text-sm mb-2 mt-4 text-slate-700">Изменить статус</h4>
@@ -1883,7 +1883,7 @@ function InWorkOrderRow({ order, client, point, legal, expanded, items, onToggle
 
 // ===== Документы Эльбы =====
 
-function ElbaDocumentsBlock({ order, onCreated, showToast }) {
+function ElbaDocumentsBlock({ order, client, point, legal, onCreated, showToast }) {
   const [creating, setCreating] = useState(false);
 
   const hasDocs = !!(order.invoice_id || order.waybill_id || order.invoice_url || order.waybill_url);
@@ -1924,6 +1924,56 @@ function ElbaDocumentsBlock({ order, onCreated, showToast }) {
     setCreating(false);
   };
 
+  const copyTextToClipboard = async (text) => {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+  };
+
+  const handleCopyInvoice = async () => {
+    if (!order.invoice_url) {
+      showToast('Ссылка на счёт не найдена', 'warn');
+      return;
+    }
+
+    const clientName = client?.name || order.client_name || order.client_id || 'Оптовик';
+    const invoiceNumber = order.invoice_number ? `№${order.invoice_number}` : 'без номера';
+    const invoiceDate = displayDate(order.invoice_date || order.documents_created_at || order.created_at || today());
+    const text = [
+      clientName,
+      `Счёт ${invoiceNumber} от ${invoiceDate}`,
+      `Сумма: ${money(order.total_amount)}`,
+      '',
+      order.invoice_url,
+    ].join('\n');
+
+    try {
+      await copyTextToClipboard(text);
+      showToast('Сообщение со счётом скопировано');
+    } catch (err) {
+      showToast('Не удалось скопировать: ' + err.message, 'error');
+    }
+  };
+
+  const handlePrintWaybill = () => {
+    if (!order.waybill_url) {
+      showToast('Ссылка на ТН не найдена', 'warn');
+      return;
+    }
+    window.open(order.waybill_url, '_blank', 'noopener,noreferrer');
+  };
+
   return <div className="rounded-2xl border border-slate-200 bg-white p-4">
     <div className="mb-3 flex items-start justify-between gap-3">
       <div>
@@ -1941,23 +1991,21 @@ function ElbaDocumentsBlock({ order, onCreated, showToast }) {
 
     <div className="space-y-2 text-xs text-slate-600">
       <div className="flex flex-wrap gap-2">
-        {order.invoice_url && <a
-          href={order.invoice_url}
-          target="_blank"
-          rel="noreferrer"
+        {order.invoice_url && <button
+          type="button"
+          onClick={handleCopyInvoice}
           className="inline-flex rounded-xl bg-slate-950 px-3 py-2 font-medium text-white hover:bg-slate-800"
         >
-          Открыть счёт
-        </a>}
+          Скопировать счёт
+        </button>}
 
-        {order.waybill_url && <a
-          href={order.waybill_url}
-          target="_blank"
-          rel="noreferrer"
+        {order.waybill_url && <button
+          type="button"
+          onClick={handlePrintWaybill}
           className="inline-flex rounded-xl bg-white px-3 py-2 font-medium text-slate-900 border border-slate-200 hover:bg-slate-50"
         >
-          Открыть ТН
-        </a>}
+          Распечатать ТН
+        </button>}
       </div>
 
       {order.waybill_number && !order.waybill_url && <div>
@@ -2499,7 +2547,7 @@ function HistoryOrderRow({ order, client, point, legal, expanded, items, onToggl
           </div>
 
           <div className="mt-4">
-            <ElbaDocumentsBlock order={order} legal={legal} onCreated={onDocumentsCreated} showToast={showToast} />
+            <ElbaDocumentsBlock order={order} client={client} point={point} legal={legal} onCreated={onDocumentsCreated} showToast={showToast} />
           </div>
 
           <h4 className="font-semibold text-sm mb-2 mt-4 text-slate-700">Изменить статус</h4>
