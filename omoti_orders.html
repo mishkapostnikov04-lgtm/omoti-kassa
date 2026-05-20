@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OMOTI — Заказы B2B</title>
-<script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=Ux5Q42EzPrOi5HxrnGCdo5EaREThQheatFvwDORQhuJYAtzT-8oOC29VbkuNrWkGse6h0xz5jFoh6TTk-GWtVOZMkmhProjrwjR9FQrVgWktjEE4zEtcTWEgVpR7tGrJ41MNzGf5CYQcOJRK2HEVeDMgnrkZ6SaXQPpHS_jjf_ZRnZlydlxbCFY39ivP5aLNWhhPLwT-I0AcAHgT46iwV7uY5Q1AHC5hgNRDTCsxyUJfa0N-oP-oaWvLyYxOhagb4miq5q1K3vPbayjs4P7YHMeqIi-DP9hxnhR2yhEH2hriw2srlugG_ZolC4Qb7ZPbEFSYLjypukIQoVkn3i4V9Q" charset="UTF-8"></script><script src="https://cdn.tailwindcss.com"></script>
+<script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=VY2iRpUhc86azwHy1Zmd3B_O77OJj2oyRNersrs2IS70vSGEJ03feMg3aT_V4lJVv5KAmH_X5OBGz4zTRupSDPOb1CO0eN1sDzQcmHnWHoz3ZdKTnXCsIM-Xg7Oo1sLqHnjgWoF8zpLO8Syq4rK2kYwXtfvcpWeW-kwDJaYBny0GybaUqQhZZfLhD-RBexzE4tA25R2T3x1C16rF1nghf2I_nj8m5zu01rXC8it2COddCAxpryglrV-tudwW1ALNBabsE1VQlp4R-bsOB0p89RYwGxZ-6hULMtdLrP8QEVyUGNlO3p3IhkR4rN10v5g8xUqZTw_hwl_s8-Q3FXgt2A" charset="UTF-8"></script><script src="https://cdn.tailwindcss.com"></script>
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -1056,13 +1056,21 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
 function QuickParseBlock({ value, onChange, onParse, loading, result, onClear }) {
   const itemCount = result?.draft?.items?.length || 0;
   const totalQty = (result?.draft?.items || []).reduce((sum, i) => sum + Number(i.qty || 0), 0);
+  const hasUnresolved = !!(result && (
+    (result.unresolved?.flavors?.length || 0) > 0 ||
+    (result.unresolved?.extras?.length || 0) > 0
+  ));
+  const isCleanResult = !!(result && result.success && !result.needs_clarification && !hasUnresolved);
+  const isPartialResult = !!(result && itemCount > 0 && hasUnresolved);
   const modelLabel = result?.ai_model_used === 'fallback_js'
     ? 'без ИИ'
     : result?.ai_model_used === 'openai/gpt-4.1-mini'
       ? 'GPT-4.1 mini'
-      : result?.ai_model_used === 'anthropic/claude-sonnet-4.5'
-        ? 'Sonnet 4.5'
-        : result?.ai_model_used || '';
+      : result?.ai_model_used === 'anthropic/claude-haiku-4.5'
+        ? 'Haiku 4.5'
+        : result?.ai_model_used === 'anthropic/claude-sonnet-4.5'
+          ? 'Sonnet 4.5'
+          : result?.ai_model_used || '';
 
   return <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
     <div className="mb-3 flex items-start justify-between gap-3">
@@ -1089,11 +1097,13 @@ function QuickParseBlock({ value, onChange, onParse, loading, result, onClear })
       <div className="text-xs text-slate-500">Сложные заказы “как обычно” и несколько точек лучше вносить руками.</div>
     </div>
 
-    {result && <div className={`mt-3 rounded-2xl border p-3 text-sm ${result.success && !result.needs_clarification ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-amber-200 bg-amber-50 text-amber-900'}`}>
+    {result && <div className={`mt-3 rounded-2xl border p-3 text-sm ${isCleanResult ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-amber-200 bg-amber-50 text-amber-900'}`}>
       <div className="font-semibold">
-        {result.success && !result.needs_clarification
+        {isCleanResult
           ? `Разбор готов: ${itemCount} позиций, ${totalQty} шт`
-          : (result.message || 'Нужно проверить вручную')}
+          : isPartialResult
+            ? `Частично разобрано: ${itemCount} позиций, ${totalQty} шт. Проверь ниже.`
+            : (result.message || 'Нужно проверить вручную')}
       </div>
 
       {result.warnings?.length > 0 && <div className="mt-2 space-y-1">
