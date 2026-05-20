@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OMOTI — Заказы B2B</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=Ux5Q42EzPrOi5HxrnGCdo5EaREThQheatFvwDORQhuJYAtzT-8oOC29VbkuNrWkGse6h0xz5jFoh6TTk-GWtVOZMkmhProjrwjR9FQrVgWktjEE4zEtcTWEgVpR7tGrJ41MNzGf5CYQcOJRK2HEVeDMgnrkZ6SaXQPpHS_jjf_ZRnZlydlxbCFY39ivP5aLNWhhPLwT-I0AcAHgT46iwV7uY5Q1AHC5hgNRDTCsxyUJfa0N-oP-oaWvLyYxOhagb4miq5q1K3vPbayjs4P7YHMeqIi-DP9hxnhR2yhEH2hriw2srlugG_ZolC4Qb7ZPbEFSYLjypukIQoVkn3i4V9Q" charset="UTF-8"></script><script src="https://cdn.tailwindcss.com"></script>
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -29,16 +29,17 @@
   /* Печать листа сборки */
   .print-area { display: none; }
   @media print {
-    @page { size: A4 portrait; margin: 10mm; }
+    @page { size: A4 portrait; margin: 7mm; }
     body { background: #fff !important; }
     body * { visibility: hidden !important; }
     .print-area, .print-area * { visibility: visible !important; }
     .print-area { display: block !important; position: absolute; left: 0; top: 0; width: 100%; color: #111827; font-family: Arial, sans-serif; }
-    .print-card { page-break-inside: avoid; break-inside: avoid; border: 1px solid #111827; border-radius: 8px; padding: 10px; margin-bottom: 10px; }
+    .print-card { page-break-inside: avoid; break-inside: avoid; border: 1px solid #111827; border-radius: 7px; padding: 7px 8px; margin-bottom: 6px; }
     .print-muted { color: #4b5563; }
-    .print-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    .print-table th, .print-table td { border: 1px solid #d1d5db; padding: 4px 6px; }
+    .print-table { width: 100%; border-collapse: collapse; font-size: 10.5px; table-layout: fixed; }
+    .print-table th, .print-table td { border: 1px solid #d1d5db; padding: 2px 4px; vertical-align: middle; }
     .print-table th { background: #f3f4f6; text-align: left; }
+    .print-item-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   }
 
 </style>
@@ -453,6 +454,7 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
   const [quickText, setQuickText] = useState('');
   const [quickParsing, setQuickParsing] = useState(false);
   const [quickParseResult, setQuickParseResult] = useState(null);
+  const skipClientAutofillRef = useRef(false);
 
   const isEditMode = !!editOrderId;
 
@@ -597,6 +599,7 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
         };
       });
 
+    skipClientAutofillRef.current = true;
     setClientId(nextClientId);
     setPointId(nextPointId);
     setLegalId(nextLegalId);
@@ -680,10 +683,18 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
   const prevClientIdRef = useRef(clientId);
   useEffect(() => {
     if (!clientId) {
+      skipClientAutofillRef.current = false;
       setPointId('');
       setLegalId('');
       setHistory([]);
       prevClientIdRef.current = '';
+      return;
+    }
+
+    if (skipClientAutofillRef.current) {
+      skipClientAutofillRef.current = false;
+      loadHistory(clientId);
+      prevClientIdRef.current = clientId;
       return;
     }
 
@@ -1555,6 +1566,7 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
       documents_status: res.documents_status || 'full',
       waybill_id: res.waybill_id || '',
       waybill_number: res.waybill_number || '',
+      waybill_url: res.waybill_url || '',
       invoice_id: res.invoice_id || '',
       invoice_number: res.invoice_number || '',
       invoice_url: res.invoice_url || '',
@@ -1714,7 +1726,7 @@ function InWorkOrderRow({ order, client, point, legal, expanded, items, onToggle
 function ElbaDocumentsBlock({ order, onCreated, showToast }) {
   const [creating, setCreating] = useState(false);
 
-  const hasDocs = !!(order.invoice_id || order.waybill_id || order.invoice_url);
+  const hasDocs = !!(order.invoice_id || order.waybill_id || order.invoice_url || order.waybill_url);
   const status = order.documents_status || (hasDocs ? 'full' : '');
   const statusMap = {
     full: ['Документы созданы', 'green'],
@@ -1768,14 +1780,29 @@ function ElbaDocumentsBlock({ order, onCreated, showToast }) {
     </div>
 
     <div className="space-y-2 text-xs text-slate-600">
-      {order.invoice_url && <a
-        href={order.invoice_url}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-flex rounded-xl bg-slate-950 px-3 py-2 font-medium text-white hover:bg-slate-800"
-      >
-        Открыть счёт
-      </a>}
+      <div className="flex flex-wrap gap-2">
+        {order.invoice_url && <a
+          href={order.invoice_url}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex rounded-xl bg-slate-950 px-3 py-2 font-medium text-white hover:bg-slate-800"
+        >
+          Открыть счёт
+        </a>}
+
+        {order.waybill_url && <a
+          href={order.waybill_url}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex rounded-xl bg-white px-3 py-2 font-medium text-slate-900 border border-slate-200 hover:bg-slate-50"
+        >
+          Открыть ТН
+        </a>}
+      </div>
+
+      {order.waybill_number && !order.waybill_url && <div>
+        <span className="text-slate-400">ТН:</span> №{order.waybill_number} создана. Ссылку можно открыть в Эльбе.
+      </div>}
 
       {order.documents_created_at && <div>
         <span className="text-slate-400">Создано:</span> {displayDate(order.documents_created_at)}
@@ -2013,13 +2040,22 @@ function AssemblyOrderCard({ order, client, point, selected, onSelect, onAssembl
 function PrintAssemblySheet({ orders, clientById, pointById }) {
   const printedAt = new Date().toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   const totalMoti = (orders || []).reduce((s, o) => s + Number(o.total_qty_moti || 0), 0);
+
+  const makePrintRows = (items) => {
+    const rows = [];
+    for (let i = 0; i < items.length; i += 2) {
+      rows.push([items[i], items[i + 1] || null]);
+    }
+    return rows;
+  };
+
   return <div>
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
       <div>
-        <div style={{ fontSize: 22, fontWeight: 700 }}>OMOTI · Лист сборки</div>
-        <div className="print-muted" style={{ fontSize: 12 }}>Распечатано: {printedAt}</div>
+        <div style={{ fontSize: 19, fontWeight: 700 }}>OMOTI · Лист сборки</div>
+        <div className="print-muted" style={{ fontSize: 11 }}>Распечатано: {printedAt}</div>
       </div>
-      <div style={{ textAlign: 'right', fontSize: 12 }}>
+      <div style={{ textAlign: 'right', fontSize: 11 }}>
         <div><b>Заказов:</b> {orders.length}</div>
         <div><b>Моти:</b> {totalMoti} шт</div>
       </div>
@@ -2030,26 +2066,43 @@ function PrintAssemblySheet({ orders, clientById, pointById }) {
       const point = pointById[order.point_id];
       const motiItems = (order.items || []).filter(i => i.type === 'moti' && Number(i.qty) > 0);
       const extraItems = (order.items || []).filter(i => i.type === 'extra' && Number(i.qty) > 0);
+      const rows = makePrintRows(motiItems);
+      const extraText = extraItems.length
+        ? extraItems.map(it => `${it.name_snapshot} × ${it.qty}`).join('; ')
+        : '';
+
       return <div key={order.order_id} className="print-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, marginBottom: 5 }}>
           <div>
-            <div style={{ fontSize: 16, fontWeight: 700 }}>{client?.name || order.client_id}</div>
-            <div style={{ fontSize: 12 }}><b>Адрес:</b> {point?.address || '—'}</div>
-            {order.comment && <div style={{ fontSize: 12, marginTop: 4 }}><b>Комментарий:</b> {order.comment}</div>}
+            <div style={{ fontSize: 14, fontWeight: 700, lineHeight: 1.15 }}>{client?.name || order.client_id}</div>
+            <div style={{ fontSize: 10.5 }}><b>Адрес:</b> {point?.address || '—'}</div>
+            {order.comment && <div style={{ fontSize: 10.5, marginTop: 2 }}><b>Комм.:</b> {order.comment}</div>}
+            {extraText && <div style={{ fontSize: 10.5, marginTop: 2 }}><b>Упаковка:</b> {extraText}</div>}
           </div>
-          <div style={{ textAlign: 'right', minWidth: 120 }}>
-            <div style={{ fontWeight: 700 }}>{order.order_no}</div>
-            <div style={{ fontSize: 12 }}>доставка: {displayDate(order.delivery_date) || '—'}</div>
-            <div style={{ fontSize: 12 }}>моти: {order.total_qty_moti || 0} шт</div>
+          <div style={{ textAlign: 'right', minWidth: 96, fontSize: 10.5 }}>
+            <div style={{ fontWeight: 700, fontSize: 13 }}>{order.order_no}</div>
+            <div>доставка: {displayDate(order.delivery_date) || '—'}</div>
+            <div>моти: <b>{order.total_qty_moti || 0} шт</b></div>
           </div>
         </div>
+
         <table className="print-table">
-          <thead><tr><th>Вкус / позиция</th><th style={{ width: 70, textAlign: 'right' }}>Кол-во</th><th style={{ width: 90 }}>Отметка</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Вкус</th><th style={{ width: 40, textAlign: 'right' }}>Кол</th><th style={{ width: 54 }}>Отм.</th>
+              <th>Вкус</th><th style={{ width: 40, textAlign: 'right' }}>Кол</th><th style={{ width: 54 }}>Отм.</th>
+            </tr>
+          </thead>
           <tbody>
-            {motiItems.map((it, idx) => <tr key={it.item_id || idx}><td>{it.name_snapshot}</td><td style={{ textAlign: 'right', fontWeight: 700 }}>{it.qty}</td><td></td></tr>)}
-            {motiItems.length === 0 && <tr><td colSpan="3">Позиции не найдены</td></tr>}
-            {extraItems.length > 0 && <tr><th colSpan="3">Упаковка</th></tr>}
-            {extraItems.map((it, idx) => <tr key={it.item_id || idx}><td>{it.name_snapshot}</td><td style={{ textAlign: 'right', fontWeight: 700 }}>{it.qty}</td><td></td></tr>)}
+            {rows.map((pair, idx) => <tr key={idx}>
+              <td className="print-item-name">{pair[0]?.name_snapshot || ''}</td>
+              <td style={{ textAlign: 'right', fontWeight: 700 }}>{pair[0]?.qty || ''}</td>
+              <td></td>
+              <td className="print-item-name">{pair[1]?.name_snapshot || ''}</td>
+              <td style={{ textAlign: 'right', fontWeight: 700 }}>{pair[1]?.qty || ''}</td>
+              <td></td>
+            </tr>)}
+            {motiItems.length === 0 && <tr><td colSpan="6">Позиции не найдены</td></tr>}
           </tbody>
         </table>
       </div>;
@@ -2181,6 +2234,7 @@ function HistoryPage({ clients, points, legals, flavors, extras, showToast, onEd
       documents_status: res.documents_status || 'full',
       waybill_id: res.waybill_id || '',
       waybill_number: res.waybill_number || '',
+      waybill_url: res.waybill_url || '',
       invoice_id: res.invoice_id || '',
       invoice_number: res.invoice_number || '',
       invoice_url: res.invoice_url || '',
@@ -2339,6 +2393,7 @@ function UsagePage() {
       slate: 'border-slate-200 bg-slate-50 text-slate-700',
       amber: 'border-amber-200 bg-amber-50 text-amber-900',
       green: 'border-emerald-200 bg-emerald-50 text-emerald-900',
+      blue: 'border-blue-200 bg-blue-50 text-blue-900',
     };
     return <div className={`rounded-2xl border px-4 py-3 text-sm leading-relaxed ${colors[color]}`}>{children}</div>;
   };
@@ -2346,51 +2401,69 @@ function UsagePage() {
   return <>
     <header className="rounded-3xl bg-white p-5 shadow-sm">
       <h1 className="text-2xl font-semibold tracking-tight">Как пользоваться дашбордом</h1>
-      <p className="mt-1 text-sm text-slate-500">Короткая инструкция. Без лишнего.</p>
+      <p className="mt-1 text-sm text-slate-500">Коротко. Для обычной работы, без технических слов.</p>
     </header>
 
     <div className="grid grid-cols-[1fr_0.9fr] gap-5">
       <div className="space-y-5">
-        <Step number="1" title="Создать заказ">
-          <p>Открой вкладку <b>Новый заказ</b>.</p>
-          <p>Выбери клиента. Потом проверь адрес, юрлицо и дату доставки.</p>
-          <p>Добавь вкусы: слева цена, справа количество. Пустое количество значит вкус не нужен.</p>
-          <p>Когда всё проверила, нажми <b>Сохранить заказ</b>.</p>
+        <Step number="1" title="Новый заказ">
+          <p>Открой <b>Новый заказ</b>.</p>
+          <p>Выбери клиента, дату, адрес и юрлицо. Если дашборд сам что-то подставил — всё равно проверь.</p>
+          <p>В блоке <b>Моти</b>: первое поле — цена, второе — количество.</p>
+          <p>Пустое количество значит, что этот вкус не нужен.</p>
+          <p>Проверь сумму и нажми <b>Сохранить заказ</b>.</p>
         </Step>
 
         <Step number="2" title="Быстрый ввод из сообщения">
-          <p>Скопируй сообщение клиента и вставь в поле <b>Быстрый ввод</b>.</p>
+          <p>Скопируй сообщение клиента и вставь в большое поле сверху.</p>
           <p>Нажми <b>Разобрать и заполнить</b>.</p>
-          <p>Дашборд сам попробует найти клиента, адрес, юрлицо и вкусы.</p>
-          <p>Перед сохранением всё равно проверь заказ глазами.</p>
+          <p>Если клиент или вкус не найден — это не страшно. Дашборд покажет предупреждение.</p>
+          <p>Найденные вкусы всё равно могут добавиться в заказ. Остальное поправь руками.</p>
         </Step>
 
-        <Step number="3" title="Если появилась жёлтая плашка">
-          <p>Это не страшно. Дашборд просто просит проверить спорное место.</p>
-          <p><b>Клиент не найден</b> - выбери клиента вручную.</p>
-          <p><b>Не найдено: вкус</b> - этот вкус не добавился. Добавь его руками или уточни у Евгения.</p>
-          <p>Остальные найденные вкусы могут уже стоять в заказе.</p>
+        <Step number="3" title="Жёлтая плашка">
+          <p>Жёлтая плашка значит: “проверь руками”.</p>
+          <p><b>Клиент не найден</b> — выбери клиента сама.</p>
+          <p><b>Адрес не найден</b> — выбери филиал вручную. Особенно если у клиента несколько точек.</p>
+          <p><b>Юрлицо не найдено</b> — выбери, если нужны документы.</p>
+          <p><b>Не найдено: вкус</b> — этот вкус не добавился. Добавь вручную или уточни.</p>
         </Step>
 
         <Step number="4" title="В работе">
-          <p>Тут лежат заказы, которые ещё не отгружены.</p>
-          <p><b>Новый</b> - заказ только создан.</p>
-          <p><b>Собран</b> - заказ уже собрали.</p>
-          <p><b>Отгружен</b> - заказ уехал клиенту.</p>
-          <p>Если заказ изменили, нажми <b>Обновить</b>.</p>
+          <p>Здесь все заказы, которые ещё не отгружены.</p>
+          <p><b>Новый</b> — заказ создан, его надо собрать.</p>
+          <p><b>Собран</b> — заказ готов к отгрузке.</p>
+          <p><b>Отгружен</b> — заказ уехал клиенту.</p>
+          <p>Если что-то не обновилось, нажми <b>Обновить</b>.</p>
         </Step>
 
-        <Step number="5" title="Сборка / печать">
-          <p>Эта вкладка нужна, чтобы удобно собрать заказы по вкусам.</p>
-          <p>Открой нужный день и проверь, что надо собрать.</p>
-          <p>Можно распечатать лист сборки.</p>
+        <Step number="5" title="Эльба: счёт и ТН">
+          <p>Открой заказ во вкладке <b>В работе</b> или <b>История</b>.</p>
+          <p>Проверь клиента, юрлицо, адрес, сумму и позиции.</p>
+          <p>Нажми <b>Создать документы</b>. Дашборд создаст в Эльбе счёт и товарную накладную.</p>
+          <p>После создания появятся номера документов: <b>Счёт №...</b> и <b>ТН №...</b>.</p>
+          <p>Если появилась красная ошибка — не нажимай много раз. Скопируй ошибку и отправь Евгению.</p>
         </Step>
 
-        <Step number="6" title="История и исправления">
+        <Step number="6" title="Сборка / печать">
+          <p>Здесь заказы для сборки.</p>
+          <p>Можно выбрать нужные заказы галочками и распечатать лист сборки.</p>
+          <p>Если ничего не выбрано, печатаются все видимые заказы.</p>
+          <p>После сборки нажми <b>Собран</b>.</p>
+        </Step>
+
+        <Step number="7" title="История и исправления">
           <p><b>История</b> нужна, чтобы найти старый заказ.</p>
-          <p>Если нужно поправить заказ, нажми <b>Редактировать</b>.</p>
+          <p>Если заказ надо поправить, нажми <b>Редактировать</b>.</p>
           <p>Дашборд создаст новый исправленный заказ, а старый пометит отменённым.</p>
           <p>Реальные заказы лучше не удалять без причины.</p>
+        </Step>
+
+        <Step number="8" title="Экспорт в Excel">
+          <p>Открой <b>Экспорт в Excel</b>.</p>
+          <p>Выбери даты доставки и нажми <b>Обновить</b>.</p>
+          <p>Галочки по умолчанию сняты. Отметь только нужные строки.</p>
+          <p>Нажми <b>Скопировать выбранные</b> и вставь в Excel в колонку I.</p>
         </Step>
       </div>
 
@@ -2399,44 +2472,47 @@ function UsagePage() {
           <h2 className="text-lg font-semibold">Перед сохранением проверь</h2>
           <div className="mt-4 space-y-3 text-sm text-slate-700">
             <div className="flex gap-3"><span className="text-emerald-600">✓</span><span>Клиент выбран правильно.</span></div>
-            <div className="flex gap-3"><span className="text-emerald-600">✓</span><span>Адрес доставки правильный.</span></div>
-            <div className="flex gap-3"><span className="text-emerald-600">✓</span><span>Юрлицо правильное.</span></div>
+            <div className="flex gap-3"><span className="text-emerald-600">✓</span><span>Адрес/филиал правильный.</span></div>
+            <div className="flex gap-3"><span className="text-emerald-600">✓</span><span>Юрлицо правильное, если нужны документы.</span></div>
             <div className="flex gap-3"><span className="text-emerald-600">✓</span><span>Дата доставки верная.</span></div>
-            <div className="flex gap-3"><span className="text-emerald-600">✓</span><span>Вкусы и количество совпадают с сообщением клиента.</span></div>
+            <div className="flex gap-3"><span className="text-emerald-600">✓</span><span>Вкусы и количества совпадают с сообщением клиента.</span></div>
             <div className="flex gap-3"><span className="text-emerald-600">✓</span><span>Цена не сбилась.</span></div>
             <div className="flex gap-3"><span className="text-emerald-600">✓</span><span>Комментарий добавлен, если он нужен.</span></div>
           </div>
         </Card>
 
         <Note color="amber">
-          <b>Важно:</b> быстрый ввод помогает, но не заменяет проверку. Если клиент написал странно, лучше поправить руками.
+          <b>Важно:</b> быстрый ввод помогает, но не заменяет проверку. Если дашборд выбрал не тот адрес или клиента — исправь руками до сохранения.
         </Note>
 
         <Note color="green">
           <b>Если клиент пишет “как обычно”:</b> лучше скопировать прошлый заказ из истории или внести руками. Дашборд не должен сам угадывать вкусы.
         </Note>
 
+        <Note color="blue">
+          <b>Документы:</b> перед Эльбой всегда проверь юрлицо. Если клиент работает без документов, счёт и ТН создавать не надо.
+        </Note>
+
         <Card className="p-5">
           <h2 className="text-lg font-semibold">Частые ошибки</h2>
           <div className="mt-4 space-y-3 text-sm leading-relaxed text-slate-600">
             <p><b>Не выбрала клиента.</b><br />Заказ не сохранится. Нужно выбрать клиента из списка.</p>
-            <p><b>Не тот адрес.</b><br />Проверь адрес после выбора клиента. У некоторых клиентов несколько точек.</p>
+            <p><b>Не тот адрес.</b><br />У некоторых клиентов несколько точек. Адрес проверяем обязательно.</p>
             <p><b>Не то юрлицо.</b><br />Если у клиента несколько ИП/ООО, проверь внимательно.</p>
             <p><b>Вкус не найден.</b><br />Добавь похожий вкус вручную или напиши Евгению, чтобы добавил алиас.</p>
+            <p><b>Документы не создались.</b><br />Не жми повторно много раз. Скинь ошибку Евгению.</p>
             <p><b>Случайно ошиблась.</b><br />Открой заказ и нажми “Редактировать”.</p>
           </div>
         </Card>
 
         <Card className="p-5 bg-slate-950 text-white">
           <h2 className="text-lg font-semibold">Главное правило</h2>
-          <p className="mt-3 text-sm leading-relaxed text-slate-300">Лучше потратить 20 секунд на проверку, чем потом переделывать заказ, документы и сборку.</p>
+          <p className="mt-3 text-sm leading-relaxed text-slate-300">Лучше проверить 20 секунд, чем потом переделывать заказ, документы и сборку.</p>
         </Card>
       </div>
     </div>
   </>;
 }
-
-// ===== Экспорт =====
 
 function ExportPage({ showToast }) {
   const [rows, setRows] = useState([]);
@@ -2456,7 +2532,7 @@ function ExportPage({ showToast }) {
       setRows(nextRows);
       setColumns(res.columns || []);
       const nextSelected = {};
-      nextRows.forEach((row, index) => { nextSelected[rowKey(row, index)] = true; });
+      nextRows.forEach((row, index) => { nextSelected[rowKey(row, index)] = false; });
       setSelectedKeys(nextSelected);
     } catch (err) {
       showToast('Ошибка: ' + err.message, 'error');
@@ -2515,7 +2591,7 @@ function ExportPage({ showToast }) {
 
       <div className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-900 mb-5">
         Колонки идут в порядке Excel: I, J, K, L, M, N..AO, AP, AR. AQ «Количество» пропущена — её считает формула.
-        Отметь нужные строки галочками, скопируй и вставь в Excel начиная с пустой строки в колонку I.
+        Галочки по умолчанию сняты. Отметь только нужные строки, скопируй и вставь в Excel начиная с пустой строки в колонку I.
       </div>
 
       {!loading && rows.length > 0 && <div className="mb-3 flex items-center justify-between gap-3">
