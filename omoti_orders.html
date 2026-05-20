@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OMOTI — Заказы B2B v30</title>
 <!-- v29: aggregate duplicate parsed items -->
-<script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=seYpl0vmjEbdDcN2d3EF4ii58cxWI372SHIGlXrb6R3XMSjyw1lC-fXxzu7fIMtOWCUp33JOtqnMks8YzrhSTNUc-5njjjd7yZCLc7P9-X2tKuVd8TKtcynbm8GtmGrfDhPnqV4_D8kPzxOdsDWbxDOOyI6MpPt4R28ivKaL1IpBpa6C88wu-T03lQtAXgE7y8spqF8d1Rftsp53eNy41qRtYgCyBEFFHkti6kMIUcaQ4zrjbM-LNBkI3h4o4DuFBaCyN8AANrjwkwxwhT9JbDCFvZceRjfw2fYlUrICQ0BtDKf9PMbRM4SV_ZadH6iseNnCRHXulvQoko7_PPz6LT-Q8bpvTno0hLsCb4-Ga5U" charset="UTF-8"></script><script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.tailwindcss.com"></script>
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -1722,17 +1722,7 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
   };
 
   const applyElbaResult = (orderId, res) => {
-    const updates = {
-      documents_status: res.documents_status || 'full',
-      waybill_id: res.waybill_id || '',
-      waybill_number: res.waybill_number || '',
-      waybill_url: res.waybill_url || '',
-      invoice_id: res.invoice_id || '',
-      invoice_number: res.invoice_number || '',
-      invoice_url: res.invoice_url || '',
-      documents_error: res.link_error || '',
-      documents_created_at: new Date().toISOString(),
-    };
+    const updates = getElbaResultUpdates(res || {});
     setOrders(prev => prev.map(o => o.order_id === orderId ? { ...o, ...updates } : o));
   };
 
@@ -1883,10 +1873,79 @@ function InWorkOrderRow({ order, client, point, legal, expanded, items, onToggle
 
 // ===== Документы Эльбы =====
 
+
+function pickDocValue(obj, paths) {
+  for (const path of paths) {
+    const parts = String(path).split('.');
+    let cur = obj;
+    for (const part of parts) {
+      if (cur == null) break;
+      cur = cur[part];
+    }
+    if (cur !== undefined && cur !== null && String(cur).trim() !== '') return cur;
+  }
+  return '';
+}
+
+function getInvoiceNumber(order) {
+  return pickDocValue(order, [
+    'invoice_number', 'bill_number', 'invoice.no', 'invoice.number', 'bill.no', 'bill.number',
+    'documents.invoice_number', 'documents.bill_number'
+  ]);
+}
+
+function getInvoiceUrl(order) {
+  return pickDocValue(order, [
+    'invoice_url', 'bill_url', 'invoice.link', 'invoice.url', 'bill.link', 'bill.url',
+    'documents.invoice_url', 'documents.bill_url'
+  ]);
+}
+
+function getWaybillNumber(order) {
+  return pickDocValue(order, [
+    'waybill_number', 'waybill_no', 'waybill_number_text',
+    'torg12_number', 'torg_12_number', 'torg_number', 'tn_number', 'nakladnaya_number',
+    'waybill.no', 'waybill.number', 'torg12.no', 'torg12.number', 'tn.no', 'tn.number',
+    'documents.waybill_number', 'documents.torg12_number', 'documents.tn_number'
+  ]);
+}
+
+function getWaybillUrl(order) {
+  return pickDocValue(order, [
+    'waybill_url', 'waybill_link', 'waybill_print_url',
+    'torg12_url', 'torg_12_url', 'torg_url', 'tn_url', 'nakladnaya_url',
+    'waybill.link', 'waybill.url', 'torg12.link', 'torg12.url', 'tn.link', 'tn.url',
+    'documents.waybill_url', 'documents.torg12_url', 'documents.tn_url'
+  ]);
+}
+
+function getElbaResultUpdates(res) {
+  const invoiceNumber = getInvoiceNumber(res);
+  const invoiceUrl = getInvoiceUrl(res);
+  const waybillNumber = getWaybillNumber(res);
+  const waybillUrl = getWaybillUrl(res);
+  return {
+    documents_status: res.documents_status || (invoiceNumber || invoiceUrl || waybillNumber || waybillUrl ? 'full' : ''),
+    waybill_id: res.waybill_id || res.torg12_id || res.tn_id || pickDocValue(res, ['waybill.id', 'torg12.id', 'tn.id']) || '',
+    waybill_number: waybillNumber || '',
+    waybill_url: waybillUrl || '',
+    invoice_id: res.invoice_id || res.bill_id || pickDocValue(res, ['invoice.id', 'bill.id']) || '',
+    invoice_number: invoiceNumber || '',
+    invoice_url: invoiceUrl || '',
+    documents_error: res.link_error || res.documents_error || '',
+    documents_created_at: new Date().toISOString(),
+  };
+}
+
 function ElbaDocumentsBlock({ order, client, point, legal, onCreated, showToast }) {
   const [creating, setCreating] = useState(false);
 
-  const hasDocs = !!(order.invoice_id || order.waybill_id || order.invoice_url || order.waybill_url);
+  const invoiceNumber = getInvoiceNumber(order);
+  const invoiceUrl = getInvoiceUrl(order);
+  const waybillNumber = getWaybillNumber(order);
+  const waybillUrl = getWaybillUrl(order);
+
+  const hasDocs = !!(order.invoice_id || order.waybill_id || invoiceUrl || waybillUrl || invoiceNumber || waybillNumber);
   const status = order.documents_status || (hasDocs ? 'full' : '');
   const statusMap = {
     full: ['Документы созданы', 'green'],
@@ -1912,12 +1971,14 @@ function ElbaDocumentsBlock({ order, client, point, legal, onCreated, showToast 
         force,
       });
 
-      onCreated(order.order_id, res);
+      const normalizedRes = { ...res, ...getElbaResultUpdates(res || {}) };
+      onCreated(order.order_id, normalizedRes);
       clearPageCache('inwork');
       clearPageCache('history');
 
-      const invoiceText = res.invoice_number ? `Счёт №${res.invoice_number}` : 'Счёт';
-      showToast(`${invoiceText} и накладная созданы`);
+      const invoiceText = getInvoiceNumber(normalizedRes) ? `Счёт №${getInvoiceNumber(normalizedRes)}` : 'Счёт';
+      const waybillText = getWaybillNumber(normalizedRes) ? `ТН №${getWaybillNumber(normalizedRes)}` : 'ТН';
+      showToast(`${invoiceText} и ${waybillText} созданы`);
     } catch (err) {
       showToast('Ошибка Эльбы: ' + err.message, 'error');
     }
@@ -1942,20 +2003,20 @@ function ElbaDocumentsBlock({ order, client, point, legal, onCreated, showToast 
   };
 
   const handleCopyInvoice = async () => {
-    if (!order.invoice_url) {
+    if (!invoiceUrl) {
       showToast('Ссылка на счёт не найдена', 'warn');
       return;
     }
 
     const clientName = client?.name || order.client_name || order.client_id || 'Оптовик';
-    const invoiceNumber = order.invoice_number ? `№${order.invoice_number}` : 'без номера';
+    const invoiceNoText = invoiceNumber ? `№${invoiceNumber}` : 'без номера';
     const invoiceDate = displayDate(order.invoice_date || order.documents_created_at || order.created_at || today());
     const text = [
       clientName,
-      `Счёт ${invoiceNumber} от ${invoiceDate}`,
+      `Счёт ${invoiceNoText} от ${invoiceDate}`,
       `Сумма: ${money(order.total_amount)}`,
       '',
-      order.invoice_url,
+      invoiceUrl,
     ].join('\n');
 
     try {
@@ -1967,11 +2028,11 @@ function ElbaDocumentsBlock({ order, client, point, legal, onCreated, showToast 
   };
 
   const handlePrintWaybill = () => {
-    if (!order.waybill_url) {
-      showToast('Ссылка на ТН не найдена', 'warn');
+    if (!waybillUrl) {
+      showToast('Ссылка на ТН не пришла из Эльбы. Нужно доработать Elba.gs, чтобы он возвращал ссылку на накладную.', 'warn');
       return;
     }
-    window.open(order.waybill_url, '_blank', 'noopener,noreferrer');
+    window.open(waybillUrl, '_blank', 'noopener,noreferrer');
   };
 
   return <div className="rounded-2xl border border-slate-200 bg-white p-4">
@@ -1980,8 +2041,9 @@ function ElbaDocumentsBlock({ order, client, point, legal, onCreated, showToast 
         <h4 className="font-semibold text-sm text-slate-700">Документы Эльбы</h4>
         <div className="mt-1 flex flex-wrap items-center gap-2">
           <Pill color={statusColor}>{statusLabel}</Pill>
-          {order.invoice_number && <span className="text-xs text-slate-500">Счёт №{order.invoice_number}</span>}
-          {order.waybill_number && <span className="text-xs text-slate-500">ТН №{order.waybill_number}</span>}
+          {invoiceNumber && <span className="text-xs text-slate-500">Счёт №{invoiceNumber}</span>}
+          {waybillNumber && <span className="text-xs text-slate-500">ТН №{waybillNumber}</span>}
+          {hasDocs && !waybillNumber && <span className="text-xs text-amber-700">ТН: номер не пришёл</span>}
         </div>
       </div>
       <Button onClick={handleCreate} variant={hasDocs ? 'light' : 'success'} size="sm" disabled={creating}>
@@ -1991,7 +2053,7 @@ function ElbaDocumentsBlock({ order, client, point, legal, onCreated, showToast 
 
     <div className="space-y-2 text-xs text-slate-600">
       <div className="flex flex-wrap gap-2">
-        {order.invoice_url && <button
+        {invoiceUrl && <button
           type="button"
           onClick={handleCopyInvoice}
           className="inline-flex rounded-xl bg-slate-950 px-3 py-2 font-medium text-white hover:bg-slate-800"
@@ -1999,17 +2061,22 @@ function ElbaDocumentsBlock({ order, client, point, legal, onCreated, showToast 
           Скопировать счёт
         </button>}
 
-        {order.waybill_url && <button
+        {hasDocs && <button
           type="button"
           onClick={handlePrintWaybill}
-          className="inline-flex rounded-xl bg-white px-3 py-2 font-medium text-slate-900 border border-slate-200 hover:bg-slate-50"
+          className={`inline-flex rounded-xl px-3 py-2 font-medium border ${waybillUrl ? 'bg-white text-slate-900 border-slate-200 hover:bg-slate-50' : 'bg-slate-100 text-slate-400 border-slate-200'}`}
+          title={waybillUrl ? 'Открыть ТН для печати' : 'Ссылка на ТН не пришла из backend'}
         >
           Распечатать ТН
         </button>}
       </div>
 
-      {order.waybill_number && !order.waybill_url && <div>
-        <span className="text-slate-400">ТН:</span> №{order.waybill_number} создана. Ссылку можно открыть в Эльбе.
+      {waybillNumber && !waybillUrl && <div>
+        <span className="text-slate-400">ТН:</span> №{waybillNumber} создана, но ссылки на печать нет.
+      </div>}
+
+      {hasDocs && !waybillNumber && <div className="rounded-xl bg-amber-50 px-3 py-2 text-amber-800">
+        ТН в Эльбе, скорее всего, создана, но frontend не получил номер/ссылку. Проверь, что Elba.gs возвращает <b>waybill_number</b> и <b>waybill_url</b>.
       </div>}
 
       {order.documents_created_at && <div>
@@ -2022,9 +2089,6 @@ function ElbaDocumentsBlock({ order, client, point, legal, onCreated, showToast 
     </div>
   </div>;
 }
-
-
-// ===== Сборка / печать =====
 
 function AssemblyPage({ clients, points, showToast, onEditOrder }) {
   const initialCache = getPageCache('assembly_new');
@@ -2438,17 +2502,7 @@ function HistoryPage({ clients, points, legals, flavors, extras, showToast, onEd
   };
 
   const applyElbaResult = (orderId, res) => {
-    const updates = {
-      documents_status: res.documents_status || 'full',
-      waybill_id: res.waybill_id || '',
-      waybill_number: res.waybill_number || '',
-      waybill_url: res.waybill_url || '',
-      invoice_id: res.invoice_id || '',
-      invoice_number: res.invoice_number || '',
-      invoice_url: res.invoice_url || '',
-      documents_error: res.link_error || '',
-      documents_created_at: new Date().toISOString(),
-    };
+    const updates = getElbaResultUpdates(res || {});
     setOrders(prev => prev.map(o => o.order_id === orderId ? { ...o, ...updates } : o));
   };
 
