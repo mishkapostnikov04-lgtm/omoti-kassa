@@ -644,19 +644,27 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
 
         applyParsedDraft(res.draft);
 
-        const totalParsed = draftItems.reduce((sum, i) => sum + Number(i.qty || 0), 0);
+        const parsedMotiItems = draftItems.filter(i => i.type === 'moti');
+        const parsedExtraItems = draftItems.filter(i => i.type === 'extra');
+        const totalParsedMoti = parsedMotiItems.reduce((sum, i) => sum + Number(i.qty || 0), 0);
+        const totalParsedExtra = parsedExtraItems.reduce((sum, i) => sum + Number(i.qty || 0), 0);
+        const parsedSummary = totalParsedExtra > 0
+          ? `${parsedMotiItems.length} вкусов, ${totalParsedMoti} моти + упаковка ${totalParsedExtra} шт`
+          : `${parsedMotiItems.length || draftItems.length} позиций, ${totalParsedMoti} шт`;
         const model = res.ai_model_used === 'fallback_js'
           ? 'без ИИ'
           : res.ai_model_used === 'openai/gpt-4.1-mini'
             ? 'GPT-4.1 mini'
-            : res.ai_model_used === 'anthropic/claude-sonnet-4.5'
-              ? 'Sonnet 4.5'
-              : res.ai_model_used || 'ИИ';
+            : res.ai_model_used === 'anthropic/claude-haiku-4.5'
+              ? 'Haiku 4.5'
+              : res.ai_model_used === 'anthropic/claude-sonnet-4.5'
+                ? 'Sonnet 4.5'
+                : res.ai_model_used || 'ИИ';
 
         if (res.success && !res.needs_clarification) {
-          showToast(`Заказ разобран: ${totalParsed} шт · ${model}`);
+          showToast(`Заказ разобран: ${parsedSummary} · ${model}`);
         } else {
-          showToast(`Частично разобрано: ${totalParsed} шт. Проверь предупреждения.`, 'warn');
+          showToast(`Частично разобрано: ${parsedSummary}. Проверь предупреждения.`, 'warn');
         }
 
         return;
@@ -1061,8 +1069,17 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
 }
 
 function QuickParseBlock({ value, onChange, onParse, loading, result, onClear }) {
-  const itemCount = result?.draft?.items?.length || 0;
-  const totalQty = (result?.draft?.items || []).reduce((sum, i) => sum + Number(i.qty || 0), 0);
+  const parsedItems = result?.draft?.items || [];
+  const motiItems = parsedItems.filter(i => i.type === 'moti');
+  const extraItems = parsedItems.filter(i => i.type === 'extra');
+  const itemCount = parsedItems.length || 0;
+  const motiCount = motiItems.length;
+  const extraCount = extraItems.length;
+  const totalMotiQty = motiItems.reduce((sum, i) => sum + Number(i.qty || 0), 0);
+  const totalExtraQty = extraItems.reduce((sum, i) => sum + Number(i.qty || 0), 0);
+  const parseSummaryText = totalExtraQty > 0
+    ? `${motiCount} вкусов, ${totalMotiQty} моти + упаковка ${totalExtraQty} шт`
+    : `${motiCount || itemCount} позиций, ${totalMotiQty || 0} шт`;
   const hasUnresolved = !!(result && (
     (result.unresolved?.flavors?.length || 0) > 0 ||
     (result.unresolved?.extras?.length || 0) > 0
@@ -1107,9 +1124,9 @@ function QuickParseBlock({ value, onChange, onParse, loading, result, onClear })
     {result && <div className={`mt-3 rounded-2xl border p-3 text-sm ${isCleanResult ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-amber-200 bg-amber-50 text-amber-900'}`}>
       <div className="font-semibold">
         {isCleanResult
-          ? `Разбор готов: ${itemCount} позиций, ${totalQty} шт`
+          ? `Разбор готов: ${parseSummaryText}`
           : isPartialResult
-            ? `Частично разобрано: ${itemCount} позиций, ${totalQty} шт. Проверь ниже.`
+            ? `Частично разобрано: ${parseSummaryText}. Проверь ниже.`
             : (result.message || 'Нужно проверить вручную')}
       </div>
 
