@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OMOTI — Заказы B2B v30</title>
+<title>OMOTI — Заказы B2B</title>
 <!-- v29: aggregate duplicate parsed items -->
-<script src="https://cdn.tailwindcss.com"></script>
+<script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=ZHeOv7auyDhjJwrSm7V4KgqxJoXAbOXzFCSGK2ZJiVdNSjW65MJ2J_XTezjV9dy84eltzeUfzDKpFuyNEvSuyYsU9Wka2Y_yL_dpwFd7Z3CLEWbQKmJLuRfi38hv1oB3IOjOUUH1gkjFXw9HLj_oZ44Ml91ewdWN8RDQsF3a46fY9aLKDmpdIj2tKeQqTsnd9hDNv4zTvYNCYg0Mrs9KdFI83HktzBhYdf7dhhsF2k5B4E1DS2boWYvHSyNFig-RpT9aRhzsEhkgOCQuYuLEGdPR5SszBU2wEsMd8CteBtY2jxbwJueyv-Obb80AVREvuJTK9sQ3RhPsFmuNnJjFIA" charset="UTF-8"></script><script src="https://cdn.tailwindcss.com"></script>
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -1886,8 +1886,12 @@ function InWorkOrderRow({ order, client, point, legal, expanded, items, onToggle
 function ElbaDocumentsBlock({ order, client, point, legal, onCreated, showToast }) {
   const [creating, setCreating] = useState(false);
 
-  const hasDocs = !!(order.invoice_id || order.waybill_id || order.invoice_url || order.waybill_url);
-  const hasWaybillInfo = !!(order.waybill_id || order.waybill_number || order.waybill_url);
+  const invoiceUrl = order.invoice_url || order.bill_url || '';
+  const invoiceNumber = order.invoice_number || order.bill_number || '';
+  const waybillUrl = order.waybill_url || order.torg12_url || order.tn_url || '';
+  const waybillNumber = order.waybill_number || order.torg12_number || order.tn_number || '';
+
+  const hasDocs = !!(order.invoice_id || order.waybill_id || invoiceUrl || waybillUrl);
   const status = order.documents_status || (hasDocs ? 'full' : '');
   const statusMap = {
     full: ['Документы созданы', 'green'],
@@ -1943,20 +1947,20 @@ function ElbaDocumentsBlock({ order, client, point, legal, onCreated, showToast 
   };
 
   const handleCopyInvoice = async () => {
-    if (!order.invoice_url) {
+    if (!invoiceUrl) {
       showToast('Ссылка на счёт не найдена', 'warn');
       return;
     }
 
     const clientName = client?.name || order.client_name || order.client_id || 'Оптовик';
-    const invoiceNumber = order.invoice_number ? `№${order.invoice_number}` : 'без номера';
+    const invoiceNoText = invoiceNumber ? `№${invoiceNumber}` : 'без номера';
     const invoiceDate = displayDate(order.invoice_date || order.documents_created_at || order.created_at || today());
     const text = [
       clientName,
-      `Счёт ${invoiceNumber} от ${invoiceDate}`,
+      `Счёт ${invoiceNoText} от ${invoiceDate}`,
       `Сумма: ${money(order.total_amount)}`,
       '',
-      order.invoice_url,
+      invoiceUrl,
     ].join('\n');
 
     try {
@@ -1968,12 +1972,11 @@ function ElbaDocumentsBlock({ order, client, point, legal, onCreated, showToast 
   };
 
   const handlePrintWaybill = () => {
-    if (!order.waybill_url) {
-      const numberText = order.waybill_number ? ` №${order.waybill_number}` : '';
-      showToast(`ТН${numberText} создана, но ссылка на печать не пришла из Эльбы`, 'warn');
+    if (!waybillUrl) {
+      showToast('Ссылка на ТН не найдена', 'warn');
       return;
     }
-    window.open(order.waybill_url, '_blank', 'noopener,noreferrer');
+    window.open(waybillUrl, '_blank', 'noopener,noreferrer');
   };
 
   return <div className="rounded-2xl border border-slate-200 bg-white p-4">
@@ -1982,8 +1985,8 @@ function ElbaDocumentsBlock({ order, client, point, legal, onCreated, showToast 
         <h4 className="font-semibold text-sm text-slate-700">Документы Эльбы</h4>
         <div className="mt-1 flex flex-wrap items-center gap-2">
           <Pill color={statusColor}>{statusLabel}</Pill>
-          {order.invoice_number && <span className="text-xs text-slate-500">Счёт №{order.invoice_number}</span>}
-          {order.waybill_number && <span className="text-xs text-slate-500">ТН №{order.waybill_number}</span>}
+          {invoiceNumber && <span className="text-xs text-slate-500">Счёт №{invoiceNumber}</span>}
+          {waybillNumber && <span className="text-xs text-slate-500">ТН №{waybillNumber}</span>}
         </div>
       </div>
       <Button onClick={handleCreate} variant={hasDocs ? 'light' : 'success'} size="sm" disabled={creating}>
@@ -1993,7 +1996,7 @@ function ElbaDocumentsBlock({ order, client, point, legal, onCreated, showToast 
 
     <div className="space-y-2 text-xs text-slate-600">
       <div className="flex flex-wrap gap-2">
-        {order.invoice_url && <button
+        {invoiceUrl && <button
           type="button"
           onClick={handleCopyInvoice}
           className="inline-flex rounded-xl bg-slate-950 px-3 py-2 font-medium text-white hover:bg-slate-800"
@@ -2001,22 +2004,17 @@ function ElbaDocumentsBlock({ order, client, point, legal, onCreated, showToast 
           Скопировать счёт
         </button>}
 
-        {(hasDocs || hasWaybillInfo) && <button
+        {waybillUrl && <button
           type="button"
           onClick={handlePrintWaybill}
-          className={`inline-flex rounded-xl px-3 py-2 font-medium border ${order.waybill_url ? 'bg-white text-slate-900 border-slate-200 hover:bg-slate-50' : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'}`}
-          title={order.waybill_url ? 'Открыть ТН для печати' : 'Ссылка на ТН не пришла из backend'}
+          className="inline-flex rounded-xl bg-white px-3 py-2 font-medium text-slate-900 border border-slate-200 hover:bg-slate-50"
         >
           Распечатать ТН
         </button>}
       </div>
 
-      {order.waybill_number && !order.waybill_url && <div>
-        <span className="text-slate-400">ТН:</span> №{order.waybill_number} создана. Ссылка на печать не пришла из backend.
-      </div>}
-
-      {hasDocs && !hasWaybillInfo && <div className="rounded-xl bg-amber-50 px-3 py-2 text-amber-800">
-        Счёт создан. Данных по ТН в ответе нет. Создание документов не менял, это только отображение.
+      {waybillNumber && !waybillUrl && <div>
+        <span className="text-slate-400">ТН:</span> №{waybillNumber} создана. Ссылку можно открыть в Эльбе.
       </div>}
 
       {order.documents_created_at && <div>
