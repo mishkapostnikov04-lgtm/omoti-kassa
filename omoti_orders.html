@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OMOTI — Заказы B2B</title>
-<script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=VY2iRpUhc86azwHy1Zmd3B_O77OJj2oyRNersrs2IS70vSGEJ03feMg3aT_V4lJVv5KAmH_X5OBGz4zTRupSDPOb1CO0eN1sDzQcmHnWHoz3ZdKTnXCsIM-Xg7Oo1sLqHnjgWoF8zpLO8Syq4rK2kYwXtfvcpWeW-kwDJaYBny0GybaUqQhZZfLhD-RBexzE4tA25R2T3x1C16rF1nghf2I_nj8m5zu01rXC8it2COddCAxpryglrV-tudwW1ALNBabsE1VQlp4R-bsOB0p89RYwGxZ-6hULMtdLrP8QEVyUGNlO3p3IhkR4rN10v5g8xUqZTw_hwl_s8-Q3FXgt2A" charset="UTF-8"></script><script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.tailwindcss.com"></script>
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -837,6 +837,13 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
 
   const getSaveError = () => {
     if (!clientId) return 'Выбери клиента';
+
+    // Если у клиента есть адреса в справочнике, адрес обязателен.
+    // Если адресов у клиента нет вообще — заказ можно сохранить без адреса.
+    if (clientPoints.length > 0 && !pointId) {
+      return 'Выбери адрес / филиал';
+    }
+
     if (!deliveryDate) return 'Укажи дату доставки';
     if (items.length === 0) return 'Добавь хотя бы одну позицию';
 
