@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OMOTI — Заказы B2B</title>
+<!-- v29: aggregate duplicate parsed items -->
 <script src="https://cdn.tailwindcss.com"></script>
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -106,6 +107,126 @@ function readLocalJson(key, fallback) {
 function writeLocalJson(key, value) {
   try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
 }
+
+function getOrderItemQty(item) {
+  return Number((item && (item.qty ?? item.quantity)) || 0);
+}
+
+function getOrderItemName(item) {
+  return String((item && (item.name || item.title || item.productName || item.name_snapshot || item.ref_id)) || '').trim();
+}
+
+function getOrderItemKey(item) {
+  const type = String((item && item.type) || 'moti').trim().toLowerCase();
+  const refId = String((item && item.ref_id) || getOrderItemName(item).toLowerCase()).trim().toLowerCase();
+  const priceRaw = item && (item.price ?? item.unitPrice ?? item.unit_price);
+  const price = priceRaw === undefined || priceRaw === null || priceRaw === '' ? '' : Number(priceRaw);
+  const pricePart = Number.isFinite(price) ? String(price) : '';
+  return `${type}|${refId}|${pricePart}`;
+}
+
+function aggregateOrderItems(items) {
+  const map = new Map();
+
+  (items || []).forEach(item => {
+    if (!item) return;
+
+    const qty = getOrderItemQty(item);
+    if (!Number.isFinite(qty) || qty <= 0) return;
+
+    const key = getOrderItemKey(item);
+    if (!key) return;
+
+    if (!map.has(key)) {
+      map.set(key, {
+        ...item,
+        qty,
+        quantity: qty,
+      });
+      return;
+    }
+
+    const existing = map.get(key);
+    const nextQty = getOrderItemQty(existing) + qty;
+    map.set(key, {
+      ...existing,
+      qty: nextQty,
+      quantity: nextQty,
+    });
+  });
+
+  return Array.from(map.values());
+}
+
+function isServiceOrderText(text) {
+  const s = String(text || '').trim().toLowerCase();
+  return /(^|\s)заказ\s*№?\s*\d*/i.test(s);
+}
+
+function normalizeParseResultForUi(result) {
+  if (!result) return result;
+
+  const next = { ...result };
+
+  if (next.draft) {
+    next.draft = {
+      ...next.draft,
+      items: aggregateOrderItems(next.draft.items || []),
+    };
+  }
+
+  const unresolved = next.unresolved || {};
+  const cleanFlavors = (unresolved.flavors || []).filter(x => !isServiceOrderText(x?.raw_text || x));
+  const cleanExtras = (unresolved.extras || []).filter(x => !isServiceOrderText(x?.raw_text || x));
+
+  next.unresolved = {
+    ...unresolved,
+    flavors: cleanFlavors,
+    extras: cleanExtras,
+  };
+
+  if (Array.isArray(next.warnings)) {
+    next.warnings = next.warnings.filter(w => !isServiceOrderText(w?.raw_text || w?.message || w));
+  }
+
+  const hasUnresolved = cleanFlavors.length > 0 || cleanExtras.length > 0;
+  const hasWarnings = (next.warnings || []).length > 0;
+
+  if (next.success && !hasUnresolved && !hasWarnings) {
+    next.needs_clarification = false;
+  }
+
+  return next;
+}
+
+function extractPackNoteFromRawText(rawText) {
+  const matches = [];
+  String(rawText || '').split(/\r?\n/).forEach(line => {
+    const m = String(line || '').match(/заказ\s*№?\s*\d+/i);
+    if (!m) return;
+
+    const normalized = m[0]
+      .replace(/\s+/g, ' ')
+      .replace(/№\s*/i, '№')
+      .trim();
+
+    if (normalized && !matches.some(x => x.toLowerCase() === normalized.toLowerCase())) {
+      matches.push(normalized);
+    }
+  });
+
+  if (matches.length < 2) return '';
+  return `Упаковать отдельно: ${matches.join(', ')}`;
+}
+
+function appendCommentNote(comment, note) {
+  const base = String(comment || '').trim();
+  const add = String(note || '').trim();
+  if (!add) return base;
+  if (base.toLowerCase().includes(add.toLowerCase())) return base;
+  return base ? `${base}\n${add}` : add;
+}
+
 function itemsMapFromOrders(orders) {
   const out = {};
   (orders || []).forEach(o => {
@@ -572,7 +693,7 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
     return { price: base, basePrice: base, source: 'flavor_default' };
   }, [flavors, extras, priceOverrides, clientId, pointId, legalId]);
 
-  const applyParsedDraft = useCallback((draft) => {
+  const applyParsedDraft = useCallback((draft, rawText = '') => {
     if (!draft) return;
 
     const nextClientId = draft.client_id || '';
@@ -580,7 +701,7 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
     const nextLegalId = draft.legal_id || '';
     const ctx = { client_id: nextClientId, point_id: nextPointId, legal_id: nextLegalId };
 
-    const nextItems = (draft.items || [])
+    const mappedItems = (draft.items || [])
       .filter(i => i && i.ref_id && Number(i.qty) > 0)
       .map(i => {
         const priceInfo = calcPriceForContext(i.type, i.ref_id, ctx);
@@ -591,7 +712,7 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
         return {
           type: i.type,
           ref_id: i.ref_id,
-          name: ref?.name || i.ref_id,
+          name: ref?.name || i.name || i.ref_id,
           qty: Number(i.qty),
           price: priceInfo.price,
           basePrice: priceInfo.basePrice,
@@ -599,12 +720,16 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
         };
       });
 
+    const nextItems = aggregateOrderItems(mappedItems);
+    const packNote = extractPackNoteFromRawText(rawText);
+    const nextComment = appendCommentNote(draft.comment || '', packNote);
+
     skipClientAutofillRef.current = true;
     setClientId(nextClientId);
     setPointId(nextPointId);
     setLegalId(nextLegalId);
     if (draft.delivery_date) setDeliveryDate(dateOnly(draft.delivery_date));
-    setComment(draft.comment || '');
+    setComment(nextComment);
     setItems(nextItems);
   }, [calcPriceForContext, extras, flavors]);
 
@@ -626,15 +751,16 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
         created_by: CURRENT_USER,
       });
 
-      setQuickParseResult(res);
+      const parsedRes = normalizeParseResultForUi(res);
+      setQuickParseResult(parsedRes);
 
-      const draftItems = res?.draft?.items || [];
+      const draftItems = parsedRes?.draft?.items || [];
       const hasParsedItems = draftItems.some(i => i && i.ref_id && Number(i.qty || 0) > 0);
 
       // Если часть заказа разобралась, заполняем найденные позиции даже при warnings / needs_clarification.
       // Клиент может остаться пустым. Не найденные вкусы останутся в жёлтом предупреждении.
       // Сохранить заказ без клиента всё равно нельзя.
-      if (res.draft && hasParsedItems) {
+      if (parsedRes.draft && hasParsedItems) {
         const hasCurrentData = clientId || pointId || legalId || items.length || comment;
 
         if (hasCurrentData && !window.confirm('Заменить текущую форму найденными позициями из разбора?')) {
@@ -642,7 +768,7 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
           return;
         }
 
-        applyParsedDraft(res.draft);
+        applyParsedDraft(parsedRes.draft, raw);
 
         const parsedMotiItems = draftItems.filter(i => i.type === 'moti');
         const parsedExtraItems = draftItems.filter(i => i.type === 'extra');
@@ -651,17 +777,17 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
         const parsedSummary = totalParsedExtra > 0
           ? `${parsedMotiItems.length} вкусов, ${totalParsedMoti} моти + упаковка ${totalParsedExtra} шт`
           : `${parsedMotiItems.length || draftItems.length} позиций, ${totalParsedMoti} шт`;
-        const model = res.ai_model_used === 'fallback_js'
+        const model = parsedRes.ai_model_used === 'fallback_js'
           ? 'без ИИ'
-          : res.ai_model_used === 'openai/gpt-4.1-mini'
+          : parsedRes.ai_model_used === 'openai/gpt-4.1-mini'
             ? 'GPT-4.1 mini'
-            : res.ai_model_used === 'anthropic/claude-haiku-4.5'
+            : parsedRes.ai_model_used === 'anthropic/claude-haiku-4.5'
               ? 'Haiku 4.5'
-              : res.ai_model_used === 'anthropic/claude-sonnet-4.5'
+              : parsedRes.ai_model_used === 'anthropic/claude-sonnet-4.5'
                 ? 'Sonnet 4.5'
-                : res.ai_model_used || 'ИИ';
+                : parsedRes.ai_model_used || 'ИИ';
 
-        if (res.success && !res.needs_clarification) {
+        if (parsedRes.success && !parsedRes.needs_clarification) {
           showToast(`Заказ разобран: ${parsedSummary} · ${model}`);
         } else {
           showToast(`Частично разобрано: ${parsedSummary}. Проверь предупреждения.`, 'warn');
@@ -671,7 +797,7 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
       }
 
       // Если позиций нет вообще, форму не трогаем.
-      showToast(res.message || 'Нужно проверить текст вручную', 'warn');
+      showToast(parsedRes.message || 'Нужно проверить текст вручную', 'warn');
 
     } catch (err) {
       setQuickParseResult({
