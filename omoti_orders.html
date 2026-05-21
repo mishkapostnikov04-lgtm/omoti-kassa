@@ -90,10 +90,16 @@ const isTrue = (v) => v === true || ['TRUE', 'ИСТИНА', 'ДА', '1'].includ
 // Не заменяет Google Таблицу: показываем последние данные сразу,
 // а потом всё равно обновляем их из Apps Script в фоне.
 const pageCache = {};
+const PAGE_CACHE_TTL_MS = 2 * 60 * 1000; // 2 минуты — фоновое обновление не нужно, если данные свежее
 function getPageCache(key) {
   const cached = pageCache[key];
   if (!cached) return null;
   return cached.data;
+}
+function isPageCacheFresh(key) {
+  const cached = pageCache[key];
+  if (!cached) return false;
+  return (Date.now() - cached.time) < PAGE_CACHE_TTL_MS;
 }
 function setPageCache(key, data) {
   pageCache[key] = { time: Date.now(), data };
@@ -433,6 +439,7 @@ function App() {
   const [toast, setToast] = useState(null);
   const [editOrderId, setEditOrderId] = useState(null);
   const [editOrderData, setEditOrderData] = useState(null);
+  const [mountedPages, setMountedPages] = useState(() => new Set(['order']));
 
   const showToast = (message, type = 'success') => setToast({ message, type });
 
@@ -474,6 +481,15 @@ function App() {
 
   useEffect(() => { loadCatalogs(); }, [loadCatalogs]);
 
+  useEffect(() => {
+    setMountedPages(prev => {
+      if (prev.has(page)) return prev;
+      const next = new Set(prev);
+      next.add(page);
+      return next;
+    });
+  }, [page]);
+
   if (loading) return <div className="min-h-screen flex items-center justify-center">
     <div className="flex items-center gap-3 text-slate-600"><Spinner /><span>Загрузка...</span></div>
   </div>;
@@ -482,13 +498,13 @@ function App() {
     <div className="mx-auto grid max-w-[1440px] grid-cols-[240px_1fr] gap-5">
       <Sidebar page={page} setPage={setPage} />
       <main className="space-y-5 min-w-0">
-        {page === 'order' && <NewOrderPage {...data} editOrderId={editOrderId} editOrderData={editOrderData} onClearEdit={() => { setEditOrderId(null); setEditOrderData(null); }} onSaved={loadCatalogs} showToast={showToast} />}
-        {page === 'inwork' && <InWorkPage clients={data.clients} points={data.points} legals={data.legals} flavors={data.flavors} extras={data.extras} priceOverrides={data.priceOverrides} showToast={showToast} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} />}
-        {page === 'assembly' && <AssemblyPage clients={data.clients} points={data.points} showToast={showToast} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} />}
-        {page === 'history' && <HistoryPage clients={data.clients} points={data.points} legals={data.legals} flavors={data.flavors} extras={data.extras} showToast={showToast} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} />}
-        {page === 'help' && <UsagePage />}
-        {page === 'export' && <ExportPage showToast={showToast} />}
-        {page === 'catalog' && <CatalogPage {...data} reload={loadCatalogs} showToast={showToast} />}
+        {mountedPages.has('order') && <div style={{display: page === 'order' ? '' : 'none'}}><NewOrderPage {...data} editOrderId={editOrderId} editOrderData={editOrderData} onClearEdit={() => { setEditOrderId(null); setEditOrderData(null); }} onSaved={loadCatalogs} showToast={showToast} /></div>}
+        {mountedPages.has('inwork') && <div style={{display: page === 'inwork' ? '' : 'none'}}><InWorkPage clients={data.clients} points={data.points} legals={data.legals} flavors={data.flavors} extras={data.extras} priceOverrides={data.priceOverrides} showToast={showToast} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} /></div>}
+        {mountedPages.has('assembly') && <div style={{display: page === 'assembly' ? '' : 'none'}}><AssemblyPage clients={data.clients} points={data.points} showToast={showToast} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} /></div>}
+        {mountedPages.has('history') && <div style={{display: page === 'history' ? '' : 'none'}}><HistoryPage clients={data.clients} points={data.points} legals={data.legals} flavors={data.flavors} extras={data.extras} showToast={showToast} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} /></div>}
+        {mountedPages.has('help') && <div style={{display: page === 'help' ? '' : 'none'}}><UsagePage /></div>}
+        {mountedPages.has('export') && <div style={{display: page === 'export' ? '' : 'none'}}><ExportPage showToast={showToast} /></div>}
+        {mountedPages.has('catalog') && <div style={{display: page === 'catalog' ? '' : 'none'}}><CatalogPage {...data} reload={loadCatalogs} showToast={showToast} /></div>}
       </main>
     </div>
     {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
@@ -1563,13 +1579,14 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
   const [refreshKey, setRefreshKey] = useState(0);
   const [statusFilter, setStatusFilter] = useState(''); // '', 'new', 'assembled'
 
-  const load = async () => {
+  const load = async (force = false) => {
     const cacheKey = 'inwork_all';
     const cached = getPageCache(cacheKey);
     if (cached) {
       setOrders(cached);
       setExpandedItems(prev => ({ ...itemsMapFromOrders(cached), ...prev }));
       setLoading(false);
+      if (!force && isPageCacheFresh(cacheKey)) return;
     } else {
       setLoading(true);
     }
@@ -1697,7 +1714,7 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
       }
     } catch (err) {
       showToast('Ошибка: ' + err.message, 'error');
-      setRefreshKey(k => k + 1);
+      load(true);
     }
   };
 
@@ -1744,10 +1761,13 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
           {totalCount > 0 ? <>{totalCount} заказов · {money(totalAmount)}</> : 'Заказов в работе нет'}
         </p>
       </div>
-      <div className="flex gap-2 rounded-2xl bg-slate-100 p-1">
-        {[['', 'Все'], ['new', 'Новые'], ['assembled', 'Собранные']].map(([k, l]) => (
-          <button key={k} onClick={() => setStatusFilter(k)} className={`rounded-xl px-4 py-2 text-sm transition ${statusFilter === k ? 'bg-white shadow-sm font-medium' : 'text-slate-500'}`}>{l}</button>
-        ))}
+      <div className="flex items-center gap-2">
+        <Button variant="light" onClick={() => load(true)}>↻ Обновить</Button>
+        <div className="flex gap-1 rounded-2xl bg-slate-100 p-1">
+          {[['', 'Все'], ['new', 'Новые'], ['assembled', 'Собранные']].map(([k, l]) => (
+            <button key={k} onClick={() => setStatusFilter(k)} className={`rounded-xl px-4 py-2 text-sm transition ${statusFilter === k ? 'bg-white shadow-sm font-medium' : 'text-slate-500'}`}>{l}</button>
+          ))}
+        </div>
       </div>
     </header>
 
@@ -2044,12 +2064,13 @@ function AssemblyPage({ clients, points, showToast, onEditOrder }) {
   const clientById = useMemo(() => { const m = {}; clients.forEach(c => { m[c.client_id] = c; }); return m; }, [clients]);
   const pointById = useMemo(() => { const m = {}; points.forEach(p => { m[p.point_id] = p; }); return m; }, [points]);
 
-  const load = async () => {
+  const load = async (force = false) => {
     const cacheKey = 'assembly_new';
     const cached = getPageCache(cacheKey);
     if (cached) {
       setOrders(cached);
       setLoading(false);
+      if (!force && isPageCacheFresh(cacheKey)) return;
     } else {
       setLoading(true);
     }
@@ -2152,7 +2173,7 @@ function AssemblyPage({ clients, points, showToast, onEditOrder }) {
         </p>
       </div>
       <div className="flex gap-2">
-        <Button variant="light" onClick={() => setRefreshKey(k => k + 1)}>Обновить</Button>
+        <Button variant="light" onClick={() => load(true)}>↻ Обновить</Button>
         <Button onClick={printAssembly}>Распечатать A4</Button>
       </div>
     </header>
@@ -2339,13 +2360,14 @@ function HistoryPage({ clients, points, legals, flavors, extras, showToast, onEd
   const [expandedId, setExpandedId] = useState(null);
   const [expandedItems, setExpandedItems] = useState(() => initialHistoryCache ? itemsMapFromOrders(initialHistoryCache) : {});
 
-  const load = async () => {
+  const load = async (force = false) => {
     const cacheKey = `history_${dateFrom}_${dateTo}_${filterClient || 'all'}_${filterStatus || 'all'}`;
     const cached = getPageCache(cacheKey);
     if (cached) {
       setOrders(cached);
       setExpandedItems(prev => ({ ...itemsMapFromOrders(cached), ...prev }));
       setLoading(false);
+      if (!force && isPageCacheFresh(cacheKey)) return;
     } else {
       setLoading(true);
     }
@@ -2475,7 +2497,7 @@ function HistoryPage({ clients, points, legals, flavors, extras, showToast, onEd
           options={[{ value: '', label: 'Все клиенты' }, ...clients.map(c => ({ value: c.client_id, label: c.name }))]} placeholder="Все клиенты" /></div>
         <div><Label>Статус</Label><Combobox value={filterStatus} onChange={setFilterStatus}
           options={[{ value: '', label: 'Все' }, ...STATUS_OPTIONS]} placeholder="Все статусы" /></div>
-        <div className="self-end"><Button onClick={load} variant="light">Обновить</Button></div>
+        <div className="self-end"><Button onClick={() => load(true)} variant="light">Обновить</Button></div>
       </div>
 
       {loading && <div className="text-center py-12"><Spinner /></div>}
@@ -2864,6 +2886,7 @@ function CatalogPage({ clients, points, legals, flavors, extras, priceOverrides,
   const [modalType, setModalType] = useState(null);
   const [modalData, setModalData] = useState({});
   const [search, setSearch] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
   const closeModal = () => { setModalType(null); setModalData({}); };
 
@@ -2947,12 +2970,29 @@ function CatalogPage({ clients, points, legals, flavors, extras, priceOverrides,
     }
   };
 
+  const handleRefreshCatalogs = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      await api('flushCache');
+      await reload();
+      showToast('Справочники обновлены');
+    } catch (err) {
+      showToast('Ошибка обновления: ' + err.message, 'error');
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   return <>
     <header className="flex items-center justify-between rounded-3xl bg-white p-5 shadow-sm">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Справочники</h1>
         <p className="mt-1 text-sm text-slate-500">Клиенты и их данные · вкусы · упаковка</p>
       </div>
+      <Button onClick={handleRefreshCatalogs} variant="light" disabled={refreshing}>
+        {refreshing ? <><Spinner small /> Обновляю...</> : '↻ Обновить справочники'}
+      </Button>
     </header>
 
     <Card className="p-5">
