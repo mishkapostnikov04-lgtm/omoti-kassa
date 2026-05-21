@@ -242,6 +242,17 @@ function itemsMapFromOrders(orders) {
   return out;
 }
 
+function isDeletedOrderForUi(order) {
+  const comment = String((order && order.comment) || '').trim();
+  const status = String((order && order.status) || '').trim().toLowerCase();
+
+  return status === 'deleted' || /^\[УДАЛ[ЕЁ]Н\]/i.test(comment);
+}
+
+function filterDeletedOrdersForUi(orders) {
+  return (orders || []).filter(o => !isDeletedOrderForUi(o));
+}
+
 // ===== Базовые UI =====
 
 function Pill({ children, color = 'slate', size = 'sm' }) {
@@ -881,7 +892,7 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
     setLoadingHistory(true);
     try {
       const res = await api('getClientHistory', { client_id: cid, limit: 5 });
-      setHistory(res.orders || []);
+      setHistory(filterDeletedOrdersForUi(res.orders || []));
     } catch (err) { console.error(err); }
     setLoadingHistory(false);
   };
@@ -1594,7 +1605,7 @@ function HistoryOrderMini({ order, point, onRepeat }) {
 
 function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, showToast, onEditOrder }) {
   const initialInworkCache = getPageCache('inwork_all');
-  const [orders, setOrders] = useState(() => initialInworkCache || []);
+  const [orders, setOrders] = useState(() => filterDeletedOrdersForUi(initialInworkCache || []));
   const [loading, setLoading] = useState(() => !initialInworkCache);
   const [expandedId, setExpandedId] = useState(null);
   const [expandedItems, setExpandedItems] = useState(() => initialInworkCache ? itemsMapFromOrders(initialInworkCache) : {});
@@ -1625,6 +1636,7 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
         ]);
         all = [...(resNew.orders || []), ...(resAssembled.orders || [])];
       }
+      all = filterDeletedOrdersForUi(all);
       setOrders(all);
       setExpandedItems(prev => ({ ...itemsMapFromOrders(all), ...prev }));
       setPageCache(cacheKey, all);
@@ -1742,21 +1754,36 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
 
   const deleteOrder = async (order) => {
     const client = clientById[order.client_id];
-    if (!confirm(`Удалить заказ ${order.order_no} (${client?.name || order.client_id})?\n\nЗаказ будет помечен как отменён, в Google Таблице останется для истории.`)) return;
+    const hasDocs = !!(order.invoice_id || order.invoice_number || order.invoice_url || order.waybill_id || order.waybill_number || order.waybill_url);
+
+    if (hasDocs) {
+      showToast('У заказа есть документы Эльбы. Полное удаление запрещено.', 'error');
+      return;
+    }
+
+    if (!confirm(`Полностью удалить тестовый заказ ${order.order_no} (${client?.name || order.client_id})?\n\nОн исчезнет из листов Заказы и Позиции. Это действие нельзя отменить.`)) return;
+
+    const typed = window.prompt('Для подтверждения введи: УДАЛИТЬ');
+    if (typed !== 'УДАЛИТЬ') {
+      showToast('Удаление отменено', 'warn');
+      return;
+    }
+
     try {
-      await api('updateOrder', {
+      await api('deleteOrderPermanent', {
         order_id: order.order_id,
-        updates: {
-          status: 'cancelled',
-          comment: '[УДАЛЁН] ' + (order.comment || ''),
-        }
+        confirm: true,
+        reason: 'test order cleanup',
+        deleted_by: CURRENT_USER,
       });
       clearPageCache('inwork');
       clearPageCache('history');
+      clearPageCache('assembly');
       setOrders(prev => prev.filter(o => o.order_id !== order.order_id));
-      showToast(`Заказ ${order.order_no} удалён`);
+      showToast(`Заказ ${order.order_no} полностью удалён`);
     } catch (err) {
-      showToast('Ошибка: ' + err.message, 'error');
+      showToast('Ошибка удаления: ' + err.message, 'error');
+      load(true);
     }
   };
 
@@ -1915,7 +1942,7 @@ function InWorkOrderRow({ order, client, point, legal, expanded, items, onToggle
 
           <div className="flex gap-2 mt-4 pt-4 border-t border-slate-200">
             <Button onClick={onEdit} variant="light" size="sm">Редактировать</Button>
-            <Button onClick={onDelete} variant="danger" size="sm">Удалить</Button>
+            <Button onClick={onDelete} variant="danger" size="sm">Удалить полностью</Button>
           </div>
         </div>
       </div>
@@ -2077,7 +2104,7 @@ function ElbaDocumentsBlock({ order, client, point, legal, onCreated, showToast 
 
 function AssemblyPage({ clients, points, showToast, onEditOrder }) {
   const initialCache = getPageCache('assembly_new');
-  const [orders, setOrders] = useState(() => initialCache || []);
+  const [orders, setOrders] = useState(() => filterDeletedOrdersForUi(initialCache || []));
   const [loading, setLoading] = useState(() => !initialCache);
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [dateFilter, setDateFilter] = useState('all'); // all / today / tomorrow / overdue / later
@@ -2113,6 +2140,7 @@ function AssemblyPage({ clients, points, showToast, onEditOrder }) {
           }
         }));
       }
+      all = filterDeletedOrdersForUi(all);
       const newOrders = all
         .filter(o => o.status === 'new')
         .sort((a, b) => {
@@ -2377,7 +2405,7 @@ function HistoryPage({ clients, points, legals, flavors, extras, showToast, onEd
   const [filterClient, setFilterClient] = useState(() => savedFilters?.filterClient || '');
   const [filterStatus, setFilterStatus] = useState(() => savedFilters?.filterStatus || '');
   const initialHistoryCache = getPageCache(`history_${dateFrom}_${dateTo}_${filterClient || 'all'}_${filterStatus || 'all'}`);
-  const [orders, setOrders] = useState(() => initialHistoryCache || []);
+  const [orders, setOrders] = useState(() => filterDeletedOrdersForUi(initialHistoryCache || []));
   const [loading, setLoading] = useState(() => !initialHistoryCache);
   const [expandedId, setExpandedId] = useState(null);
   const [expandedItems, setExpandedItems] = useState(() => initialHistoryCache ? itemsMapFromOrders(initialHistoryCache) : {});
@@ -2412,6 +2440,7 @@ function HistoryPage({ clients, points, legals, flavors, extras, showToast, onEd
         });
         nextOrders = res.orders || [];
       }
+      nextOrders = filterDeletedOrdersForUi(nextOrders);
       setOrders(nextOrders);
       setExpandedItems(prev => ({ ...itemsMapFromOrders(nextOrders), ...prev }));
       setPageCache(cacheKey, nextOrders);
@@ -2470,21 +2499,36 @@ function HistoryPage({ clients, points, legals, flavors, extras, showToast, onEd
 
   const deleteOrder = async (order) => {
     const client = clientById[order.client_id];
-    if (!confirm(`Удалить заказ ${order.order_no} (${client?.name || order.client_id})?\n\nЗаказ будет помечен как отменён, в Google Таблице останется для истории.`)) return;
+    const hasDocs = !!(order.invoice_id || order.invoice_number || order.invoice_url || order.waybill_id || order.waybill_number || order.waybill_url);
+
+    if (hasDocs) {
+      showToast('У заказа есть документы Эльбы. Полное удаление запрещено.', 'error');
+      return;
+    }
+
+    if (!confirm(`Полностью удалить тестовый заказ ${order.order_no} (${client?.name || order.client_id})?\n\nОн исчезнет из листов Заказы и Позиции. Это действие нельзя отменить.`)) return;
+
+    const typed = window.prompt('Для подтверждения введи: УДАЛИТЬ');
+    if (typed !== 'УДАЛИТЬ') {
+      showToast('Удаление отменено', 'warn');
+      return;
+    }
+
     try {
-      await api('updateOrder', {
+      await api('deleteOrderPermanent', {
         order_id: order.order_id,
-        updates: {
-          status: 'cancelled',
-          comment: '[УДАЛЁН] ' + (order.comment || ''),
-        }
+        confirm: true,
+        reason: 'test order cleanup',
+        deleted_by: CURRENT_USER,
       });
       clearPageCache('history');
       clearPageCache('inwork');
-      setOrders(prev => prev.map(o => o.order_id === order.order_id ? { ...o, status: 'cancelled' } : o));
-      showToast(`Заказ ${order.order_no} удалён`);
+      clearPageCache('assembly');
+      setOrders(prev => prev.filter(o => o.order_id !== order.order_id));
+      showToast(`Заказ ${order.order_no} полностью удалён`);
     } catch (err) {
-      showToast('Ошибка: ' + err.message, 'error');
+      showToast('Ошибка удаления: ' + err.message, 'error');
+      load(true);
     }
   };
 
@@ -2615,7 +2659,7 @@ function HistoryOrderRow({ order, client, point, legal, expanded, items, onToggl
 
           <div className="flex gap-2 mt-4 pt-4 border-t border-slate-200">
             <Button onClick={onEdit} variant="light" size="sm">Редактировать</Button>
-            <Button onClick={onDelete} variant="danger" size="sm">Удалить</Button>
+            <Button onClick={onDelete} variant="danger" size="sm">Удалить полностью</Button>
           </div>
         </div>
       </div>
