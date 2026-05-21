@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OMOTI — Заказы B2B</title>
-<!-- v29: aggregate duplicate parsed items -->
-<script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=dNbOB3bqUmVnmkuSJL7oK4WTxyqrdQ0tviGqpqGCN4OCydk1NaJeE3A-AvqFCdjteXVdZUplm3QHHOmzcz_RmXL9LcKoZ_8ysfEADTx6fptTwNfLy_RtzUeBa9yV9baypo3XQwjTZAS4SxoU3QKeyYzoFVduxqUWL6NvaC0XtYANkv0gI3KYeaXXnvpoL4YXp1KUWVWN9lPqJGi978CbTeLiEmsAxH1pE8x7A9MYmik5MxgV3lKNtERFR2e5g6t834Ll_if7CdF0xmDoc_ePvMXX6c_18s-WiJbEQvFMYLU_UtX-wBsQCSYxoR_H7WdnOp4zybQilUt_isYp0BXMHQ" charset="UTF-8"></script><script src="https://cdn.tailwindcss.com"></script>
+<title>OMOTI — Заказы B2B v35</title>
+<!-- v35: invoice copy text with legal entity and address -->
+<script src="https://cdn.tailwindcss.com"></script>
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -1724,12 +1724,12 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
   const applyElbaResult = (orderId, res) => {
     const updates = {
       documents_status: res.documents_status || 'full',
-      waybill_id: res.waybill_id || res.torg12_id || res.tn_id || res.waybill?.id || res.torg12?.id || res.tn?.id || '',
-      waybill_number: res.waybill_number || res.torg12_number || res.tn_number || res.waybill?.number || res.torg12?.number || res.tn?.number || '',
-      waybill_url: res.waybill_url || res.torg12_url || res.tn_url || res.waybill_link || res.torg12_link || res.tn_link || res.waybill_pdf_url || res.torg12_pdf_url || res.tn_pdf_url || res.waybill?.url || res.torg12?.url || res.tn?.url || '',
-      invoice_id: res.invoice_id || res.bill_id || res.invoice?.id || res.bill?.id || '',
-      invoice_number: res.invoice_number || res.bill_number || res.invoice?.number || res.bill?.number || '',
-      invoice_url: res.invoice_url || res.bill_url || res.invoice_link || res.bill_link || res.invoice_pdf_url || res.bill_pdf_url || res.invoice?.url || res.bill?.url || '',
+      waybill_id: res.waybill_id || '',
+      waybill_number: res.waybill_number || '',
+      waybill_url: res.waybill_url || '',
+      invoice_id: res.invoice_id || '',
+      invoice_number: res.invoice_number || '',
+      invoice_url: res.invoice_url || '',
       documents_error: res.link_error || '',
       documents_created_at: new Date().toISOString(),
     };
@@ -1886,13 +1886,7 @@ function InWorkOrderRow({ order, client, point, legal, expanded, items, onToggle
 function ElbaDocumentsBlock({ order, client, point, legal, onCreated, showToast }) {
   const [creating, setCreating] = useState(false);
 
-  const invoiceUrl = order.invoice_url || order.bill_url || order.invoice_link || order.bill_link || order.invoice_pdf_url || order.bill_pdf_url || '';
-  const invoiceNumber = order.invoice_number || order.bill_number || '';
-  const waybillUrl = order.waybill_url || order.torg12_url || order.tn_url || order.waybill_link || order.torg12_link || order.tn_link || order.waybill_pdf_url || order.torg12_pdf_url || order.tn_pdf_url || '';
-  const waybillNumber = order.waybill_number || order.torg12_number || order.tn_number || '';
-
-  const hasWaybillData = !!(order.waybill_id || order.torg12_id || order.tn_id || waybillNumber || waybillUrl);
-  const hasDocs = !!(order.invoice_id || order.waybill_id || order.torg12_id || order.tn_id || invoiceUrl || waybillUrl || invoiceNumber || waybillNumber);
+  const hasDocs = !!(order.invoice_id || order.waybill_id || order.invoice_url || order.waybill_url);
   const status = order.documents_status || (hasDocs ? 'full' : '');
   const statusMap = {
     full: ['Документы созданы', 'green'],
@@ -1948,21 +1942,28 @@ function ElbaDocumentsBlock({ order, client, point, legal, onCreated, showToast 
   };
 
   const handleCopyInvoice = async () => {
-    if (!invoiceUrl) {
+    if (!order.invoice_url) {
       showToast('Ссылка на счёт не найдена', 'warn');
       return;
     }
 
     const clientName = client?.name || order.client_name || order.client_id || 'Оптовик';
-    const invoiceNoText = invoiceNumber ? `№${invoiceNumber}` : 'без номера';
+    const legalName = legal?.legal_name || order.legal_name || '';
+    const pointAddress = point?.address || order.point_address || '';
+    const invoiceNumber = order.invoice_number ? `№${order.invoice_number}` : 'без номера';
     const invoiceDate = displayDate(order.invoice_date || order.documents_created_at || order.created_at || today());
+
     const text = [
       clientName,
-      `Счёт ${invoiceNoText} от ${invoiceDate}`,
+      legalName ? `Юрлицо: ${legalName}` : '',
+      pointAddress ? `Адрес: ${pointAddress}` : '',
+      '',
+      `Счёт ${invoiceNumber} от ${invoiceDate}`,
       `Сумма: ${money(order.total_amount)}`,
       '',
-      invoiceUrl,
-    ].join('\n');
+      'Ссылка на оплату:',
+      order.invoice_url,
+    ].filter(line => line !== '').join('\n');
 
     try {
       await copyTextToClipboard(text);
@@ -1972,28 +1973,12 @@ function ElbaDocumentsBlock({ order, client, point, legal, onCreated, showToast 
     }
   };
 
-  const extractWaybillUrl = (o) => o?.waybill_url || o?.torg12_url || o?.tn_url || o?.waybill_link || o?.torg12_link || o?.tn_link || o?.waybill_pdf_url || o?.torg12_pdf_url || o?.tn_pdf_url || '';
-
-  const handlePrintWaybill = async () => {
-    const currentUrl = waybillUrl || extractWaybillUrl(order);
-    if (currentUrl) {
-      window.open(currentUrl, '_blank', 'noopener,noreferrer');
+  const handlePrintWaybill = () => {
+    if (!order.waybill_url) {
+      showToast('Ссылка на ТН не найдена', 'warn');
       return;
     }
-
-    try {
-      const fresh = await api('getOrder', { order_id: order.order_id });
-      const freshOrder = fresh?.order || {};
-      const freshUrl = extractWaybillUrl(freshOrder);
-      if (freshUrl) {
-        window.open(freshUrl, '_blank', 'noopener,noreferrer');
-        return;
-      }
-    } catch (e) {
-      console.warn('Не удалось обновить заказ перед печатью ТН', e);
-    }
-
-    showToast('ТН создана, но ссылка на ТН не пришла из Apps Script. Нужно добавить waybill_url в Elba.gs.', 'warn');
+    window.open(order.waybill_url, '_blank', 'noopener,noreferrer');
   };
 
   return <div className="rounded-2xl border border-slate-200 bg-white p-4">
@@ -2002,8 +1987,8 @@ function ElbaDocumentsBlock({ order, client, point, legal, onCreated, showToast 
         <h4 className="font-semibold text-sm text-slate-700">Документы Эльбы</h4>
         <div className="mt-1 flex flex-wrap items-center gap-2">
           <Pill color={statusColor}>{statusLabel}</Pill>
-          {invoiceNumber && <span className="text-xs text-slate-500">Счёт №{invoiceNumber}</span>}
-          {waybillNumber && <span className="text-xs text-slate-500">ТН №{waybillNumber}</span>}
+          {order.invoice_number && <span className="text-xs text-slate-500">Счёт №{order.invoice_number}</span>}
+          {order.waybill_number && <span className="text-xs text-slate-500">ТН №{order.waybill_number}</span>}
         </div>
       </div>
       <Button onClick={handleCreate} variant={hasDocs ? 'light' : 'success'} size="sm" disabled={creating}>
@@ -2013,7 +1998,7 @@ function ElbaDocumentsBlock({ order, client, point, legal, onCreated, showToast 
 
     <div className="space-y-2 text-xs text-slate-600">
       <div className="flex flex-wrap gap-2">
-        {invoiceUrl && <button
+        {order.invoice_url && <button
           type="button"
           onClick={handleCopyInvoice}
           className="inline-flex rounded-xl bg-slate-950 px-3 py-2 font-medium text-white hover:bg-slate-800"
@@ -2021,7 +2006,7 @@ function ElbaDocumentsBlock({ order, client, point, legal, onCreated, showToast 
           Скопировать счёт
         </button>}
 
-        {hasDocs && <button
+        {order.waybill_url && <button
           type="button"
           onClick={handlePrintWaybill}
           className="inline-flex rounded-xl bg-white px-3 py-2 font-medium text-slate-900 border border-slate-200 hover:bg-slate-50"
@@ -2030,8 +2015,8 @@ function ElbaDocumentsBlock({ order, client, point, legal, onCreated, showToast 
         </button>}
       </div>
 
-      {waybillNumber && !waybillUrl && <div>
-        <span className="text-slate-400">ТН:</span> №{waybillNumber} создана, но ссылка не пришла в дашборд.
+      {order.waybill_number && !order.waybill_url && <div>
+        <span className="text-slate-400">ТН:</span> №{order.waybill_number} создана. Ссылку можно открыть в Эльбе.
       </div>}
 
       {order.documents_created_at && <div>
@@ -2462,12 +2447,12 @@ function HistoryPage({ clients, points, legals, flavors, extras, showToast, onEd
   const applyElbaResult = (orderId, res) => {
     const updates = {
       documents_status: res.documents_status || 'full',
-      waybill_id: res.waybill_id || res.torg12_id || res.tn_id || res.waybill?.id || res.torg12?.id || res.tn?.id || '',
-      waybill_number: res.waybill_number || res.torg12_number || res.tn_number || res.waybill?.number || res.torg12?.number || res.tn?.number || '',
-      waybill_url: res.waybill_url || res.torg12_url || res.tn_url || res.waybill_link || res.torg12_link || res.tn_link || res.waybill_pdf_url || res.torg12_pdf_url || res.tn_pdf_url || res.waybill?.url || res.torg12?.url || res.tn?.url || '',
-      invoice_id: res.invoice_id || res.bill_id || res.invoice?.id || res.bill?.id || '',
-      invoice_number: res.invoice_number || res.bill_number || res.invoice?.number || res.bill?.number || '',
-      invoice_url: res.invoice_url || res.bill_url || res.invoice_link || res.bill_link || res.invoice_pdf_url || res.bill_pdf_url || res.invoice?.url || res.bill?.url || '',
+      waybill_id: res.waybill_id || '',
+      waybill_number: res.waybill_number || '',
+      waybill_url: res.waybill_url || '',
+      invoice_id: res.invoice_id || '',
+      invoice_number: res.invoice_number || '',
+      invoice_url: res.invoice_url || '',
       documents_error: res.link_error || '',
       documents_created_at: new Date().toISOString(),
     };
