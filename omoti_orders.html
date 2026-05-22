@@ -87,6 +87,37 @@ const displayDate = (v) => {
 };
 const isTrue = (v) => v === true || ['TRUE', 'ИСТИНА', 'ДА', '1'].includes(String(v).trim().toUpperCase());
 
+// ===== Порядок вкусов (единый, как в экспорте Excel) =====
+const EXPORT_FLAVOR_ORDER = [
+  'Арбуз-Дыня', 'Бабл Гам', 'Банан-Нутелла', 'Вишня-Тонка', 'Мандарин',
+  'Дубайский шоколад', 'Киви-Алоэ', 'Клубника', 'Кокос-Маракуйя',
+  'Кокосовый пломбир', 'Кофе-Карамель', 'Малина-Ваниль', 'Матча-Манго',
+  'Мохито', 'Печенье с топлёным молоком', 'Сливочный лимон', 'Смородина',
+  'Сникерс', 'Твикс', 'Трюфель', 'Шоколад', 'Криспи', 'Пряник', 'Грибы',
+  'Мункейки', 'Новый вкус 3', 'Новый вкус 4', 'Новый вкус 5',
+];
+function getFlavorOrderIndex(name) {
+  const idx = EXPORT_FLAVOR_ORDER.indexOf(String(name || '').trim());
+  return idx === -1 ? 9000 : idx;
+}
+// нет поля is_active или пусто = активен; явный false/0/нет = неактивен
+function isCatalogActive(row) {
+  const v = row && row.is_active;
+  if (v === undefined || v === null || v === '') return true;
+  return isTrue(v);
+}
+// Сортирует позиции для отображения: моти по EXPORT_FLAVOR_ORDER, упаковка после.
+// Использует getOrderItemName — работает и с name, и с name_snapshot.
+function sortItemsForDisplay(items) {
+  return [...(items || [])].sort((a, b) => {
+    if (a.type !== b.type) return a.type === 'moti' ? -1 : 1;
+    if (a.type === 'moti') {
+      return getFlavorOrderIndex(getOrderItemName(a)) - getFlavorOrderIndex(getOrderItemName(b));
+    }
+    return Number(a.line_no || 0) - Number(b.line_no || 0);
+  });
+}
+
 // Лёгкий кеш внутри открытой вкладки браузера.
 // Не заменяет Google Таблицу: показываем последние данные сразу,
 // а потом всё равно обновляем их из Apps Script в фоне.
@@ -1194,7 +1225,18 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
           />
 
           {items.length > 0 && <div className="space-y-2">
-            {items.map((it, idx) => <ItemRow key={idx} item={it} idx={idx} onUpdate={updateItem} onRemove={removeItem} />)}
+            {items
+              .map((it, idx) => ({ it, idx }))
+              .sort((a, b) => {
+                if (a.it.type !== b.it.type) return a.it.type === 'moti' ? -1 : 1;
+                if (a.it.type === 'moti') {
+                  return getFlavorOrderIndex(getOrderItemName(a.it)) - getFlavorOrderIndex(getOrderItemName(b.it));
+                }
+                return a.idx - b.idx;
+              })
+              .map(({ it, idx }) => (
+                <ItemRow key={idx} item={it} idx={idx} onUpdate={updateItem} onRemove={removeItem} />
+              ))}
           </div>}
 
           <div>
@@ -1403,12 +1445,12 @@ function AddItemBlock({ flavors, extras, items, calcPrice, priceContextKey, onSe
     return map;
   }, [items]);
 
-  const activeFlavors = useMemo(() => [...flavors].sort((a, b) => {
-    const sa = Number(a.sort_order || 999);
-    const sb = Number(b.sort_order || 999);
-    if (sa !== sb) return sa - sb;
-    return String(a.name).localeCompare(String(b.name), 'ru');
-  }), [flavors]);
+  const activeFlavors = useMemo(
+    () => flavors
+      .filter(f => isCatalogActive(f))
+      .sort((a, b) => getFlavorOrderIndex(a.name) - getFlavorOrderIndex(b.name)),
+    [flavors]
+  );
 
   const hiddenSet = useMemo(() => new Set(hiddenFlavorIds), [hiddenFlavorIds]);
 
@@ -1902,7 +1944,7 @@ function InWorkOrderRow({ order, client, point, legal, expanded, items, onToggle
           <h4 className="font-semibold text-sm mb-2 text-slate-700">Позиции</h4>
           {!items && <Spinner small />}
           {items && <div className="space-y-1">
-            {items.filter(i => Number(i.qty) > 0).map(it => (
+            {sortItemsForDisplay(items.filter(i => Number(i.qty) > 0)).map(it => (
               <div key={it.item_id} className="grid grid-cols-[1fr_60px_80px_80px] gap-2 text-sm rounded-lg bg-white px-3 py-1.5">
                 <span className="truncate">
                   {it.name_snapshot}
@@ -2280,7 +2322,7 @@ function AssemblyPage({ clients, points, showToast, onEditOrder }) {
 }
 
 function AssemblyOrderCard({ order, client, point, selected, onSelect, onAssembled, onEdit }) {
-  const motiItems = (order.items || []).filter(i => i.type === 'moti' && Number(i.qty) > 0);
+  const motiItems = sortItemsForDisplay((order.items || []).filter(i => i.type === 'moti' && Number(i.qty) > 0));
   const extraItems = (order.items || []).filter(i => i.type === 'extra' && Number(i.qty) > 0);
   const isOverdue = dateOnly(order.delivery_date) && dateOnly(order.delivery_date) < today();
   return <Card className={`p-4 ${selected ? 'ring-2 ring-slate-400' : ''} ${isOverdue ? 'border border-red-200' : ''}`}>
@@ -2350,7 +2392,7 @@ function PrintAssemblySheet({ orders, clientById, pointById }) {
     {(orders || []).map(order => {
       const client = clientById[order.client_id];
       const point = pointById[order.point_id];
-      const motiItems = (order.items || []).filter(i => i.type === 'moti' && Number(i.qty) > 0);
+      const motiItems = sortItemsForDisplay((order.items || []).filter(i => i.type === 'moti' && Number(i.qty) > 0));
       const extraItems = (order.items || []).filter(i => i.type === 'extra' && Number(i.qty) > 0);
       const rows = makePrintRows(motiItems);
       const extraText = extraItems.length
@@ -2619,7 +2661,7 @@ function HistoryOrderRow({ order, client, point, legal, expanded, items, onToggl
           <h4 className="font-semibold text-sm mb-2 text-slate-700">Позиции</h4>
           {!items && <Spinner small />}
           {items && <div className="space-y-1">
-            {items.filter(i => Number(i.qty) > 0).map(it => (
+            {sortItemsForDisplay(items.filter(i => Number(i.qty) > 0)).map(it => (
               <div key={it.item_id} className="grid grid-cols-[1fr_60px_80px_80px] gap-2 text-sm rounded-lg bg-white px-3 py-1.5">
                 <span className="truncate">
                   {it.name_snapshot}
@@ -2845,7 +2887,7 @@ function ExportPage({ showToast }) {
 
   useEffect(() => { load(); }, [dateFrom, dateTo]);
 
-  const visibleColumns = columns.filter(c => !c.startsWith('meta_'));
+  const visibleColumns = columns.filter(c => !c.startsWith('meta_') && c !== 'AR_Стоимость');
   const selectedRows = rows.filter((row, index) => selectedKeys[rowKey(row, index)]);
   const allSelected = rows.length > 0 && selectedRows.length === rows.length;
 
