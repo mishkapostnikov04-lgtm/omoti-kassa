@@ -503,6 +503,67 @@ function ShippingConfirmModal({ severity, orderNo, issues, onConfirm, onCancel, 
   </div>;
 }
 
+
+function DangerConfirmModal({ title, description, warning, actionLabel = 'Подтвердить', confirmText = '', processingLabel = 'Выполняю...', onConfirm, onCancel, onClose }) {
+  const [typedValue, setTypedValue] = useState('');
+  const [processing, setProcessing] = useState(false);
+
+  const needsText = !!confirmText;
+  const canSubmit = !needsText || typedValue === confirmText;
+
+  const handleSubmit = async () => {
+    if (!canSubmit || processing) return;
+    setProcessing(true);
+    try {
+      await onConfirm?.();
+    } finally {
+      setProcessing(false);
+      onClose();
+    }
+  };
+
+  const handleCancel = () => {
+    if (processing) return;
+    onCancel?.();
+    onClose();
+  };
+
+  return <div className="modal-bg fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+    <div className="modal-content w-full max-w-md rounded-3xl bg-white shadow-xl overflow-hidden">
+      <div className="h-1.5 w-full bg-red-500"></div>
+      <div className="p-6">
+        <div className="flex items-start gap-3 mb-4">
+          <div className="shrink-0 rounded-full bg-red-50 p-2 text-red-600">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            </svg>
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+            {description && <p className="text-sm text-slate-500 mt-1 whitespace-pre-wrap">{description}</p>}
+          </div>
+        </div>
+
+        {warning && <div className="rounded-2xl border border-red-100 bg-red-50/50 p-4 mb-5 text-sm text-slate-700 whitespace-pre-wrap">
+          {warning}
+        </div>}
+
+        {needsText && <div className="mb-5">
+          <Label>Введите {confirmText} для подтверждения</Label>
+          <Input value={typedValue} onChange={setTypedValue} placeholder={confirmText} />
+        </div>}
+
+        <div className="flex justify-end gap-2">
+          <Button variant="light" onClick={handleCancel} disabled={processing}>Остаться</Button>
+          <Button variant="danger" onClick={handleSubmit} disabled={!canSubmit || processing}>
+            {processing ? <><Spinner small /> {processingLabel}</> : actionLabel}
+          </Button>
+        </div>
+      </div>
+    </div>
+  </div>;
+}
+
 function Modal({ open, onClose, title, children, size = 'md' }) {
   if (!open) return null;
   const sizes = { sm: 'max-w-md', md: 'max-w-xl', lg: 'max-w-3xl', xl: 'max-w-5xl' };
@@ -637,9 +698,11 @@ function App() {
   const [mountedPages, setMountedPages] = useState(() => new Set(['order']));
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
   const [shippingConfirm, setShippingConfirm] = useState(null);
+  const [dangerConfirm, setDangerConfirm] = useState(null);
 
   const showToast = (message, type = 'success', action = null) => setToast({ message, type, action });
   const showShippingConfirm = (params) => setShippingConfirm(params);
+  const showDangerConfirm = (params) => setDangerConfirm(params);
 
   const markOrdersChanged = () => {
     clearPageCache('inwork');
@@ -713,9 +776,9 @@ function App() {
       <Sidebar page={page} setPage={setPage} />
       <main className="space-y-5 min-w-0">
         {mountedPages.has('order') && <div style={{display: page === 'order' ? '' : 'none'}}><NewOrderPage {...data} editOrderId={editOrderId} editOrderData={editOrderData} onClearEdit={() => { setEditOrderId(null); setEditOrderData(null); }} onSaved={loadCatalogs} showToast={showToast} markOrdersChanged={markOrdersChanged} /></div>}
-        {mountedPages.has('inwork') && <div style={{display: page === 'inwork' ? '' : 'none'}}><InWorkPage clients={data.clients} points={data.points} legals={data.legals} flavors={data.flavors} extras={data.extras} priceOverrides={data.priceOverrides} showToast={showToast} showShippingConfirm={showShippingConfirm} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} markOrdersChanged={markOrdersChanged} ordersRefreshKey={ordersRefreshKey} /></div>}
+        {mountedPages.has('inwork') && <div style={{display: page === 'inwork' ? '' : 'none'}}><InWorkPage clients={data.clients} points={data.points} legals={data.legals} flavors={data.flavors} extras={data.extras} priceOverrides={data.priceOverrides} showToast={showToast} showShippingConfirm={showShippingConfirm} showDangerConfirm={showDangerConfirm} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} markOrdersChanged={markOrdersChanged} ordersRefreshKey={ordersRefreshKey} /></div>}
         {mountedPages.has('assembly') && <div style={{display: page === 'assembly' ? '' : 'none'}}><AssemblyPage clients={data.clients} points={data.points} showToast={showToast} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} markOrdersChanged={markOrdersChanged} ordersRefreshKey={ordersRefreshKey} /></div>}
-        {mountedPages.has('history') && <div style={{display: page === 'history' ? '' : 'none'}}><HistoryPage clients={data.clients} points={data.points} legals={data.legals} flavors={data.flavors} extras={data.extras} showToast={showToast} showShippingConfirm={showShippingConfirm} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} markOrdersChanged={markOrdersChanged} ordersRefreshKey={ordersRefreshKey} /></div>}
+        {mountedPages.has('history') && <div style={{display: page === 'history' ? '' : 'none'}}><HistoryPage clients={data.clients} points={data.points} legals={data.legals} flavors={data.flavors} extras={data.extras} showToast={showToast} showShippingConfirm={showShippingConfirm} showDangerConfirm={showDangerConfirm} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} markOrdersChanged={markOrdersChanged} ordersRefreshKey={ordersRefreshKey} /></div>}
         {mountedPages.has('help') && <div style={{display: page === 'help' ? '' : 'none'}}><UsagePage /></div>}
         {mountedPages.has('export') && <div style={{display: page === 'export' ? '' : 'none'}}><ExportPage showToast={showToast} /></div>}
         {mountedPages.has('catalog') && <div style={{display: page === 'catalog' ? '' : 'none'}}><CatalogPage {...data} reload={loadCatalogs} showToast={showToast} /></div>}
@@ -729,6 +792,17 @@ function App() {
       onConfirm={shippingConfirm.onConfirm}
       onCancel={shippingConfirm.onCancel}
       onClose={() => setShippingConfirm(null)}
+    />}
+    {dangerConfirm && <DangerConfirmModal
+      title={dangerConfirm.title}
+      description={dangerConfirm.description}
+      warning={dangerConfirm.warning}
+      actionLabel={dangerConfirm.actionLabel}
+      confirmText={dangerConfirm.confirmText}
+      processingLabel={dangerConfirm.processingLabel}
+      onConfirm={dangerConfirm.onConfirm}
+      onCancel={dangerConfirm.onCancel}
+      onClose={() => setDangerConfirm(null)}
     />}
   </div>;
 }
@@ -1815,7 +1889,7 @@ function HistoryOrderMini({ order, point, onRepeat }) {
 
 // ===== Сегодня / завтра =====
 
-function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, showToast, showShippingConfirm, onEditOrder, markOrdersChanged, ordersRefreshKey }) {
+function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, showToast, showShippingConfirm, showDangerConfirm, onEditOrder, markOrdersChanged, ordersRefreshKey }) {
   const initialInworkCache = getPageCache('inwork_all');
   const [orders, setOrders] = useState(() => filterDeletedOrdersForUi(initialInworkCache || []));
   const [loading, setLoading] = useState(() => !initialInworkCache);
@@ -2115,30 +2189,33 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
       return;
     }
 
-    if (!confirm(`Полностью удалить тестовый заказ ${order.order_no} (${client?.name || order.client_id})?\n\nОн исчезнет из листов Заказы и Позиции. Это действие нельзя отменить.`)) return;
-
-    const typed = window.prompt('Для подтверждения введи: УДАЛИТЬ');
-    if (typed !== 'УДАЛИТЬ') {
-      showToast('Удаление отменено', 'warn');
-      return;
-    }
-
-    try {
-      await api('deleteOrderPermanent', {
-        order_id: order.order_id,
-        confirm: true,
-        reason: 'test order cleanup',
-        deleted_by: CURRENT_USER,
-      });
-      clearPageCache('inwork');
-      clearPageCache('history');
-      clearPageCache('assembly');
-      setOrders(prev => prev.filter(o => o.order_id !== order.order_id));
-      showToast(`Заказ ${order.order_no} полностью удалён`);
-    } catch (err) {
-      showToast('Ошибка удаления: ' + err.message, 'error');
-      load(true);
-    }
+    showDangerConfirm({
+      title: 'Удалить заказ?',
+      description: `Заказ ${order.order_no || ''} · ${client?.name || order.client_id} будет удалён из листов «Заказы» и «Позиции».`,
+      warning: 'Это действие нельзя отменить.',
+      actionLabel: 'Удалить заказ',
+      confirmText: 'УДАЛИТЬ',
+      processingLabel: 'Удаляю...',
+      onCancel: () => showToast('Удаление отменено', 'warn'),
+      onConfirm: async () => {
+        try {
+          await api('deleteOrderPermanent', {
+            order_id: order.order_id,
+            confirm: true,
+            reason: 'test order cleanup',
+            deleted_by: CURRENT_USER,
+          });
+          clearPageCache('inwork');
+          clearPageCache('history');
+          clearPageCache('assembly');
+          setOrders(prev => prev.filter(o => o.order_id !== order.order_id));
+          showToast(`Заказ ${order.order_no} полностью удалён`);
+        } catch (err) {
+          showToast('Ошибка удаления: ' + err.message, 'error');
+          load(true);
+        }
+      },
+    });
   };
 
   const applyElbaResult = (orderId, res) => {
@@ -2245,6 +2322,7 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
                   onDocumentsDetached={detachDocuments}
                   onDocumentsMetaUpdate={updateOrderMeta}
                   showToast={showToast}
+                  showDangerConfirm={showDangerConfirm}
                   isOverdue={group.key === 'overdue'}
                   isRecentlyChanged={recentlyChanged.has(o.order_id)}
                   isStatusPending={pendingStatusIds.has(o.order_id)}
@@ -2258,7 +2336,7 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
   </>;
 }
 
-function InWorkOrderRow({ order, client, point, legal, expanded, items, onToggle, onChangeStatus, onEdit, onDelete, onDocumentsCreated, onDocumentsDetached, onDocumentsMetaUpdate, showToast, isOverdue, isRecentlyChanged, isStatusPending }) {
+function InWorkOrderRow({ order, client, point, legal, expanded, items, onToggle, onChangeStatus, onEdit, onDelete, onDocumentsCreated, onDocumentsDetached, onDocumentsMetaUpdate, showToast, showDangerConfirm, isOverdue, isRecentlyChanged, isStatusPending }) {
   const statusColor = { new: 'blue', assembled: 'amber', shipped: 'green', cancelled: 'red' }[order.status] || 'slate';
   const statusLabel = { new: 'Новый', assembled: 'Собран', shipped: 'Отгружен', cancelled: 'Отменён' }[order.status] || order.status;
   const docState = orderDocState(order);
@@ -2336,7 +2414,7 @@ function InWorkOrderRow({ order, client, point, legal, expanded, items, onToggle
           </div>
 
           <div className="mt-4">
-            <ElbaDocumentsBlock order={order} client={client} point={point} legal={legal} onCreated={onDocumentsCreated} onDetached={onDocumentsDetached} onMetaUpdate={onDocumentsMetaUpdate} showToast={showToast} />
+            <ElbaDocumentsBlock order={order} client={client} point={point} legal={legal} onCreated={onDocumentsCreated} onDetached={onDocumentsDetached} onMetaUpdate={onDocumentsMetaUpdate} showToast={showToast} showDangerConfirm={showDangerConfirm} />
           </div>
 
           <h4 className="font-semibold text-sm mb-2 mt-4 text-slate-700">Изменить статус</h4>
@@ -2363,7 +2441,7 @@ function InWorkOrderRow({ order, client, point, legal, expanded, items, onToggle
 
 // ===== Документы Эльбы =====
 
-function ElbaDocumentsBlock({ order, client, point, legal, onCreated, onDetached, onMetaUpdate, showToast }) {
+function ElbaDocumentsBlock({ order, client, point, legal, onCreated, onDetached, onMetaUpdate, showToast, showDangerConfirm }) {
   const [creating, setCreating] = useState(false);
   const [detaching, setDetaching] = useState(false);
   const [copyingInvoice, setCopyingInvoice] = useState(false);
@@ -2409,32 +2487,35 @@ function ElbaDocumentsBlock({ order, client, point, legal, onCreated, onDetached
 
   const handleDetach = async () => {
     if (detaching) return;
-    const ok = confirm(
-      `Открепить документы от заказа ${order.order_no || ''}?\n\n` +
-      `ВАЖНО: это очистит ссылки на счёт и накладную только в дашборде.\n` +
-      `Сам счёт и накладная в Эльбе НЕ удалятся — их нужно отменить вручную в Эльбе, иначе будут дубли.\n\n` +
-      `После открепления заказ можно будет редактировать.`
-    );
-    if (!ok) return;
 
-    setDetaching(true);
-    try {
-      await api('updateOrder', {
-        order_id: order.order_id,
-        updates: {
-          invoice_id: '', invoice_number: '', invoice_url: '',
-          waybill_id: '', waybill_number: '', waybill_url: '',
-          documents_status: '', documents_error: '',
-        },
-      });
-      onDetached?.(order.order_id);
-      clearPageCache('inwork');
-      clearPageCache('history');
-      showToast('Документы откреплены. Не забудь отменить их в Эльбе вручную.', 'warn');
-    } catch (err) {
-      showToast('Ошибка: ' + err.message, 'error');
-    }
-    setDetaching(false);
+    showDangerConfirm({
+      title: 'Открепить документы?',
+      description: `Ссылки на счёт и ТН будут убраны из заказа ${order.order_no || ''}. После этого заказ можно будет редактировать.`,
+      warning: 'В Эльбе документы не удалятся. Их нужно отменить вручную, иначе будут дубли.',
+      actionLabel: 'Открепить',
+      processingLabel: 'Открепляю...',
+      onConfirm: async () => {
+        setDetaching(true);
+        try {
+          await api('updateOrder', {
+            order_id: order.order_id,
+            updates: {
+              invoice_id: '', invoice_number: '', invoice_url: '',
+              waybill_id: '', waybill_number: '', waybill_url: '',
+              documents_status: '', documents_error: '',
+            },
+          });
+          onDetached?.(order.order_id);
+          clearPageCache('inwork');
+          clearPageCache('history');
+          showToast('Документы откреплены. Не забудь отменить их в Эльбе вручную.', 'warn');
+        } catch (err) {
+          showToast('Ошибка: ' + err.message, 'error');
+        } finally {
+          setDetaching(false);
+        }
+      },
+    });
   };
 
   const copyTextToClipboard = async (text) => {
@@ -2491,7 +2572,7 @@ function ElbaDocumentsBlock({ order, client, point, legal, onCreated, onDetached
 
       // Отметка: счёт скопирован — не критично, при ошибке только warn
       try {
-        const ts = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Novosibirsk', hour12: false }).slice(0, 16);
+        const ts = new Date().toISOString();
         await api('updateOrder', {
           order_id: order.order_id,
           updates: { invoice_copied_at: ts, invoice_copied_by: CURRENT_USER },
@@ -2518,7 +2599,7 @@ function ElbaDocumentsBlock({ order, client, point, legal, onCreated, onDetached
 
       // Отметка: ТН открыта — не критично, при ошибке только warn
       try {
-        const ts = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Novosibirsk', hour12: false }).slice(0, 16);
+        const ts = new Date().toISOString();
         await api('updateOrder', {
           order_id: order.order_id,
           updates: { waybill_printed_at: ts, waybill_printed_by: CURRENT_USER },
@@ -2908,7 +2989,7 @@ function PrintAssemblySheet({ orders, clientById, pointById }) {
 
 // ===== История =====
 
-function HistoryPage({ clients, points, legals, flavors, extras, showToast, showShippingConfirm, onEditOrder, markOrdersChanged, ordersRefreshKey }) {
+function HistoryPage({ clients, points, legals, flavors, extras, showToast, showShippingConfirm, showDangerConfirm, onEditOrder, markOrdersChanged, ordersRefreshKey }) {
   const savedFilters = readLocalJson('omoti_history_filters_v1', null);
   const [dateFrom, setDateFrom] = useState(() => savedFilters?.dateFrom || (() => { const d = new Date(); d.setDate(d.getDate() - 14); return d.toISOString().substring(0, 10); })());
   const [dateTo, setDateTo] = useState(() => savedFilters?.dateTo || today());
@@ -3064,30 +3145,33 @@ function HistoryPage({ clients, points, legals, flavors, extras, showToast, show
       return;
     }
 
-    if (!confirm(`Полностью удалить тестовый заказ ${order.order_no} (${client?.name || order.client_id})?\n\nОн исчезнет из листов Заказы и Позиции. Это действие нельзя отменить.`)) return;
-
-    const typed = window.prompt('Для подтверждения введи: УДАЛИТЬ');
-    if (typed !== 'УДАЛИТЬ') {
-      showToast('Удаление отменено', 'warn');
-      return;
-    }
-
-    try {
-      await api('deleteOrderPermanent', {
-        order_id: order.order_id,
-        confirm: true,
-        reason: 'test order cleanup',
-        deleted_by: CURRENT_USER,
-      });
-      clearPageCache('history');
-      clearPageCache('inwork');
-      clearPageCache('assembly');
-      setOrders(prev => prev.filter(o => o.order_id !== order.order_id));
-      showToast(`Заказ ${order.order_no} полностью удалён`);
-    } catch (err) {
-      showToast('Ошибка удаления: ' + err.message, 'error');
-      load(true);
-    }
+    showDangerConfirm({
+      title: 'Удалить заказ?',
+      description: `Заказ ${order.order_no || ''} · ${client?.name || order.client_id} будет удалён из листов «Заказы» и «Позиции».`,
+      warning: 'Это действие нельзя отменить.',
+      actionLabel: 'Удалить заказ',
+      confirmText: 'УДАЛИТЬ',
+      processingLabel: 'Удаляю...',
+      onCancel: () => showToast('Удаление отменено', 'warn'),
+      onConfirm: async () => {
+        try {
+          await api('deleteOrderPermanent', {
+            order_id: order.order_id,
+            confirm: true,
+            reason: 'test order cleanup',
+            deleted_by: CURRENT_USER,
+          });
+          clearPageCache('inwork');
+          clearPageCache('history');
+          clearPageCache('assembly');
+          setOrders(prev => prev.filter(o => o.order_id !== order.order_id));
+          showToast(`Заказ ${order.order_no} полностью удалён`);
+        } catch (err) {
+          showToast('Ошибка удаления: ' + err.message, 'error');
+          load(true);
+        }
+      },
+    });
   };
 
   const applyElbaResult = (orderId, res) => {
@@ -3158,6 +3242,7 @@ function HistoryPage({ clients, points, legals, flavors, extras, showToast, show
             onDocumentsDetached={detachDocuments}
             onDocumentsMetaUpdate={updateOrderMeta}
             showToast={showToast}
+            showDangerConfirm={showDangerConfirm}
           />
         ))}
       </div>}
@@ -3173,7 +3258,7 @@ const STATUS_OPTIONS = [
   { value: 'cancelled', label: 'Отменён' },
 ];
 
-function HistoryOrderRow({ order, client, point, legal, expanded, items, onToggle, onChangeStatus, onEdit, onDelete, onDocumentsCreated, onDocumentsDetached, onDocumentsMetaUpdate, showToast }) {
+function HistoryOrderRow({ order, client, point, legal, expanded, items, onToggle, onChangeStatus, onEdit, onDelete, onDocumentsCreated, onDocumentsDetached, onDocumentsMetaUpdate, showToast, showDangerConfirm }) {
   return <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
     <button onClick={onToggle} className="w-full flex items-center gap-4 p-4 hover:bg-slate-50 text-left transition">
       <svg className={`text-slate-400 transition flex-shrink-0 ${expanded ? 'rotate-90' : ''}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
@@ -3223,7 +3308,7 @@ function HistoryOrderRow({ order, client, point, legal, expanded, items, onToggl
           </div>
 
           <div className="mt-4">
-            <ElbaDocumentsBlock order={order} client={client} point={point} legal={legal} onCreated={onDocumentsCreated} onDetached={onDocumentsDetached} onMetaUpdate={onDocumentsMetaUpdate} showToast={showToast} />
+            <ElbaDocumentsBlock order={order} client={client} point={point} legal={legal} onCreated={onDocumentsCreated} onDetached={onDocumentsDetached} onMetaUpdate={onDocumentsMetaUpdate} showToast={showToast} showDangerConfirm={showDangerConfirm} />
           </div>
 
           <h4 className="font-semibold text-sm mb-2 mt-4 text-slate-700">Изменить статус</h4>
@@ -3481,7 +3566,7 @@ function ExportPage({ showToast }) {
 
       if (orderIds.length === 0) return;
 
-      const ts = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Novosibirsk', hour12: false }).slice(0, 16);
+      const ts = new Date().toISOString();
 
       try {
         const res = await api('bulkMarkExcelCopied', { order_ids: orderIds, by: CURRENT_USER });
