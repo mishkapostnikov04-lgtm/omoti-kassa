@@ -1862,6 +1862,15 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
     setOrders(prev => prev.map(o => o.order_id === orderId ? { ...o, ...updates } : o));
   };
 
+  const detachDocuments = (orderId) => {
+    const cleared = {
+      invoice_id: '', invoice_number: '', invoice_url: '',
+      waybill_id: '', waybill_number: '', waybill_url: '',
+      documents_status: '', documents_error: '',
+    };
+    setOrders(prev => prev.map(o => o.order_id === orderId ? { ...o, ...cleared } : o));
+  };
+
   return <>
     <header className="flex items-center justify-between rounded-3xl bg-white p-5 shadow-sm">
       <div>
@@ -1916,6 +1925,7 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
               onEdit={() => onEditOrder({ ...o, items: expandedItems[o.order_id] || o.items || [] })}
               onDelete={() => deleteOrder(o)}
               onDocumentsCreated={applyElbaResult}
+              onDocumentsDetached={detachDocuments}
               showToast={showToast}
               isOverdue={group.key === 'overdue'}
             />
@@ -1926,7 +1936,7 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
   </>;
 }
 
-function InWorkOrderRow({ order, client, point, legal, expanded, items, onToggle, onChangeStatus, onEdit, onDelete, onDocumentsCreated, showToast, isOverdue }) {
+function InWorkOrderRow({ order, client, point, legal, expanded, items, onToggle, onChangeStatus, onEdit, onDelete, onDocumentsCreated, onDocumentsDetached, showToast, isOverdue }) {
   const statusColor = { new: 'blue', assembled: 'amber' }[order.status] || 'slate';
   const statusLabel = { new: 'Новый', assembled: 'Собран' }[order.status] || order.status;
 
@@ -1987,7 +1997,7 @@ function InWorkOrderRow({ order, client, point, legal, expanded, items, onToggle
           </div>
 
           <div className="mt-4">
-            <ElbaDocumentsBlock order={order} client={client} point={point} legal={legal} onCreated={onDocumentsCreated} showToast={showToast} />
+            <ElbaDocumentsBlock order={order} client={client} point={point} legal={legal} onCreated={onDocumentsCreated} onDetached={onDocumentsDetached} showToast={showToast} />
           </div>
 
           <h4 className="font-semibold text-sm mb-2 mt-4 text-slate-700">Изменить статус</h4>
@@ -2014,8 +2024,9 @@ function InWorkOrderRow({ order, client, point, legal, expanded, items, onToggle
 
 // ===== Документы Эльбы =====
 
-function ElbaDocumentsBlock({ order, client, point, legal, onCreated, showToast }) {
+function ElbaDocumentsBlock({ order, client, point, legal, onCreated, onDetached, showToast }) {
   const [creating, setCreating] = useState(false);
+  const [detaching, setDetaching] = useState(false);
 
   const hasDocs = !!(order.invoice_id || order.waybill_id || order.invoice_url || order.waybill_url);
   const status = order.documents_status || (hasDocs ? 'full' : '');
@@ -2053,6 +2064,36 @@ function ElbaDocumentsBlock({ order, client, point, legal, onCreated, showToast 
       showToast('Ошибка Эльбы: ' + err.message, 'error');
     }
     setCreating(false);
+  };
+
+  const handleDetach = async () => {
+    if (detaching) return;
+    const ok = confirm(
+      `Открепить документы от заказа ${order.order_no || ''}?\n\n` +
+      `ВАЖНО: это очистит ссылки на счёт и накладную только в дашборде.\n` +
+      `Сам счёт и накладная в Эльбе НЕ удалятся — их нужно отменить вручную в Эльбе, иначе будут дубли.\n\n` +
+      `После открепления заказ можно будет редактировать.`
+    );
+    if (!ok) return;
+
+    setDetaching(true);
+    try {
+      await api('updateOrder', {
+        order_id: order.order_id,
+        updates: {
+          invoice_id: '', invoice_number: '', invoice_url: '',
+          waybill_id: '', waybill_number: '', waybill_url: '',
+          documents_status: '', documents_error: '',
+        },
+      });
+      onDetached?.(order.order_id);
+      clearPageCache('inwork');
+      clearPageCache('history');
+      showToast('Документы откреплены. Не забудь отменить их в Эльбе вручную.', 'warn');
+    } catch (err) {
+      showToast('Ошибка: ' + err.message, 'error');
+    }
+    setDetaching(false);
   };
 
   const copyTextToClipboard = async (text) => {
@@ -2143,6 +2184,15 @@ function ElbaDocumentsBlock({ order, client, point, legal, onCreated, showToast 
           className="inline-flex rounded-xl bg-white px-3 py-2 font-medium text-slate-900 border border-slate-200 hover:bg-slate-50"
         >
           Распечатать ТН
+        </button>}
+
+        {hasDocs && onDetached && <button
+          type="button"
+          onClick={handleDetach}
+          disabled={detaching}
+          className="inline-flex rounded-xl bg-white px-3 py-2 font-medium text-red-600 border border-red-200 hover:bg-red-50 disabled:opacity-50"
+        >
+          {detaching ? 'Открепляю...' : 'Открепить документы'}
         </button>}
       </div>
 
@@ -2618,6 +2668,15 @@ function HistoryPage({ clients, points, legals, flavors, extras, showToast, onEd
     setOrders(prev => prev.map(o => o.order_id === orderId ? { ...o, ...updates } : o));
   };
 
+  const detachDocuments = (orderId) => {
+    const cleared = {
+      invoice_id: '', invoice_number: '', invoice_url: '',
+      waybill_id: '', waybill_number: '', waybill_url: '',
+      documents_status: '', documents_error: '',
+    };
+    setOrders(prev => prev.map(o => o.order_id === orderId ? { ...o, ...cleared } : o));
+  };
+
   return <>
     <header className="flex items-center justify-between rounded-3xl bg-white p-5 shadow-sm">
       <div>
@@ -2655,6 +2714,7 @@ function HistoryPage({ clients, points, legals, flavors, extras, showToast, onEd
             onEdit={() => onEditOrder({ ...o, items: expandedItems[o.order_id] || o.items || [] })}
             onDelete={() => deleteOrder(o)}
             onDocumentsCreated={applyElbaResult}
+            onDocumentsDetached={detachDocuments}
             showToast={showToast}
           />
         ))}
@@ -2671,7 +2731,7 @@ const STATUS_OPTIONS = [
   { value: 'cancelled', label: 'Отменён' },
 ];
 
-function HistoryOrderRow({ order, client, point, legal, expanded, items, onToggle, onChangeStatus, onEdit, onDelete, onDocumentsCreated, showToast }) {
+function HistoryOrderRow({ order, client, point, legal, expanded, items, onToggle, onChangeStatus, onEdit, onDelete, onDocumentsCreated, onDocumentsDetached, showToast }) {
   return <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
     <button onClick={onToggle} className="w-full flex items-center gap-4 p-4 hover:bg-slate-50 text-left transition">
       <svg className={`text-slate-400 transition flex-shrink-0 ${expanded ? 'rotate-90' : ''}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
@@ -2715,7 +2775,7 @@ function HistoryOrderRow({ order, client, point, legal, expanded, items, onToggl
           </div>
 
           <div className="mt-4">
-            <ElbaDocumentsBlock order={order} client={client} point={point} legal={legal} onCreated={onDocumentsCreated} showToast={showToast} />
+            <ElbaDocumentsBlock order={order} client={client} point={point} legal={legal} onCreated={onDocumentsCreated} onDetached={onDocumentsDetached} showToast={showToast} />
           </div>
 
           <h4 className="font-semibold text-sm mb-2 mt-4 text-slate-700">Изменить статус</h4>
@@ -3563,13 +3623,16 @@ function AddClientWizard({ clients, onDone, onCancel, showToast, onRegisterClose
     return false;
   }, [clientData, aliasesEdited, pointsData, legalsData]);
 
+  const isDirtyRef = useRef(false);
+  isDirtyRef.current = isDirty;
+
   useEffect(() => {
     onRegisterCloseGuard?.(() => {
-      if (!isDirty) return true;
+      if (!isDirtyRef.current) return true;
       return window.confirm('Есть несохранённые данные. Закрыть без сохранения?');
     });
     return () => onRegisterCloseGuard?.(() => true);
-  }, [isDirty]);
+  }, []);
 
   const updatePoint = (idx, updates) => setPointsData(prev => prev.map((p, i) => i === idx ? { ...p, ...updates } : p));
   const updateLegal = (idx, updates) => setLegalsData(prev => prev.map((l, i) => i === idx ? { ...l, ...updates } : l));
@@ -3790,13 +3853,16 @@ function EditClientWizard({ clients, client, points, legals, onDone, onCancel, s
   const currentSnapshot = useMemo(() => JSON.stringify({ clientData, pointsData, legalsData }), [clientData, pointsData, legalsData]);
   const isDirty = currentSnapshot !== initialSnapshotRef.current;
 
+  const isDirtyRef = useRef(false);
+  isDirtyRef.current = isDirty;
+
   useEffect(() => {
     onRegisterCloseGuard?.(() => {
-      if (!isDirty) return true;
+      if (!isDirtyRef.current) return true;
       return window.confirm('Есть несохранённые данные. Закрыть без сохранения?');
     });
     return () => onRegisterCloseGuard?.(() => true);
-  }, [isDirty]);
+  }, []);
 
   const updatePoint = (idx, updates) => setPointsData(prev => prev.map((p, i) => i === idx ? { ...p, ...updates } : p));
   const updateLegal = (idx, updates) => setLegalsData(prev => prev.map((l, i) => i === idx ? { ...l, ...updates } : l));
