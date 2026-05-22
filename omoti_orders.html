@@ -3029,6 +3029,12 @@ function CatalogPage({ clients, points, legals, flavors, extras, priceOverrides,
 
   const closeModal = () => { setModalType(null); setModalData({}); };
 
+  const wizardCloseGuardRef = useRef(() => true);
+  const guardedClose = () => {
+    if (!wizardCloseGuardRef.current()) return;
+    closeModal();
+  };
+
   const pointUpdates = (d) => ({
     address: d.address || '',
     label: d.label || '',
@@ -3181,8 +3187,8 @@ function CatalogPage({ clients, points, legals, flavors, extras, priceOverrides,
       {tab === 'prices' && <PricesTable overrides={priceOverrides} clients={clients} points={points} legals={legals} flavors={flavors} search={search} onDeactivate={deactivate} />}
     </Card>
 
-    {modalType === 'client_wizard' && <Modal open={true} onClose={closeModal} title="Новый клиент" size="xl"><AddClientWizard clients={clients} onDone={() => { closeModal(); reload(); }} onCancel={closeModal} showToast={showToast} /></Modal>}
-    {modalType === 'edit_client_wizard' && <Modal open={true} onClose={closeModal} title="Редактировать клиента" size="xl"><EditClientWizard clients={clients} client={modalData.client} points={modalData.points || []} legals={modalData.legals || []} onDone={() => { closeModal(); reload(); }} onCancel={closeModal} showToast={showToast} /></Modal>}
+    {modalType === 'client_wizard' && <Modal open={true} onClose={guardedClose} title="Новый клиент" size="xl"><AddClientWizard clients={clients} onDone={() => { closeModal(); reload(); }} onCancel={guardedClose} showToast={showToast} onRegisterCloseGuard={(fn) => { wizardCloseGuardRef.current = fn; }} /></Modal>}
+    {modalType === 'edit_client_wizard' && <Modal open={true} onClose={guardedClose} title="Редактировать клиента" size="xl"><EditClientWizard clients={clients} client={modalData.client} points={modalData.points || []} legals={modalData.legals || []} onDone={() => { closeModal(); reload(); }} onCancel={guardedClose} showToast={showToast} onRegisterCloseGuard={(fn) => { wizardCloseGuardRef.current = fn; }} /></Modal>}
     {modalType === 'client' && <Modal open={true} onClose={closeModal} title="Новый клиент"><AddClientForm data={modalData} setData={setModalData} onSubmit={submitModal} onCancel={closeModal} /></Modal>}
     {modalType === 'point' && <Modal open={true} onClose={closeModal} title="Новый адрес"><AddPointForm data={modalData} setData={setModalData} clients={clients} onSubmit={submitModal} onCancel={closeModal} /></Modal>}
     {modalType === 'edit_point' && <Modal open={true} onClose={closeModal} title="Редактировать адрес"><AddPointForm data={modalData} setData={setModalData} clients={clients} onSubmit={submitModal} onCancel={closeModal} submitLabel="Сохранить" lockClient={true} /></Modal>}
@@ -3522,7 +3528,7 @@ function AliasesBlock({ aliases, onChange, clients, currentClientId }) {
   </div>;
 }
 
-function AddClientWizard({ clients, onDone, onCancel, showToast }) {
+function AddClientWizard({ clients, onDone, onCancel, showToast, onRegisterCloseGuard }) {
   const emptyPoint = () => ({ address: '', label: '', working_hours: '', contact_person: '', delivery_comment: '' });
   const emptyLegal = () => ({
     legal_name: '', inn: '', kpp: '', has_contract: false,
@@ -3546,6 +3552,24 @@ function AddClientWizard({ clients, onDone, onCancel, showToast }) {
   const legalTouched = (l) => Boolean(String(l.legal_name || '').trim() || String(l.inn || '').trim() || String(l.kpp || '').trim() || String(l.documents_comment || '').trim() || Number(l.payment_terms_days || 0) > 0);
   const touchedLegals = legalsData.filter(legalTouched);
   const filledLegals = touchedLegals.filter(l => String(l.legal_name || '').trim() && String(l.inn || '').trim());
+
+  const isDirty = useMemo(() => {
+    if (String(clientData.name || '').trim()) return true;
+    if (String(clientData.main_contact || '').trim()) return true;
+    if (String(clientData.comment || '').trim()) return true;
+    if (aliasesEdited) return true;
+    if (pointsData.some(p => Object.values(p).some(v => String(v || '').trim()))) return true;
+    if (legalsData.some(legalTouched)) return true;
+    return false;
+  }, [clientData, aliasesEdited, pointsData, legalsData]);
+
+  useEffect(() => {
+    onRegisterCloseGuard?.(() => {
+      if (!isDirty) return true;
+      return window.confirm('Есть несохранённые данные. Закрыть без сохранения?');
+    });
+    return () => onRegisterCloseGuard?.(() => true);
+  }, [isDirty]);
 
   const updatePoint = (idx, updates) => setPointsData(prev => prev.map((p, i) => i === idx ? { ...p, ...updates } : p));
   const updateLegal = (idx, updates) => setLegalsData(prev => prev.map((l, i) => i === idx ? { ...l, ...updates } : l));
@@ -3577,23 +3601,30 @@ function AddClientWizard({ clients, onDone, onCancel, showToast }) {
       const nameVal = String(clientData.name || '').trim();
       const aliasArr = String(clientData.aliases || '').split('|').map(s => s.trim()).filter(Boolean);
       if (nameVal && !aliasArr.some(a => a.toLowerCase() === nameVal.toLowerCase())) aliasArr.unshift(nameVal);
-      const c = await api('addClient', { ...clientData, aliases: aliasArr.join('|'), created_by: CURRENT_USER });
-      const clientId = c.client_id;
 
-      for (const p of filledPoints) {
-        await api('addPoint', { ...p, client_id: clientId, created_by: CURRENT_USER });
+      const res = await api('addClientFull', {
+        ...clientData,
+        aliases: aliasArr.join('|'),
+        points: filledPoints,
+        legals: filledLegals,
+        created_by: CURRENT_USER,
+      });
+
+      if (!res.client_id) throw new Error('Сервер не вернул client_id — клиент не создан');
+
+      if (res.warnings && res.warnings.length) {
+        showToast(`Клиент создан, но есть проблемы:\n${res.warnings.join('\n')}`, 'warn');
+      } else {
+        showToast(`Клиент добавлен: ${clientData.name}`);
       }
 
-      for (const l of filledLegals) {
-        await api('addLegal', { ...l, client_id: clientId, created_by: CURRENT_USER });
-      }
-
-      showToast(`Клиент добавлен: ${clientData.name}`);
+      try { await api('flushCache'); } catch (_) {}
       onDone();
     } catch (err) {
       showToast('Ошибка: ' + err.message, 'error');
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   const stepClass = (n) => step === n ? 'bg-slate-950 text-white' : 'bg-slate-100 text-slate-600';
@@ -3709,7 +3740,7 @@ function AddClientWizard({ clients, onDone, onCancel, showToast }) {
 }
 
 
-function EditClientWizard({ clients, client, points, legals, onDone, onCancel, showToast }) {
+function EditClientWizard({ clients, client, points, legals, onDone, onCancel, showToast, onRegisterCloseGuard }) {
   const emptyPoint = () => ({ address: '', label: '', working_hours: '', contact_person: '', delivery_comment: '' });
   const emptyLegal = () => ({
     legal_name: '', inn: '', kpp: '', has_contract: false,
@@ -3751,6 +3782,21 @@ function EditClientWizard({ clients, client, points, legals, onDone, onCancel, s
   const legalTouched = (l) => Boolean(String(l.legal_name || '').trim() || String(l.inn || '').trim() || String(l.kpp || '').trim() || String(l.documents_comment || '').trim() || Number(l.payment_terms_days || 0) > 0);
   const touchedLegals = legalsData.filter(legalTouched);
   const filledLegals = touchedLegals.filter(l => String(l.legal_name || '').trim() && String(l.inn || '').trim());
+
+  const initialSnapshotRef = useRef(null);
+  if (initialSnapshotRef.current === null) {
+    initialSnapshotRef.current = JSON.stringify({ clientData, pointsData, legalsData });
+  }
+  const currentSnapshot = useMemo(() => JSON.stringify({ clientData, pointsData, legalsData }), [clientData, pointsData, legalsData]);
+  const isDirty = currentSnapshot !== initialSnapshotRef.current;
+
+  useEffect(() => {
+    onRegisterCloseGuard?.(() => {
+      if (!isDirty) return true;
+      return window.confirm('Есть несохранённые данные. Закрыть без сохранения?');
+    });
+    return () => onRegisterCloseGuard?.(() => true);
+  }, [isDirty]);
 
   const updatePoint = (idx, updates) => setPointsData(prev => prev.map((p, i) => i === idx ? { ...p, ...updates } : p));
   const updateLegal = (idx, updates) => setLegalsData(prev => prev.map((l, i) => i === idx ? { ...l, ...updates } : l));
