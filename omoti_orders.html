@@ -1673,7 +1673,7 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
     const cached = getPageCache(cacheKey);
     if (!force && cached) {
       setOrders(cached);
-      setExpandedItems(prev => ({ ...itemsMapFromOrders(cached), ...prev }));
+      setExpandedItems(prev => ({ ...prev, ...itemsMapFromOrders(cached) }));
       setLoading(false);
       if (isPageCacheFresh(cacheKey)) return;
     } else {
@@ -2482,7 +2482,7 @@ function HistoryPage({ clients, points, legals, flavors, extras, showToast, onEd
     const cached = getPageCache(cacheKey);
     if (!force && cached) {
       setOrders(cached);
-      setExpandedItems(prev => ({ ...itemsMapFromOrders(cached), ...prev }));
+      setExpandedItems(prev => ({ ...prev, ...itemsMapFromOrders(cached) }));
       setLoading(false);
       if (isPageCacheFresh(cacheKey)) return;
     } else {
