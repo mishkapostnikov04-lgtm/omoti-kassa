@@ -65,7 +65,7 @@ async function api(action, params = {}) {
     body: JSON.stringify({ secret: API_SECRET, action, params }),
   });
   const data = await res.json();
-  if (!data.ok) throw new Error(data.error || data.message || 'Unknown error');
+  if (!data.ok) throw new Error(data.message || data.error || 'Unknown error');
   return data;
 }
 
