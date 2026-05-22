@@ -95,6 +95,9 @@ const displayTime = (v) => {
   const m = s.match(/(\d{2}):(\d{2})/);
   return m ? `${m[1]}:${m[2]}` : '';
 };
+const nowNovosibirskIso = () => new Date()
+  .toLocaleString('sv-SE', { timeZone: 'Asia/Novosibirsk', hour12: false })
+  .replace(' ', 'T');
 const orderHasDocs = (o) => !!(o && (o.invoice_id || o.invoice_url || o.waybill_id || o.waybill_url));
 
 const orderDocState = (o) => {
@@ -3588,7 +3591,7 @@ function ExportPage({ showToast, showDangerConfirm }) {
 
       if (orderIds.length === 0) return;
 
-      const ts = new Date().toISOString();
+      const ts = nowNovosibirskIso();
 
       try {
         const res = await api('bulkMarkExcelCopied', { order_ids: orderIds, by: CURRENT_USER });
