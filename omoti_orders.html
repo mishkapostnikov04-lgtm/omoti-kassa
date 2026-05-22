@@ -87,6 +87,27 @@ const displayDate = (v) => {
 };
 const isTrue = (v) => v === true || ['TRUE', 'ИСТИНА', 'ДА', '1'].includes(String(v).trim().toUpperCase());
 
+// ===== Алиасы клиентов =====
+const ALIAS_LEGAL_PREFIXES_RE = /^(ООО|ИП|ЗАО|ПАО|АО|Inc\.?|Ltd\.?|LLC)\s+/i;
+const ALIAS_LEGAL_SUFFIXES_RE = /\s+(ООО|ИП|ЗАО|ПАО|АО|Inc\.?|Ltd\.?|LLC)$/i;
+const ALIAS_STOP_WORDS = new Set([
+  'кафе','суши','ресторан','доставка','еда','бар','гриль','пицца','кухня',
+  'food','cafe','sushi','bar','kitchen','delivery','store','shop',
+]);
+function generateClientAliases(name) {
+  const clean = String(name || '').trim();
+  if (!clean) return [];
+  const variants = [clean];
+  const stripped = clean.replace(ALIAS_LEGAL_PREFIXES_RE, '').replace(ALIAS_LEGAL_SUFFIXES_RE, '').trim();
+  if (stripped && stripped !== clean) variants.push(stripped);
+  const words = (stripped || clean).split(/\s+/);
+  if (words.length > 1) {
+    const w = words[0];
+    if (w.length > 3 && !ALIAS_STOP_WORDS.has(w.toLowerCase())) variants.push(w);
+  }
+  return [...new Set(variants)];
+}
+
 // ===== Порядок вкусов (единый, как в экспорте Excel) =====
 const EXPORT_FLAVOR_ORDER = [
   'Арбуз-Дыня', 'Бабл Гам', 'Банан-Нутелла', 'Вишня-Тонка', 'Мандарин',
@@ -1073,32 +1094,17 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
     setSaving(true);
     try {
       if (isEditMode && editingOrder) {
-        // редактирование: создаём новый заказ, старый помечаем cancelled
-        const newComment = comment + (comment && editingOrder.order_no ? ' ' : '') + `(исправление ${editingOrder.order_no})`;
-        const res = await api('createOrder', {
+        const res = await api('replaceOrder', {
+          order_id: editingOrder.order_id,
           client_id: clientId,
           point_id: pointId || undefined,
           legal_id: legalId || undefined,
           delivery_date: deliveryDate,
-          comment: newComment,
+          comment: comment,
           items: items.map(i => ({ type: i.type, ref_id: i.ref_id, qty: Number(i.qty), price: Number(i.price) })),
-          source: 'manual',
           status: getEditedOrderStatus(),
-          created_by: CURRENT_USER,
         });
-        // помечаем старый как отменённый
-        try {
-          await api('updateOrder', {
-            order_id: editingOrder.order_id,
-            updates: {
-              status: 'cancelled',
-              comment: `[ЗАМЕНЁН на ${res.order_no}] ` + (editingOrder.comment || ''),
-            }
-          });
-        } catch (err) {
-          console.warn('Не удалось пометить старый заказ:', err);
-        }
-        showToast(`Заказ обновлён: ${res.order_no} вместо ${editingOrder.order_no}`);
+        showToast(`Заказ ${editingOrder.order_no} обновлён`);
         // выходим из режима редактирования
         setItems([]); setComment(''); setClientId(''); setPointId(''); setLegalId('');
         onClearEdit();
@@ -1651,7 +1657,6 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
   const [loading, setLoading] = useState(() => !initialInworkCache);
   const [expandedId, setExpandedId] = useState(null);
   const [expandedItems, setExpandedItems] = useState(() => initialInworkCache ? itemsMapFromOrders(initialInworkCache) : {});
-  const [refreshKey, setRefreshKey] = useState(0);
   const [statusFilter, setStatusFilter] = useState(''); // '', 'new', 'assembled'
 
   const load = async (force = false) => {
@@ -1688,7 +1693,7 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [refreshKey]);
+  useEffect(() => { load(); }, []);
 
   const clientById = useMemo(() => { const m = {}; clients.forEach(c => { m[c.client_id] = c; }); return m; }, [clients]);
   const pointById = useMemo(() => { const m = {}; points.forEach(p => { m[p.point_id] = p; }); return m; }, [points]);
@@ -2150,7 +2155,6 @@ function AssemblyPage({ clients, points, showToast, onEditOrder }) {
   const [loading, setLoading] = useState(() => !initialCache);
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [dateFilter, setDateFilter] = useState('all'); // all / today / tomorrow / overdue / later
-  const [refreshKey, setRefreshKey] = useState(0);
 
   const clientById = useMemo(() => { const m = {}; clients.forEach(c => { m[c.client_id] = c; }); return m; }, [clients]);
   const pointById = useMemo(() => { const m = {}; points.forEach(p => { m[p.point_id] = p; }); return m; }, [points]);
@@ -2202,7 +2206,7 @@ function AssemblyPage({ clients, points, showToast, onEditOrder }) {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [refreshKey]);
+  useEffect(() => { load(); }, []);
 
   const filteredOrders = useMemo(() => {
     const t = today();
@@ -3150,8 +3154,8 @@ function CatalogPage({ clients, points, legals, flavors, extras, priceOverrides,
       {tab === 'prices' && <PricesTable overrides={priceOverrides} clients={clients} points={points} legals={legals} flavors={flavors} search={search} onDeactivate={deactivate} />}
     </Card>
 
-    {modalType === 'client_wizard' && <Modal open={true} onClose={closeModal} title="Новый клиент" size="xl"><AddClientWizard onDone={() => { closeModal(); reload(); }} onCancel={closeModal} showToast={showToast} /></Modal>}
-    {modalType === 'edit_client_wizard' && <Modal open={true} onClose={closeModal} title="Редактировать клиента" size="xl"><EditClientWizard client={modalData.client} points={modalData.points || []} legals={modalData.legals || []} onDone={() => { closeModal(); reload(); }} onCancel={closeModal} showToast={showToast} /></Modal>}
+    {modalType === 'client_wizard' && <Modal open={true} onClose={closeModal} title="Новый клиент" size="xl"><AddClientWizard clients={clients} onDone={() => { closeModal(); reload(); }} onCancel={closeModal} showToast={showToast} /></Modal>}
+    {modalType === 'edit_client_wizard' && <Modal open={true} onClose={closeModal} title="Редактировать клиента" size="xl"><EditClientWizard clients={clients} client={modalData.client} points={modalData.points || []} legals={modalData.legals || []} onDone={() => { closeModal(); reload(); }} onCancel={closeModal} showToast={showToast} /></Modal>}
     {modalType === 'client' && <Modal open={true} onClose={closeModal} title="Новый клиент"><AddClientForm data={modalData} setData={setModalData} onSubmit={submitModal} onCancel={closeModal} /></Modal>}
     {modalType === 'point' && <Modal open={true} onClose={closeModal} title="Новый адрес"><AddPointForm data={modalData} setData={setModalData} clients={clients} onSubmit={submitModal} onCancel={closeModal} /></Modal>}
     {modalType === 'edit_point' && <Modal open={true} onClose={closeModal} title="Редактировать адрес"><AddPointForm data={modalData} setData={setModalData} clients={clients} onSubmit={submitModal} onCancel={closeModal} submitLabel="Сохранить" lockClient={true} /></Modal>}
@@ -3441,7 +3445,57 @@ function FormActions({ onSubmit, onCancel, submitLabel = 'Сохранить' })
 }
 
 
-function AddClientWizard({ onDone, onCancel, showToast }) {
+function AliasesBlock({ aliases, onChange, clients, currentClientId }) {
+  const [expanded, setExpanded] = useState(false);
+  const arr = String(aliases || '').split('|').map(s => s.trim()).filter(Boolean);
+
+  const conflicts = useMemo(() => {
+    if (!clients || !arr.length) return [];
+    return arr.filter(alias => {
+      const a = alias.toLowerCase();
+      return (clients || []).some(c => {
+        if (c.client_id === currentClientId) return false;
+        const cAliases = String(c.aliases || '').toLowerCase().split('|').map(s => s.trim());
+        const cName = String(c.name || '').toLowerCase().trim();
+        return cAliases.includes(a) || cName === a;
+      });
+    });
+  }, [aliases, clients, currentClientId]);
+
+  const countLabel = arr.length === 0 ? 'нет вариантов'
+    : arr.length === 1 ? '1 вариант'
+    : arr.length < 5 ? `${arr.length} варианта` : `${arr.length} вариантов`;
+
+  return <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3 space-y-2">
+    <div className="flex items-center justify-between">
+      <div className="text-sm text-slate-500">Дашборд запомнит, как клиент может написать себя в заказе.</div>
+      <button type="button" onClick={() => setExpanded(e => !e)}
+        className="text-xs text-slate-400 hover:text-slate-700 shrink-0 ml-3">
+        {countLabel} {expanded ? '▲' : '▼'}
+      </button>
+    </div>
+    {!expanded && arr.length > 0 && <div className="flex flex-wrap gap-1">
+      {arr.map((a, i) => <span key={i} className={`rounded-lg px-2 py-0.5 text-xs border ${conflicts.includes(a) ? 'bg-amber-50 border-amber-200 text-amber-800' : 'bg-white border-slate-200 text-slate-700'}`}>{a}</span>)}
+    </div>}
+    {expanded && <div className="space-y-2">
+      {arr.length > 0 && <div className="flex flex-wrap gap-1">
+        {arr.map((a, i) => <span key={i} className={`rounded-lg px-2 py-0.5 text-xs border ${conflicts.includes(a) ? 'bg-amber-50 border-amber-200 text-amber-800' : 'bg-white border-slate-200 text-slate-700'}`}>{a}</span>)}
+      </div>}
+      {conflicts.length > 0 && <div className="text-xs text-amber-700">
+        ⚠ {conflicts.map(c => `«${c}»`).join(', ')} уже {conflicts.length === 1 ? 'используется' : 'используются'} у другого клиента
+      </div>}
+      <details>
+        <summary className="cursor-pointer text-xs text-slate-400 hover:text-slate-600">Расширенные настройки</summary>
+        <div className="mt-2 space-y-1">
+          <div className="text-xs text-slate-400">Варианты через | — только для Евгения</div>
+          <Input value={aliases} onChange={onChange} placeholder="азер|azer|азер суши" />
+        </div>
+      </details>
+    </div>}
+  </div>;
+}
+
+function AddClientWizard({ clients, onDone, onCancel, showToast }) {
   const emptyPoint = () => ({ address: '', label: '', working_hours: '', contact_person: '', delivery_comment: '' });
   const emptyLegal = () => ({
     legal_name: '', inn: '', kpp: '', has_contract: false,
@@ -3453,6 +3507,13 @@ function AddClientWizard({ onDone, onCancel, showToast }) {
   const [pointsData, setPointsData] = useState([emptyPoint()]);
   const [legalsData, setLegalsData] = useState([emptyLegal()]);
   const [saving, setSaving] = useState(false);
+  const [aliasesEdited, setAliasesEdited] = useState(false);
+
+  useEffect(() => {
+    if (!aliasesEdited) {
+      setClientData(prev => ({ ...prev, aliases: generateClientAliases(prev.name).join('|') }));
+    }
+  }, [clientData.name]);
 
   const filledPoints = pointsData.filter(p => String(p.address || '').trim());
   const legalTouched = (l) => Boolean(String(l.legal_name || '').trim() || String(l.inn || '').trim() || String(l.kpp || '').trim() || String(l.documents_comment || '').trim() || Number(l.payment_terms_days || 0) > 0);
@@ -3486,7 +3547,10 @@ function AddClientWizard({ onDone, onCancel, showToast }) {
     if (saving) return;
     setSaving(true);
     try {
-      const c = await api('addClient', { ...clientData, created_by: CURRENT_USER });
+      const nameVal = String(clientData.name || '').trim();
+      const aliasArr = String(clientData.aliases || '').split('|').map(s => s.trim()).filter(Boolean);
+      if (nameVal && !aliasArr.some(a => a.toLowerCase() === nameVal.toLowerCase())) aliasArr.unshift(nameVal);
+      const c = await api('addClient', { ...clientData, aliases: aliasArr.join('|'), created_by: CURRENT_USER });
       const clientId = c.client_id;
 
       for (const p of filledPoints) {
@@ -3520,7 +3584,12 @@ function AddClientWizard({ onDone, onCancel, showToast }) {
         Клиент - это бренд или сеть. Например: Sayori суши, Uji, Макитория. Адреса и ИП/ООО добавим следующими шагами.
       </div>
       <div><Label>Название клиента *</Label><Input value={clientData.name} onChange={(v) => setClientData({ ...clientData, name: v })} placeholder="Например: Азер" /></div>
-      <div><Label>Алиасы для поиска</Label><Input value={clientData.aliases} onChange={(v) => setClientData({ ...clientData, aliases: v })} placeholder="азер|azer|азер суши" /></div>
+      <AliasesBlock
+        aliases={clientData.aliases}
+        onChange={(v) => { setAliasesEdited(true); setClientData({ ...clientData, aliases: v }); }}
+        clients={clients}
+        currentClientId={null}
+      />
       <div><Label>Основной контакт</Label><Input value={clientData.main_contact} onChange={(v) => setClientData({ ...clientData, main_contact: v })} placeholder="Имя, телефон" /></div>
       <div><Label>Комментарий по клиенту</Label><Input value={clientData.comment} onChange={(v) => setClientData({ ...clientData, comment: v })} placeholder="Например: часто пишет по адресам, проверять филиал" /></div>
     </div>}
@@ -3585,7 +3654,9 @@ function AddClientWizard({ onDone, onCancel, showToast }) {
         <h3 className="mb-3 font-semibold">Проверка перед сохранением</h3>
         <div className="space-y-3 text-sm">
           <div><span className="text-slate-500">Клиент:</span> <b>{clientData.name || 'не заполнен'}</b></div>
-          <div><span className="text-slate-500">Алиасы:</span> {clientData.aliases || '—'}</div>
+          <div><span className="text-slate-500">Узнает клиента, если напишут:</span>{' '}
+            {clientData.aliases ? clientData.aliases.split('|').map(s => s.trim()).filter(Boolean).join(', ') : '—'}
+          </div>
           <div><span className="text-slate-500">Адреса:</span> {filledPoints.length ? filledPoints.map(p => p.address).join('; ') : 'нет'}</div>
           <div><span className="text-slate-500">ИП / ООО:</span> {filledLegals.length ? filledLegals.map(l => `${l.legal_name} · ИНН ${l.inn}`).join('; ') : 'нет'}</div>
         </div>
@@ -3611,7 +3682,7 @@ function AddClientWizard({ onDone, onCancel, showToast }) {
 }
 
 
-function EditClientWizard({ client, points, legals, onDone, onCancel, showToast }) {
+function EditClientWizard({ clients, client, points, legals, onDone, onCancel, showToast }) {
   const emptyPoint = () => ({ address: '', label: '', working_hours: '', contact_person: '', delivery_comment: '' });
   const emptyLegal = () => ({
     legal_name: '', inn: '', kpp: '', has_contract: false,
@@ -3748,7 +3819,12 @@ function EditClientWizard({ client, points, legals, onDone, onCancel, showToast 
     {step === 1 && <div className="space-y-4">
       <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">Меняем данные клиента. ID не меняется, старые заказы не ломаются.</div>
       <div><Label>Название клиента *</Label><Input value={clientData.name} onChange={(v) => setClientData({ ...clientData, name: v })} /></div>
-      <div><Label>Алиасы для поиска</Label><Input value={clientData.aliases} onChange={(v) => setClientData({ ...clientData, aliases: v })} placeholder="азер|azer|азер суши" /></div>
+      <AliasesBlock
+        aliases={clientData.aliases}
+        onChange={(v) => setClientData({ ...clientData, aliases: v })}
+        clients={clients}
+        currentClientId={clientData.client_id}
+      />
       <div><Label>Основной контакт</Label><Input value={clientData.main_contact} onChange={(v) => setClientData({ ...clientData, main_contact: v })} placeholder="Имя, телефон" /></div>
       <div><Label>Комментарий по клиенту</Label><Input value={clientData.comment} onChange={(v) => setClientData({ ...clientData, comment: v })} /></div>
     </div>}
@@ -3801,7 +3877,9 @@ function EditClientWizard({ client, points, legals, onDone, onCancel, showToast 
         <h3 className="mb-3 font-semibold">Проверка перед сохранением</h3>
         <div className="space-y-3 text-sm">
           <div><span className="text-slate-500">Клиент:</span> <b>{clientData.name || 'не заполнен'}</b></div>
-          <div><span className="text-slate-500">Алиасы:</span> {clientData.aliases || '—'}</div>
+          <div><span className="text-slate-500">Узнает клиента, если напишут:</span>{' '}
+            {clientData.aliases ? clientData.aliases.split('|').map(s => s.trim()).filter(Boolean).join(', ') : '—'}
+          </div>
           <div><span className="text-slate-500">Адреса:</span> {filledPoints.length ? filledPoints.map(p => p.address).join('; ') : 'нет'}</div>
           <div><span className="text-slate-500">ИП / ООО:</span> {filledLegals.length ? filledLegals.map(l => `${l.legal_name} · ИНН ${l.inn}`).join('; ') : 'нет'}</div>
         </div>
