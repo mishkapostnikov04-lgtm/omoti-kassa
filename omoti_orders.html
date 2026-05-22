@@ -1694,7 +1694,7 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
       }
       all = filterDeletedOrdersForUi(all);
       setOrders(all);
-      setExpandedItems(prev => ({ ...itemsMapFromOrders(all), ...prev }));
+      setExpandedItems(prev => ({ ...prev, ...itemsMapFromOrders(all) }));
       setPageCache(cacheKey, all);
     } catch (err) {
       showToast('Ошибка: ' + err.message, 'error');
@@ -2509,7 +2509,7 @@ function HistoryPage({ clients, points, legals, flavors, extras, showToast, onEd
       }
       nextOrders = filterDeletedOrdersForUi(nextOrders);
       setOrders(nextOrders);
-      setExpandedItems(prev => ({ ...itemsMapFromOrders(nextOrders), ...prev }));
+      setExpandedItems(prev => ({ ...prev, ...itemsMapFromOrders(nextOrders) }));
       setPageCache(cacheKey, nextOrders);
     } catch (err) {
       showToast('Ошибка: ' + err.message, 'error');
