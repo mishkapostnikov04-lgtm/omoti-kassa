@@ -1815,15 +1815,30 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
   const updateStatus = async (orderId, newStatus) => {
     const order = orders.find(o => o.order_id === orderId);
 
-    // Soft-block: отгрузка с юрлицом, но документы не полностью созданы
+    // Soft-block: отгрузка с юрлицом — проверяем документы и действия с ними
     if (newStatus === 'shipped' && order?.legal_id) {
       const docState = orderDocState(order);
+      let warningText = null;
+
       if (docState !== 'created') {
         const stateLabel = DOC_STATE_LABEL[docState] || docState;
-        const typed = window.prompt(
+        warningText =
           `У заказа ${order.order_no || ''} указано юрлицо, но статус документов: «${stateLabel}».\n\n` +
-          `Если действительно нужно отгрузить — введи: ОТГРУЗИТЬ`
-        );
+          `Если действительно нужно отгрузить — введи: ОТГРУЗИТЬ`;
+      } else {
+        const missing = [];
+        if (!order.invoice_copied_at) missing.push('счёт не скопирован');
+        if (!order.waybill_printed_at) missing.push('ТН не распечатана');
+        if (missing.length > 0) {
+          warningText =
+            `У заказа ${order.order_no || ''} документы созданы, но не все действия выполнены:\n` +
+            `- ${missing.join('\n- ')}\n\n` +
+            `Если всё равно нужно отгрузить — введи: ОТГРУЗИТЬ`;
+        }
+      }
+
+      if (warningText) {
+        const typed = window.prompt(warningText);
         if (typed !== 'ОТГРУЗИТЬ') {
           showToast('Отгрузка отменена', 'warn');
           return;
@@ -1950,7 +1965,7 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
       Заказов в работе нет. Молодцы 🎉
     </Card>}
 
-    {!loading && groups.length > 0 && <div className="px-4 py-2 grid grid-cols-[24px_100px_100px_1fr_70px_110px_140px_110px_120px] gap-3 items-center text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+    {!loading && groups.length > 0 && <div className="px-4 py-2 grid grid-cols-[24px_100px_100px_1fr_70px_110px_140px_110px_160px] gap-3 items-center text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
       <div></div>
       <div>Дата</div>
       <div>Заказ</div>
@@ -1958,8 +1973,8 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
       <div className="text-right">Кол-во</div>
       <div className="text-right">Сумма</div>
       <div>Документы</div>
-      <div>Статус</div>
-      <div className="text-right">Действие</div>
+      <div>Сейчас</div>
+      <div className="text-right">Следующий шаг</div>
     </div>}
 
     {!loading && groups.map(group => (
@@ -2008,13 +2023,13 @@ function InWorkOrderRow({ order, client, point, legal, expanded, items, onToggle
   const docState = orderDocState(order);
 
   const nextAction = order.status === 'new'
-    ? { label: 'Собран', status: 'assembled', variant: 'amber' }
+    ? { label: 'Отметить собран', status: 'assembled', variant: 'amber' }
     : order.status === 'assembled'
-    ? { label: 'Отгружен', status: 'shipped', variant: 'success' }
+    ? { label: 'Отметить отгружен', status: 'shipped', variant: 'success' }
     : null;
 
   return <div className={`rounded-2xl border overflow-hidden transition ${isOverdue ? 'border-red-200 bg-red-50/30' : 'border-slate-200 bg-white'}`}>
-    <div className="grid grid-cols-[24px_100px_100px_1fr_70px_110px_140px_110px_120px] gap-3 items-center px-4 py-3">
+    <div className="grid grid-cols-[24px_100px_100px_1fr_70px_110px_140px_110px_160px] gap-3 items-center px-4 py-3">
       <button onClick={onToggle} className="text-slate-400 hover:text-slate-700">
         <svg className={`transition ${expanded ? 'rotate-90' : ''}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
@@ -2703,15 +2718,30 @@ function HistoryPage({ clients, points, legals, flavors, extras, showToast, onEd
   const updateStatus = async (orderId, newStatus) => {
     const order = orders.find(o => o.order_id === orderId);
 
-    // Soft-block: отгрузка с юрлицом, но документы не полностью созданы
+    // Soft-block: отгрузка с юрлицом — проверяем документы и действия с ними
     if (newStatus === 'shipped' && order?.legal_id) {
       const docState = orderDocState(order);
+      let warningText = null;
+
       if (docState !== 'created') {
         const stateLabel = DOC_STATE_LABEL[docState] || docState;
-        const typed = window.prompt(
+        warningText =
           `У заказа ${order.order_no || ''} указано юрлицо, но статус документов: «${stateLabel}».\n\n` +
-          `Если действительно нужно отгрузить — введи: ОТГРУЗИТЬ`
-        );
+          `Если действительно нужно отгрузить — введи: ОТГРУЗИТЬ`;
+      } else {
+        const missing = [];
+        if (!order.invoice_copied_at) missing.push('счёт не скопирован');
+        if (!order.waybill_printed_at) missing.push('ТН не распечатана');
+        if (missing.length > 0) {
+          warningText =
+            `У заказа ${order.order_no || ''} документы созданы, но не все действия выполнены:\n` +
+            `- ${missing.join('\n- ')}\n\n` +
+            `Если всё равно нужно отгрузить — введи: ОТГРУЗИТЬ`;
+        }
+      }
+
+      if (warningText) {
+        const typed = window.prompt(warningText);
         if (typed !== 'ОТГРУЗИТЬ') {
           showToast('Отгрузка отменена', 'warn');
           return;
