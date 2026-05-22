@@ -504,12 +504,17 @@ function ShippingConfirmModal({ severity, orderNo, issues, onConfirm, onCancel, 
 }
 
 
-function DangerConfirmModal({ title, description, warning, actionLabel = 'Подтвердить', confirmText = '', processingLabel = 'Выполняю...', onConfirm, onCancel, onClose }) {
+function DangerConfirmModal({ title, description, warning, actionLabel = 'Подтвердить', confirmText = '', processingLabel = 'Выполняю...', variant = 'danger', onConfirm, onCancel, onClose }) {
   const [typedValue, setTypedValue] = useState('');
   const [processing, setProcessing] = useState(false);
 
   const needsText = !!confirmText;
   const canSubmit = !needsText || typedValue === confirmText;
+  const isWarning = variant === 'warning';
+  const accentClass = isWarning ? 'bg-amber-500' : 'bg-red-500';
+  const iconClass = isWarning ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600';
+  const warningClass = isWarning ? 'border-amber-100 bg-amber-50/50' : 'border-red-100 bg-red-50/50';
+  const actionVariant = isWarning ? 'amber' : 'danger';
 
   const handleSubmit = async () => {
     if (!canSubmit || processing) return;
@@ -530,10 +535,10 @@ function DangerConfirmModal({ title, description, warning, actionLabel = 'Под
 
   return <div className="modal-bg fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
     <div className="modal-content w-full max-w-md rounded-3xl bg-white shadow-xl overflow-hidden">
-      <div className="h-1.5 w-full bg-red-500"></div>
+      <div className={`h-1.5 w-full ${accentClass}`}></div>
       <div className="p-6">
         <div className="flex items-start gap-3 mb-4">
-          <div className="shrink-0 rounded-full bg-red-50 p-2 text-red-600">
+          <div className={`shrink-0 rounded-full p-2 ${iconClass}`}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
             </svg>
@@ -544,7 +549,7 @@ function DangerConfirmModal({ title, description, warning, actionLabel = 'Под
           </div>
         </div>
 
-        {warning && <div className="rounded-2xl border border-red-100 bg-red-50/50 p-4 mb-5 text-sm text-slate-700 whitespace-pre-wrap">
+        {warning && <div className={`rounded-2xl border ${warningClass} p-4 mb-5 text-sm text-slate-700 whitespace-pre-wrap`}>
           {warning}
         </div>}
 
@@ -555,7 +560,7 @@ function DangerConfirmModal({ title, description, warning, actionLabel = 'Под
 
         <div className="flex justify-end gap-2">
           <Button variant="light" onClick={handleCancel} disabled={processing}>Остаться</Button>
-          <Button variant="danger" onClick={handleSubmit} disabled={!canSubmit || processing}>
+          <Button variant={actionVariant} onClick={handleSubmit} disabled={!canSubmit || processing}>
             {processing ? <><Spinner small /> {processingLabel}</> : actionLabel}
           </Button>
         </div>
@@ -780,7 +785,7 @@ function App() {
         {mountedPages.has('assembly') && <div style={{display: page === 'assembly' ? '' : 'none'}}><AssemblyPage clients={data.clients} points={data.points} showToast={showToast} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} markOrdersChanged={markOrdersChanged} ordersRefreshKey={ordersRefreshKey} /></div>}
         {mountedPages.has('history') && <div style={{display: page === 'history' ? '' : 'none'}}><HistoryPage clients={data.clients} points={data.points} legals={data.legals} flavors={data.flavors} extras={data.extras} showToast={showToast} showShippingConfirm={showShippingConfirm} showDangerConfirm={showDangerConfirm} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} markOrdersChanged={markOrdersChanged} ordersRefreshKey={ordersRefreshKey} /></div>}
         {mountedPages.has('help') && <div style={{display: page === 'help' ? '' : 'none'}}><UsagePage /></div>}
-        {mountedPages.has('export') && <div style={{display: page === 'export' ? '' : 'none'}}><ExportPage showToast={showToast} /></div>}
+        {mountedPages.has('export') && <div style={{display: page === 'export' ? '' : 'none'}}><ExportPage showToast={showToast} showDangerConfirm={showDangerConfirm} /></div>}
         {mountedPages.has('catalog') && <div style={{display: page === 'catalog' ? '' : 'none'}}><CatalogPage {...data} reload={loadCatalogs} showToast={showToast} /></div>}
       </main>
     </div>
@@ -800,6 +805,7 @@ function App() {
       actionLabel={dangerConfirm.actionLabel}
       confirmText={dangerConfirm.confirmText}
       processingLabel={dangerConfirm.processingLabel}
+      variant={dangerConfirm.variant}
       onConfirm={dangerConfirm.onConfirm}
       onCancel={dangerConfirm.onCancel}
       onClose={() => setDangerConfirm(null)}
@@ -3483,7 +3489,7 @@ function UsagePage() {
   </>;
 }
 
-function ExportPage({ showToast }) {
+function ExportPage({ showToast, showDangerConfirm }) {
   const [rows, setRows] = useState([]);
   const [columns, setColumns] = useState([]);
   const [selectedKeys, setSelectedKeys] = useState({});
@@ -3539,10 +3545,26 @@ function ExportPage({ showToast }) {
     try {
       const alreadyCopied = selectedRows.filter(r => r.excel_copied_at);
       if (alreadyCopied.length > 0) {
-        const ok = window.confirm(
-          `Среди выбранных ${selectedRows.length} строк есть ${alreadyCopied.length} уже скопированных в Excel ранее.\n\n` +
-          'Скопировать всё равно?'
-        );
+        const ok = await new Promise(resolve => {
+          if (!showDangerConfirm) {
+            resolve(window.confirm(
+              `Среди выбранных ${selectedRows.length} строк есть ${alreadyCopied.length} уже скопированных в Excel ранее.\n\n` +
+              'Скопировать всё равно?'
+            ));
+            return;
+          }
+
+          showDangerConfirm({
+            variant: 'warning',
+            title: 'Повторное копирование',
+            description: `Среди выбранных ${selectedRows.length} строк уже копировались в Excel ранее: ${alreadyCopied.length}.`,
+            warning: 'Если продолжить, эти строки снова попадут в буфер обмена, а время копирования обновится.',
+            actionLabel: 'Скопировать всё равно',
+            processingLabel: 'Копирую...',
+            onConfirm: () => resolve(true),
+            onCancel: () => resolve(false),
+          });
+        });
         if (!ok) {
           showToast('Копирование отменено', 'warn');
           return;
