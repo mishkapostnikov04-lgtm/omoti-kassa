@@ -427,6 +427,82 @@ function Toast({ message, type = 'success', action = null, onClose }) {
   </div>;
 }
 
+function ShippingConfirmModal({ severity, orderNo, issues, onConfirm, onCancel, onClose }) {
+  const [typedValue, setTypedValue] = useState('');
+  const [processing, setProcessing] = useState(false);
+
+  const isCritical = severity === 'critical';
+  const canSubmit = isCritical ? typedValue === 'ОТГРУЗИТЬ' : true;
+
+  const title = isCritical ? 'Проверь документы' : 'Не все действия выполнены';
+  const intro = isCritical
+    ? `У заказа ${orderNo} указано юрлицо, но документы не готовы. Отгрузка без документов — серьёзный риск.`
+    : `Документы у заказа ${orderNo} созданы, но не все действия с ними выполнены:`;
+
+  const handleSubmit = async () => {
+    if (!canSubmit || processing) return;
+    setProcessing(true);
+    try {
+      await onConfirm?.();
+    } finally {
+      setProcessing(false);
+      onClose();
+    }
+  };
+
+  const handleCancel = () => {
+    if (processing) return;
+    onCancel?.();
+    onClose();
+  };
+
+  return <div className="modal-bg fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+    <div className="modal-content w-full max-w-md rounded-3xl bg-white shadow-xl overflow-hidden">
+      <div className={`h-1.5 w-full ${isCritical ? 'bg-red-500' : 'bg-amber-500'}`}></div>
+      <div className="p-6">
+        <div className="flex items-start gap-3 mb-4">
+          <div className={`shrink-0 rounded-full p-2 ${isCritical ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'}`}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            </svg>
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+            <p className="text-sm text-slate-500 mt-1">{intro}</p>
+          </div>
+        </div>
+
+        {issues && issues.length > 0 && <div className={`rounded-2xl border ${isCritical ? 'border-red-100 bg-red-50/50' : 'border-amber-100 bg-amber-50/50'} p-4 mb-5`}>
+          <ul className="space-y-2">
+            {issues.map((issue, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm">
+                <span className={`mt-1.5 shrink-0 w-1.5 h-1.5 rounded-full ${isCritical ? 'bg-red-500' : 'bg-amber-500'}`}></span>
+                <span className="text-slate-700">{issue}</span>
+              </li>
+            ))}
+          </ul>
+        </div>}
+
+        {isCritical && <div className="mb-5">
+          <Label>Введите ОТГРУЗИТЬ для подтверждения</Label>
+          <Input value={typedValue} onChange={setTypedValue} placeholder="ОТГРУЗИТЬ" />
+        </div>}
+
+        <div className="flex justify-end gap-2">
+          <Button variant="light" onClick={handleCancel} disabled={processing}>Остаться</Button>
+          <Button
+            variant={isCritical ? 'danger' : 'success'}
+            onClick={handleSubmit}
+            disabled={!canSubmit || processing}
+          >
+            {processing ? <><Spinner small /> Отгружаю...</> : 'Всё равно отгрузить'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  </div>;
+}
+
 function Modal({ open, onClose, title, children, size = 'md' }) {
   if (!open) return null;
   const sizes = { sm: 'max-w-md', md: 'max-w-xl', lg: 'max-w-3xl', xl: 'max-w-5xl' };
@@ -560,8 +636,10 @@ function App() {
   const [editOrderData, setEditOrderData] = useState(null);
   const [mountedPages, setMountedPages] = useState(() => new Set(['order']));
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
+  const [shippingConfirm, setShippingConfirm] = useState(null);
 
   const showToast = (message, type = 'success', action = null) => setToast({ message, type, action });
+  const showShippingConfirm = (params) => setShippingConfirm(params);
 
   const markOrdersChanged = () => {
     clearPageCache('inwork');
@@ -635,15 +713,23 @@ function App() {
       <Sidebar page={page} setPage={setPage} />
       <main className="space-y-5 min-w-0">
         {mountedPages.has('order') && <div style={{display: page === 'order' ? '' : 'none'}}><NewOrderPage {...data} editOrderId={editOrderId} editOrderData={editOrderData} onClearEdit={() => { setEditOrderId(null); setEditOrderData(null); }} onSaved={loadCatalogs} showToast={showToast} markOrdersChanged={markOrdersChanged} /></div>}
-        {mountedPages.has('inwork') && <div style={{display: page === 'inwork' ? '' : 'none'}}><InWorkPage clients={data.clients} points={data.points} legals={data.legals} flavors={data.flavors} extras={data.extras} priceOverrides={data.priceOverrides} showToast={showToast} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} markOrdersChanged={markOrdersChanged} ordersRefreshKey={ordersRefreshKey} /></div>}
+        {mountedPages.has('inwork') && <div style={{display: page === 'inwork' ? '' : 'none'}}><InWorkPage clients={data.clients} points={data.points} legals={data.legals} flavors={data.flavors} extras={data.extras} priceOverrides={data.priceOverrides} showToast={showToast} showShippingConfirm={showShippingConfirm} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} markOrdersChanged={markOrdersChanged} ordersRefreshKey={ordersRefreshKey} /></div>}
         {mountedPages.has('assembly') && <div style={{display: page === 'assembly' ? '' : 'none'}}><AssemblyPage clients={data.clients} points={data.points} showToast={showToast} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} markOrdersChanged={markOrdersChanged} ordersRefreshKey={ordersRefreshKey} /></div>}
-        {mountedPages.has('history') && <div style={{display: page === 'history' ? '' : 'none'}}><HistoryPage clients={data.clients} points={data.points} legals={data.legals} flavors={data.flavors} extras={data.extras} showToast={showToast} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} markOrdersChanged={markOrdersChanged} ordersRefreshKey={ordersRefreshKey} /></div>}
+        {mountedPages.has('history') && <div style={{display: page === 'history' ? '' : 'none'}}><HistoryPage clients={data.clients} points={data.points} legals={data.legals} flavors={data.flavors} extras={data.extras} showToast={showToast} showShippingConfirm={showShippingConfirm} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} markOrdersChanged={markOrdersChanged} ordersRefreshKey={ordersRefreshKey} /></div>}
         {mountedPages.has('help') && <div style={{display: page === 'help' ? '' : 'none'}}><UsagePage /></div>}
         {mountedPages.has('export') && <div style={{display: page === 'export' ? '' : 'none'}}><ExportPage showToast={showToast} /></div>}
         {mountedPages.has('catalog') && <div style={{display: page === 'catalog' ? '' : 'none'}}><CatalogPage {...data} reload={loadCatalogs} showToast={showToast} /></div>}
       </main>
     </div>
     {toast && <Toast message={toast.message} type={toast.type} action={toast.action} onClose={() => setToast(null)} />}
+    {shippingConfirm && <ShippingConfirmModal
+      severity={shippingConfirm.severity}
+      orderNo={shippingConfirm.orderNo}
+      issues={shippingConfirm.issues}
+      onConfirm={shippingConfirm.onConfirm}
+      onCancel={shippingConfirm.onCancel}
+      onClose={() => setShippingConfirm(null)}
+    />}
   </div>;
 }
 
@@ -1729,7 +1815,7 @@ function HistoryOrderMini({ order, point, onRepeat }) {
 
 // ===== Сегодня / завтра =====
 
-function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, showToast, onEditOrder, markOrdersChanged, ordersRefreshKey }) {
+function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, showToast, showShippingConfirm, onEditOrder, markOrdersChanged, ordersRefreshKey }) {
   const initialInworkCache = getPageCache('inwork_all');
   const [orders, setOrders] = useState(() => filterDeletedOrdersForUi(initialInworkCache || []));
   const [loading, setLoading] = useState(() => !initialInworkCache);
@@ -1881,45 +1967,17 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
     }
   };
 
-  const updateStatus = async (orderId, newStatus) => {
-    const order = orders.find(o => o.order_id === orderId);
-
-    // Soft-block: отгрузка с юрлицом — проверяем документы и действия с ними
-    if (newStatus === 'shipped' && order?.legal_id) {
-      const docState = orderDocState(order);
-      let warningText = null;
-
-      if (docState !== 'created') {
-        const stateLabel = DOC_STATE_LABEL[docState] || docState;
-        warningText =
-          `У заказа ${order.order_no || ''} указано юрлицо, но статус документов: «${stateLabel}».\n\n` +
-          `Если действительно нужно отгрузить — введи: ОТГРУЗИТЬ`;
-      } else {
-        const missing = [];
-        if (!order.invoice_copied_at) missing.push('счёт не скопирован');
-        if (!order.waybill_printed_at) missing.push('ТН не распечатана');
-        if (missing.length > 0) {
-          warningText =
-            `У заказа ${order.order_no || ''} документы созданы, но не все действия выполнены:\n` +
-            `- ${missing.join('\n- ')}\n\n` +
-            `Если всё равно нужно отгрузить — введи: ОТГРУЗИТЬ`;
-        }
-      }
-
-      if (warningText) {
-        const typed = window.prompt(warningText);
-        if (typed !== 'ОТГРУЗИТЬ') {
-          showToast('Отгрузка отменена', 'warn');
-          return;
-        }
-      }
-    }
+  // Само выполнение смены статуса: оптимистичный апдейт, hold-position, api, undo, откат.
+  // Не содержит soft-block — он вынесен в updateStatus выше.
+  const doUpdateStatus = async (orderId, newStatus, orderArg) => {
+    const order = orderArg || orders.find(o => o.order_id === orderId);
+    if (!order) return;
 
     const updates = { status: newStatus };
 
     // Если возвращаем старый заказ в работу, старая дата доставки оставит его в «Просрочено».
     // Поэтому предлагаем сразу поставить сегодняшнюю дату.
-    if ((newStatus === 'new' || newStatus === 'assembled') && order) {
+    if ((newStatus === 'new' || newStatus === 'assembled')) {
       const oldDeliveryDate = dateOnly(order.delivery_date);
       const todayStr = today();
       if (oldDeliveryDate && oldDeliveryDate < todayStr) {
@@ -1928,8 +1986,8 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
       }
     }
 
-    const prevStatus = order?.status;
-    const prevDeliveryDate = order?.delivery_date;
+    const prevStatus = order.status;
+    const prevDeliveryDate = order.delivery_date;
 
     // Оптимистично: фиксируем _displayStatus = старый статус (только если ещё не зафиксирован),
     // чтобы строка не съезжала в моменте клика
@@ -1951,13 +2009,11 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
           const { _displayStatus, ...rest } = o;
           return rest;
         })
-        // Через 30 сек убираем отгруженные/отменённые из «В работе»
         .filter(o => o.order_id !== orderId || (o.status !== 'shipped' && o.status !== 'cancelled'))
       );
       setRecentlyChanged(prev => { const n = new Set(prev); n.delete(orderId); return n; });
     }, 30000));
 
-    // Помечаем заказ как «в процессе» — кнопка disabled, повторный клик блокируется
     setPendingStatusIds(prev => { const n = new Set(prev); n.add(orderId); return n; });
 
     try {
@@ -1992,7 +2048,6 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
 
       showToast(`Заказ ${order.order_no || ''} — ${newLabel}`, 'success', undoAction);
     } catch (err) {
-      // Откат оптимистичного апдейта
       const tid = cleanupTimersRef.current.get(orderId);
       if (tid) { clearTimeout(tid); cleanupTimersRef.current.delete(orderId); }
       setOrders(prev => prev.map(o => {
@@ -2006,6 +2061,49 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
     } finally {
       setPendingStatusIds(prev => { const n = new Set(prev); n.delete(orderId); return n; });
     }
+  };
+
+  const updateStatus = async (orderId, newStatus) => {
+    if (pendingStatusIds.has(orderId)) return;
+    const order = orders.find(o => o.order_id === orderId);
+    if (!order) return;
+
+    // Soft-block: отгрузка с юрлицом — открываем модалку, продолжение в onConfirm
+    if (newStatus === 'shipped' && order.legal_id) {
+      const docState = orderDocState(order);
+      let severity = null;
+      const issues = [];
+
+      if (docState !== 'created') {
+        severity = 'critical';
+        const stateLabel = DOC_STATE_LABEL[docState] || docState;
+        issues.push(`Статус документов: «${stateLabel}»`);
+        if (docState === 'pending') issues.push('Счёт и ТН ещё не создавали в Эльбе');
+        if (docState === 'partial') {
+          const hasInvoice = !!(order.invoice_id || order.invoice_url);
+          const hasWaybill = !!(order.waybill_id || order.waybill_url);
+          if (!hasInvoice) issues.push('Счёт не выставлен');
+          if (!hasWaybill) issues.push('Транспортная накладная не создана');
+        }
+      } else {
+        if (!order.invoice_copied_at) issues.push('Счёт не скопирован');
+        if (!order.waybill_printed_at) issues.push('ТН не распечатана');
+        if (issues.length > 0) severity = 'warning';
+      }
+
+      if (severity) {
+        showShippingConfirm({
+          severity,
+          orderNo: order.order_no || '',
+          issues,
+          onConfirm: () => doUpdateStatus(orderId, newStatus, order),
+          onCancel: () => showToast('Отгрузка отменена', 'warn'),
+        });
+        return;
+      }
+    }
+
+    return doUpdateStatus(orderId, newStatus, order);
   };
 
   const deleteOrder = async (order) => {
@@ -2810,7 +2908,7 @@ function PrintAssemblySheet({ orders, clientById, pointById }) {
 
 // ===== История =====
 
-function HistoryPage({ clients, points, legals, flavors, extras, showToast, onEditOrder, markOrdersChanged, ordersRefreshKey }) {
+function HistoryPage({ clients, points, legals, flavors, extras, showToast, showShippingConfirm, onEditOrder, markOrdersChanged, ordersRefreshKey }) {
   const savedFilters = readLocalJson('omoti_history_filters_v1', null);
   const [dateFrom, setDateFrom] = useState(() => savedFilters?.dateFrom || (() => { const d = new Date(); d.setDate(d.getDate() - 14); return d.toISOString().substring(0, 10); })());
   const [dateTo, setDateTo] = useState(() => savedFilters?.dateTo || today());
@@ -2888,44 +2986,14 @@ function HistoryPage({ clients, points, legals, flavors, extras, showToast, onEd
     }
   };
 
-  const updateStatus = async (orderId, newStatus) => {
-    const order = orders.find(o => o.order_id === orderId);
-
-    // Soft-block: отгрузка с юрлицом — проверяем документы и действия с ними
-    if (newStatus === 'shipped' && order?.legal_id) {
-      const docState = orderDocState(order);
-      let warningText = null;
-
-      if (docState !== 'created') {
-        const stateLabel = DOC_STATE_LABEL[docState] || docState;
-        warningText =
-          `У заказа ${order.order_no || ''} указано юрлицо, но статус документов: «${stateLabel}».\n\n` +
-          `Если действительно нужно отгрузить — введи: ОТГРУЗИТЬ`;
-      } else {
-        const missing = [];
-        if (!order.invoice_copied_at) missing.push('счёт не скопирован');
-        if (!order.waybill_printed_at) missing.push('ТН не распечатана');
-        if (missing.length > 0) {
-          warningText =
-            `У заказа ${order.order_no || ''} документы созданы, но не все действия выполнены:\n` +
-            `- ${missing.join('\n- ')}\n\n` +
-            `Если всё равно нужно отгрузить — введи: ОТГРУЗИТЬ`;
-        }
-      }
-
-      if (warningText) {
-        const typed = window.prompt(warningText);
-        if (typed !== 'ОТГРУЗИТЬ') {
-          showToast('Отгрузка отменена', 'warn');
-          return;
-        }
-      }
-    }
+  // Само выполнение смены статуса в Истории (без soft-block — он в updateStatus ниже)
+  const doUpdateStatus = async (orderId, newStatus, orderArg) => {
+    const order = orderArg || orders.find(o => o.order_id === orderId);
+    if (!order) return;
 
     const updates = { status: newStatus };
 
-    // Если возвращаем старый заказ в работу из истории, предлагаем сразу поставить сегодняшнюю дату.
-    if ((newStatus === 'new' || newStatus === 'assembled') && order) {
+    if ((newStatus === 'new' || newStatus === 'assembled')) {
       const oldDeliveryDate = dateOnly(order.delivery_date);
       const todayStr = today();
       if (oldDeliveryDate && oldDeliveryDate < todayStr) {
@@ -2943,6 +3011,48 @@ function HistoryPage({ clients, points, legals, flavors, extras, showToast, onEd
     } catch (err) {
       showToast('Ошибка: ' + err.message, 'error');
     }
+  };
+
+  const updateStatus = async (orderId, newStatus) => {
+    const order = orders.find(o => o.order_id === orderId);
+    if (!order) return;
+
+    // Soft-block: отгрузка с юрлицом — открываем модалку, продолжение в onConfirm
+    if (newStatus === 'shipped' && order.legal_id) {
+      const docState = orderDocState(order);
+      let severity = null;
+      const issues = [];
+
+      if (docState !== 'created') {
+        severity = 'critical';
+        const stateLabel = DOC_STATE_LABEL[docState] || docState;
+        issues.push(`Статус документов: «${stateLabel}»`);
+        if (docState === 'pending') issues.push('Счёт и ТН ещё не создавали в Эльбе');
+        if (docState === 'partial') {
+          const hasInvoice = !!(order.invoice_id || order.invoice_url);
+          const hasWaybill = !!(order.waybill_id || order.waybill_url);
+          if (!hasInvoice) issues.push('Счёт не выставлен');
+          if (!hasWaybill) issues.push('Транспортная накладная не создана');
+        }
+      } else {
+        if (!order.invoice_copied_at) issues.push('Счёт не скопирован');
+        if (!order.waybill_printed_at) issues.push('ТН не распечатана');
+        if (issues.length > 0) severity = 'warning';
+      }
+
+      if (severity) {
+        showShippingConfirm({
+          severity,
+          orderNo: order.order_no || '',
+          issues,
+          onConfirm: () => doUpdateStatus(orderId, newStatus, order),
+          onCancel: () => showToast('Отгрузка отменена', 'warn'),
+        });
+        return;
+      }
+    }
+
+    return doUpdateStatus(orderId, newStatus, order);
   };
 
   const deleteOrder = async (order) => {
