@@ -2491,7 +2491,7 @@ function ElbaDocumentsBlock({ order, client, point, legal, onCreated, onDetached
 
       // Отметка: счёт скопирован — не критично, при ошибке только warn
       try {
-        const ts = new Date().toISOString();
+        const ts = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Novosibirsk', hour12: false }).slice(0, 16);
         await api('updateOrder', {
           order_id: order.order_id,
           updates: { invoice_copied_at: ts, invoice_copied_by: CURRENT_USER },
@@ -2518,7 +2518,7 @@ function ElbaDocumentsBlock({ order, client, point, legal, onCreated, onDetached
 
       // Отметка: ТН открыта — не критично, при ошибке только warn
       try {
-        const ts = new Date().toISOString();
+        const ts = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Novosibirsk', hour12: false }).slice(0, 16);
         await api('updateOrder', {
           order_id: order.order_id,
           updates: { waybill_printed_at: ts, waybill_printed_by: CURRENT_USER },
@@ -3403,6 +3403,7 @@ function ExportPage({ showToast }) {
   const [columns, setColumns] = useState([]);
   const [selectedKeys, setSelectedKeys] = useState({});
   const [loading, setLoading] = useState(false);
+  const [copying, setCopying] = useState(false);
   const [dateFrom, setDateFrom] = useState(today());
   const [dateTo, setDateTo] = useState(today());
 
@@ -3426,7 +3427,7 @@ function ExportPage({ showToast }) {
 
   useEffect(() => { load(); }, [dateFrom, dateTo]);
 
-  const visibleColumns = columns.filter(c => !c.startsWith('meta_') && c !== 'AR_Стоимость');
+  const visibleColumns = columns.filter(c => !c.startsWith('meta_') && c !== 'AR_Стоимость' && c !== 'excel_copied_at' && c !== 'excel_copied_by');
   const selectedRows = rows.filter((row, index) => selectedKeys[rowKey(row, index)]);
   const allSelected = rows.length > 0 && selectedRows.length === rows.length;
 
@@ -3441,16 +3442,65 @@ function ExportPage({ showToast }) {
     setSelectedKeys(next);
   };
 
-  const copyToClipboard = () => {
+  const copyToClipboard = async () => {
+    if (copying) return;
+
     if (selectedRows.length === 0) {
       showToast('Отметь хотя бы одну строку для экспорта', 'warn');
       return;
     }
-    const lines = selectedRows.map(row => visibleColumns.map(c => row[c] ?? '').join('\t'));
-    navigator.clipboard.writeText(lines.join('\n')).then(
-      () => showToast(`Скопировано ${selectedRows.length} строк. Вставь в Excel в колонку I.`),
-      () => showToast('Не удалось скопировать. Попробуй вручную.', 'error')
-    );
+
+    setCopying(true);
+    try {
+      const alreadyCopied = selectedRows.filter(r => r.excel_copied_at);
+      if (alreadyCopied.length > 0) {
+        const ok = window.confirm(
+          `Среди выбранных ${selectedRows.length} строк есть ${alreadyCopied.length} уже скопированных в Excel ранее.\n\n` +
+          'Скопировать всё равно?'
+        );
+        if (!ok) {
+          showToast('Копирование отменено', 'warn');
+          return;
+        }
+      }
+
+      const lines = selectedRows.map(row => visibleColumns.map(c => row[c] ?? '').join('\t'));
+
+      try {
+        await navigator.clipboard.writeText(lines.join('\n'));
+      } catch (e) {
+        showToast('Не удалось скопировать. Попробуй вручную.', 'error');
+        return;
+      }
+
+      showToast(`Скопировано ${selectedRows.length} строк. Вставь в Excel в колонку I.`);
+
+      const orderIds = selectedRows
+        .map(r => r.meta_order_id || r.order_id)
+        .filter(Boolean);
+
+      if (orderIds.length === 0) return;
+
+      const ts = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Novosibirsk', hour12: false }).slice(0, 16);
+
+      try {
+        const res = await api('bulkMarkExcelCopied', { order_ids: orderIds, by: CURRENT_USER });
+        setRows(prev => prev.map(r => {
+          const orderId = r.meta_order_id || r.order_id;
+          return orderIds.includes(orderId)
+            ? { ...r, excel_copied_at: ts, excel_copied_by: CURRENT_USER }
+            : r;
+        }));
+
+        if (res.not_found && res.not_found.length > 0) {
+          showToast(`Строки скопированы, но отметка не записана для ${res.not_found.length} заказов`, 'warn');
+        }
+      } catch (e) {
+        showToast('Строки скопированы, но отметку записать не удалось: ' + e.message, 'warn');
+      }
+    } finally {
+      setCopying(false);
+    }
   };
 
   return <>
@@ -3461,8 +3511,8 @@ function ExportPage({ showToast }) {
           Строки под текущую вкладку «Заказы» · выбрано {selectedRows.length} из {rows.length}
         </p>
       </div>
-      <Button onClick={copyToClipboard} disabled={selectedRows.length === 0} size="lg">
-        Скопировать выбранные
+      <Button onClick={copyToClipboard} disabled={selectedRows.length === 0 || copying} size="lg">
+        {copying ? <><Spinner small /> Копирую...</> : 'Скопировать выбранные'}
       </Button>
     </header>
 
@@ -3505,8 +3555,13 @@ function ExportPage({ showToast }) {
             {rows.map((row, i) => {
               const key = rowKey(row, i);
               const checked = !!selectedKeys[key];
+              const isCopied = !!row.excel_copied_at;
               return (
-                <tr key={key} className={`border-t border-slate-100 ${checked ? 'bg-white' : 'bg-slate-50 text-slate-400'}`}>
+                <tr key={key} className={`border-t border-slate-100 ${
+                  isCopied
+                    ? 'bg-emerald-50/40'
+                    : (checked ? 'bg-white' : 'bg-slate-50 text-slate-400')
+                }`}>
                   <td className="p-2 border-r border-slate-100 text-center">
                     <input
                       type="checkbox"
@@ -3514,6 +3569,10 @@ function ExportPage({ showToast }) {
                       onChange={() => toggleRow(row, i)}
                       className="h-4 w-4 rounded border-slate-300"
                     />
+                    {isCopied && <div
+                      className="mt-1 text-[10px] text-emerald-700 font-medium whitespace-nowrap"
+                      title={`Скопировано в Excel ${displayDate(row.excel_copied_at)} ${displayTime(row.excel_copied_at)}${row.excel_copied_by ? ' · ' + row.excel_copied_by : ''}`}
+                    >✓ {displayTime(row.excel_copied_at)}</div>}
                   </td>
                   {visibleColumns.map(c => <td key={c} className="p-2 border-r border-slate-100 last:border-r-0">{row[c] || ''}</td>)}
                 </tr>
