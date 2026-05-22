@@ -71,11 +71,10 @@ async function api(action, params = {}) {
 
 // ===== Утилиты =====
 const money = (v) => new Intl.NumberFormat('ru-RU').format(Number(v || 0)) + ' ₽';
-const today = () => new Date().toISOString().substring(0, 10);
+const today = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Novosibirsk' });
 const tomorrow = () => {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().substring(0, 10);
+  const [y, m, d] = today().split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + 1)).toISOString().substring(0, 10);
 };
 const dateOnly = (v) => String(v || '').substring(0, 10);
 const displayDate = (v) => {
@@ -504,8 +503,16 @@ function App() {
   const [editOrderId, setEditOrderId] = useState(null);
   const [editOrderData, setEditOrderData] = useState(null);
   const [mountedPages, setMountedPages] = useState(() => new Set(['order']));
+  const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
 
   const showToast = (message, type = 'success') => setToast({ message, type });
+
+  const markOrdersChanged = () => {
+    clearPageCache('inwork');
+    clearPageCache('history');
+    clearPageCache('assembly');
+    setOrdersRefreshKey(k => k + 1);
+  };
 
   const loadCatalogs = useCallback(async () => {
     try {
@@ -562,10 +569,10 @@ function App() {
     <div className="mx-auto grid max-w-[1440px] grid-cols-[240px_minmax(0,1fr)] gap-5">
       <Sidebar page={page} setPage={setPage} />
       <main className="space-y-5 min-w-0">
-        {mountedPages.has('order') && <div style={{display: page === 'order' ? '' : 'none'}}><NewOrderPage {...data} editOrderId={editOrderId} editOrderData={editOrderData} onClearEdit={() => { setEditOrderId(null); setEditOrderData(null); }} onSaved={loadCatalogs} showToast={showToast} /></div>}
-        {mountedPages.has('inwork') && <div style={{display: page === 'inwork' ? '' : 'none'}}><InWorkPage clients={data.clients} points={data.points} legals={data.legals} flavors={data.flavors} extras={data.extras} priceOverrides={data.priceOverrides} showToast={showToast} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} /></div>}
-        {mountedPages.has('assembly') && <div style={{display: page === 'assembly' ? '' : 'none'}}><AssemblyPage clients={data.clients} points={data.points} showToast={showToast} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} /></div>}
-        {mountedPages.has('history') && <div style={{display: page === 'history' ? '' : 'none'}}><HistoryPage clients={data.clients} points={data.points} legals={data.legals} flavors={data.flavors} extras={data.extras} showToast={showToast} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} /></div>}
+        {mountedPages.has('order') && <div style={{display: page === 'order' ? '' : 'none'}}><NewOrderPage {...data} editOrderId={editOrderId} editOrderData={editOrderData} onClearEdit={() => { setEditOrderId(null); setEditOrderData(null); }} onSaved={loadCatalogs} showToast={showToast} markOrdersChanged={markOrdersChanged} /></div>}
+        {mountedPages.has('inwork') && <div style={{display: page === 'inwork' ? '' : 'none'}}><InWorkPage clients={data.clients} points={data.points} legals={data.legals} flavors={data.flavors} extras={data.extras} priceOverrides={data.priceOverrides} showToast={showToast} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} markOrdersChanged={markOrdersChanged} ordersRefreshKey={ordersRefreshKey} /></div>}
+        {mountedPages.has('assembly') && <div style={{display: page === 'assembly' ? '' : 'none'}}><AssemblyPage clients={data.clients} points={data.points} showToast={showToast} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} markOrdersChanged={markOrdersChanged} ordersRefreshKey={ordersRefreshKey} /></div>}
+        {mountedPages.has('history') && <div style={{display: page === 'history' ? '' : 'none'}}><HistoryPage clients={data.clients} points={data.points} legals={data.legals} flavors={data.flavors} extras={data.extras} showToast={showToast} onEditOrder={(order) => { setEditOrderId(order?.order_id || order); setEditOrderData(typeof order === 'object' ? order : null); setPage('order'); }} markOrdersChanged={markOrdersChanged} ordersRefreshKey={ordersRefreshKey} /></div>}
         {mountedPages.has('help') && <div style={{display: page === 'help' ? '' : 'none'}}><UsagePage /></div>}
         {mountedPages.has('export') && <div style={{display: page === 'export' ? '' : 'none'}}><ExportPage showToast={showToast} /></div>}
         {mountedPages.has('catalog') && <div style={{display: page === 'catalog' ? '' : 'none'}}><CatalogPage {...data} reload={loadCatalogs} showToast={showToast} /></div>}
@@ -611,11 +618,11 @@ function usePriceCalc(flavors, extras, priceOverrides, clientId, pointId, legalI
     if (!flavor) return { price: 0, basePrice: 0, source: 'flavor_default' };
     const base = Number(flavor.default_price);
 
-    const today = new Date().toISOString().substring(0, 10);
+    const todayStr = today();
     const isValid = (o) => {
       if (!isTrue(o.is_active)) return false;
-      if (o.valid_from && dateOnly(o.valid_from) > today) return false;
-      if (o.valid_to && dateOnly(o.valid_to) < today) return false;
+      if (o.valid_from && dateOnly(o.valid_from) > todayStr) return false;
+      if (o.valid_to && dateOnly(o.valid_to) < todayStr) return false;
       return true;
     };
 
@@ -640,11 +647,11 @@ function usePriceCalc(flavors, extras, priceOverrides, clientId, pointId, legalI
 
 // ===== Новый заказ =====
 
-function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides, onSaved, showToast, editOrderId, editOrderData, onClearEdit }) {
+function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides, onSaved, showToast, editOrderId, editOrderData, onClearEdit, markOrdersChanged }) {
   const [clientId, setClientId] = useState('');
   const [pointId, setPointId] = useState('');
   const [legalId, setLegalId] = useState('');
-  const [deliveryDate, setDeliveryDate] = useState(tomorrow());
+  const [deliveryDate, setDeliveryDate] = useState(today());
   const [comment, setComment] = useState('');
   const [items, setItems] = useState([]);
   const [history, setHistory] = useState([]);
@@ -671,7 +678,7 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
       setClientId(o.client_id || '');
       setPointId(o.point_id || '');
       setLegalId(o.legal_id || '');
-      setDeliveryDate(dateOnly(o.delivery_date) || tomorrow());
+      setDeliveryDate(dateOnly(o.delivery_date) || today());
       setComment(o.comment || '');
       const loadedItems = (rawItems || [])
         .filter(it => Number(it.qty) > 0)
@@ -741,7 +748,7 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
     if (!flavor) return { price: 0, basePrice: 0, source: 'flavor_default' };
 
     const base = Number(flavor.default_price || 0);
-    const todayValue = new Date().toISOString().substring(0, 10);
+    const todayValue = today();
     const ctxClientId = ctx.client_id || clientId;
     const ctxPointId = ctx.point_id || pointId;
     const ctxLegalId = ctx.legal_id || legalId;
@@ -1105,6 +1112,7 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
           status: getEditedOrderStatus(),
         });
         showToast(`Заказ ${editingOrder.order_no} обновлён`);
+        markOrdersChanged();
         // выходим из режима редактирования
         setItems([]); setComment(''); setClientId(''); setPointId(''); setLegalId('');
         onClearEdit();
@@ -1121,6 +1129,7 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
           created_by: CURRENT_USER,
         });
         showToast(`Заказ ${res.order_no} сохранён · ${money(res.total_amount)}`);
+        markOrdersChanged();
         setItems([]); setComment('');
         loadHistory(clientId);
       }
@@ -1132,7 +1141,7 @@ function NewOrderPage({ clients, points, legals, flavors, extras, priceOverrides
 
   const cancelEdit = () => {
     setItems([]); setComment(''); setClientId(''); setPointId(''); setLegalId('');
-    setDeliveryDate(tomorrow());
+    setDeliveryDate(today());
     onClearEdit();
   };
 
@@ -1651,7 +1660,7 @@ function HistoryOrderMini({ order, point, onRepeat }) {
 
 // ===== Сегодня / завтра =====
 
-function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, showToast, onEditOrder }) {
+function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, showToast, onEditOrder, markOrdersChanged, ordersRefreshKey }) {
   const initialInworkCache = getPageCache('inwork_all');
   const [orders, setOrders] = useState(() => filterDeletedOrdersForUi(initialInworkCache || []));
   const [loading, setLoading] = useState(() => !initialInworkCache);
@@ -1662,11 +1671,11 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
   const load = async (force = false) => {
     const cacheKey = 'inwork_all';
     const cached = getPageCache(cacheKey);
-    if (cached) {
+    if (!force && cached) {
       setOrders(cached);
       setExpandedItems(prev => ({ ...itemsMapFromOrders(cached), ...prev }));
       setLoading(false);
-      if (!force && isPageCacheFresh(cacheKey)) return;
+      if (isPageCacheFresh(cacheKey)) return;
     } else {
       setLoading(true);
     }
@@ -1694,6 +1703,10 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
   };
 
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    if (ordersRefreshKey > 0) load(true);
+  }, [ordersRefreshKey]);
 
   const clientById = useMemo(() => { const m = {}; clients.forEach(c => { m[c.client_id] = c; }); return m; }, [clients]);
   const pointById = useMemo(() => { const m = {}; points.forEach(p => { m[p.point_id] = p; }); return m; }, [points]);
@@ -1858,7 +1871,9 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
         </p>
       </div>
       <div className="flex items-center gap-2">
-        <Button variant="light" onClick={() => load(true)}>↻ Обновить</Button>
+        <Button variant="light" onClick={() => load(true)} disabled={loading}>
+          {loading ? <><Spinner small /> Обновляю...</> : '↻ Обновить'}
+        </Button>
         <div className="flex gap-1 rounded-2xl bg-slate-100 p-1">
           {[['', 'Все'], ['new', 'Новые'], ['assembled', 'Собранные']].map(([k, l]) => (
             <button key={k} onClick={() => setStatusFilter(k)} className={`rounded-xl px-4 py-2 text-sm transition ${statusFilter === k ? 'bg-white shadow-sm font-medium' : 'text-slate-500'}`}>{l}</button>
@@ -2149,7 +2164,7 @@ function ElbaDocumentsBlock({ order, client, point, legal, onCreated, showToast 
 
 // ===== Сборка / печать =====
 
-function AssemblyPage({ clients, points, showToast, onEditOrder }) {
+function AssemblyPage({ clients, points, showToast, onEditOrder, markOrdersChanged, ordersRefreshKey }) {
   const initialCache = getPageCache('assembly_new');
   const [orders, setOrders] = useState(() => filterDeletedOrdersForUi(initialCache || []));
   const [loading, setLoading] = useState(() => !initialCache);
@@ -2162,10 +2177,10 @@ function AssemblyPage({ clients, points, showToast, onEditOrder }) {
   const load = async (force = false) => {
     const cacheKey = 'assembly_new';
     const cached = getPageCache(cacheKey);
-    if (cached) {
+    if (!force && cached) {
       setOrders(cached);
       setLoading(false);
-      if (!force && isPageCacheFresh(cacheKey)) return;
+      if (isPageCacheFresh(cacheKey)) return;
     } else {
       setLoading(true);
     }
@@ -2207,6 +2222,10 @@ function AssemblyPage({ clients, points, showToast, onEditOrder }) {
   };
 
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    if (ordersRefreshKey > 0) load(true);
+  }, [ordersRefreshKey]);
 
   const filteredOrders = useMemo(() => {
     const t = today();
@@ -2269,7 +2288,9 @@ function AssemblyPage({ clients, points, showToast, onEditOrder }) {
         </p>
       </div>
       <div className="flex gap-2">
-        <Button variant="light" onClick={() => load(true)}>↻ Обновить</Button>
+        <Button variant="light" onClick={() => load(true)} disabled={loading}>
+          {loading ? <><Spinner small /> Обновляю...</> : '↻ Обновить'}
+        </Button>
         <Button onClick={printAssembly}>Распечатать A4</Button>
       </div>
     </header>
@@ -2444,7 +2465,7 @@ function PrintAssemblySheet({ orders, clientById, pointById }) {
 
 // ===== История =====
 
-function HistoryPage({ clients, points, legals, flavors, extras, showToast, onEditOrder }) {
+function HistoryPage({ clients, points, legals, flavors, extras, showToast, onEditOrder, markOrdersChanged, ordersRefreshKey }) {
   const savedFilters = readLocalJson('omoti_history_filters_v1', null);
   const [dateFrom, setDateFrom] = useState(() => savedFilters?.dateFrom || (() => { const d = new Date(); d.setDate(d.getDate() - 14); return d.toISOString().substring(0, 10); })());
   const [dateTo, setDateTo] = useState(() => savedFilters?.dateTo || today());
@@ -2459,11 +2480,11 @@ function HistoryPage({ clients, points, legals, flavors, extras, showToast, onEd
   const load = async (force = false) => {
     const cacheKey = `history_${dateFrom}_${dateTo}_${filterClient || 'all'}_${filterStatus || 'all'}`;
     const cached = getPageCache(cacheKey);
-    if (cached) {
+    if (!force && cached) {
       setOrders(cached);
       setExpandedItems(prev => ({ ...itemsMapFromOrders(cached), ...prev }));
       setLoading(false);
-      if (!force && isPageCacheFresh(cacheKey)) return;
+      if (isPageCacheFresh(cacheKey)) return;
     } else {
       setLoading(true);
     }
@@ -2500,6 +2521,10 @@ function HistoryPage({ clients, points, legals, flavors, extras, showToast, onEd
     writeLocalJson('omoti_history_filters_v1', { dateFrom, dateTo, filterClient, filterStatus });
     load();
   }, [dateFrom, dateTo, filterClient, filterStatus]);
+
+  useEffect(() => {
+    if (ordersRefreshKey > 0) load(true);
+  }, [ordersRefreshKey]);
 
   const clientById = useMemo(() => { const m = {}; clients.forEach(c => { m[c.client_id] = c; }); return m; }, [clients]);
   const pointById = useMemo(() => { const m = {}; points.forEach(p => { m[p.point_id] = p; }); return m; }, [points]);
@@ -2609,7 +2634,9 @@ function HistoryPage({ clients, points, legals, flavors, extras, showToast, onEd
           options={[{ value: '', label: 'Все клиенты' }, ...clients.map(c => ({ value: c.client_id, label: c.name }))]} placeholder="Все клиенты" /></div>
         <div><Label>Статус</Label><Combobox value={filterStatus} onChange={setFilterStatus}
           options={[{ value: '', label: 'Все' }, ...STATUS_OPTIONS]} placeholder="Все статусы" /></div>
-        <div className="self-end"><Button onClick={() => load(true)} variant="light">Обновить</Button></div>
+        <div className="self-end"><Button onClick={() => load(true)} variant="light" disabled={loading}>
+          {loading ? <><Spinner small /> Обновляю...</> : 'Обновить'}
+        </Button></div>
       </div>
 
       {loading && <div className="text-center py-12"><Spinner /></div>}
