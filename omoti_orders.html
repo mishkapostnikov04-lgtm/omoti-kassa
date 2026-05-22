@@ -617,6 +617,15 @@ function App() {
     });
   }, [page]);
 
+  // Keep-warm: тихий ping каждые 4 минуты, чтобы GAS-контейнер не засыпал.
+  // Ping не пишет в таблицы и не сбрасывает кеши — он просто возвращает время.
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      api('ping').catch(() => {});
+    }, 4 * 60 * 1000);
+    return () => clearInterval(intervalId);
+  }, []);
+
   if (loading) return <div className="min-h-screen flex items-center justify-center">
     <div className="flex items-center gap-3 text-slate-600"><Spinner /><span>Загрузка...</span></div>
   </div>;
@@ -1728,6 +1737,7 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
   const [expandedItems, setExpandedItems] = useState(() => initialInworkCache ? itemsMapFromOrders(initialInworkCache) : {});
   const [statusFilter, setStatusFilter] = useState(''); // '', 'new', 'assembled'
   const [recentlyChanged, setRecentlyChanged] = useState(() => new Set());
+  const [pendingStatusIds, setPendingStatusIds] = useState(() => new Set());
   const cleanupTimersRef = useRef(new Map());
 
   // При обновлении списка сбрасываем «свежеизменённые» и таймеры
@@ -1947,6 +1957,9 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
       setRecentlyChanged(prev => { const n = new Set(prev); n.delete(orderId); return n; });
     }, 30000));
 
+    // Помечаем заказ как «в процессе» — кнопка disabled, повторный клик блокируется
+    setPendingStatusIds(prev => { const n = new Set(prev); n.add(orderId); return n; });
+
     try {
       await api('updateOrder', { order_id: orderId, updates });
       clearPageCache('inwork');
@@ -1990,6 +2003,8 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
       setRecentlyChanged(prev => { const n = new Set(prev); n.delete(orderId); return n; });
       showToast('Ошибка: ' + err.message, 'error');
       load(true);
+    } finally {
+      setPendingStatusIds(prev => { const n = new Set(prev); n.delete(orderId); return n; });
     }
   };
 
@@ -2134,6 +2149,7 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
                   showToast={showToast}
                   isOverdue={group.key === 'overdue'}
                   isRecentlyChanged={recentlyChanged.has(o.order_id)}
+                  isStatusPending={pendingStatusIds.has(o.order_id)}
                 />
               ))}
             </div>
@@ -2144,7 +2160,7 @@ function InWorkPage({ clients, points, legals, flavors, extras, priceOverrides, 
   </>;
 }
 
-function InWorkOrderRow({ order, client, point, legal, expanded, items, onToggle, onChangeStatus, onEdit, onDelete, onDocumentsCreated, onDocumentsDetached, onDocumentsMetaUpdate, showToast, isOverdue, isRecentlyChanged }) {
+function InWorkOrderRow({ order, client, point, legal, expanded, items, onToggle, onChangeStatus, onEdit, onDelete, onDocumentsCreated, onDocumentsDetached, onDocumentsMetaUpdate, showToast, isOverdue, isRecentlyChanged, isStatusPending }) {
   const statusColor = { new: 'blue', assembled: 'amber', shipped: 'green', cancelled: 'red' }[order.status] || 'slate';
   const statusLabel = { new: 'Новый', assembled: 'Собран', shipped: 'Отгружен', cancelled: 'Отменён' }[order.status] || order.status;
   const docState = orderDocState(order);
@@ -2182,8 +2198,13 @@ function InWorkOrderRow({ order, client, point, legal, expanded, items, onToggle
         {isRecentlyChanged && <div className="text-[10px] text-slate-400 italic mt-0.5">переместится</div>}
       </div>
       <div className="flex justify-end pl-3 border-l border-slate-200">
-        {nextAction && <Button onClick={() => onChangeStatus(order.order_id, nextAction.status)} variant={nextAction.variant} size="sm">
-          {nextAction.label} →
+        {nextAction && <Button
+          onClick={() => onChangeStatus(order.order_id, nextAction.status)}
+          variant={nextAction.variant}
+          size="sm"
+          disabled={isStatusPending}
+        >
+          {isStatusPending ? <><Spinner small /> Сохраняю...</> : <>{nextAction.label} →</>}
         </Button>}
       </div>
     </div>
@@ -2247,6 +2268,8 @@ function InWorkOrderRow({ order, client, point, legal, expanded, items, onToggle
 function ElbaDocumentsBlock({ order, client, point, legal, onCreated, onDetached, onMetaUpdate, showToast }) {
   const [creating, setCreating] = useState(false);
   const [detaching, setDetaching] = useState(false);
+  const [copyingInvoice, setCopyingInvoice] = useState(false);
+  const [printingWaybill, setPrintingWaybill] = useState(false);
 
   const hasDocs = !!(order.invoice_id || order.waybill_id || order.invoice_url || order.waybill_url);
   const status = order.documents_status || (hasDocs ? 'full' : '');
@@ -2334,67 +2357,80 @@ function ElbaDocumentsBlock({ order, client, point, legal, onCreated, onDetached
   };
 
   const handleCopyInvoice = async () => {
+    if (copyingInvoice) return;
     if (!order.invoice_url) {
       showToast('Ссылка на счёт не найдена', 'warn');
       return;
     }
 
-    const clientName = client?.name || order.client_name || order.client_id || 'Оптовик';
-    const legalName = legal?.legal_name || order.legal_name || '';
-    const pointAddress = point?.address || order.point_address || '';
-    const invoiceNumber = order.invoice_number ? `№${order.invoice_number}` : 'без номера';
-    const invoiceDate = displayDate(order.invoice_date || order.documents_created_at || order.created_at || today());
-
-    const text = [
-      clientName,
-      legalName ? `Юрлицо: ${legalName}` : '',
-      pointAddress ? `Адрес: ${pointAddress}` : '',
-      '',
-      `Счёт ${invoiceNumber} от ${invoiceDate}`,
-      `Сумма: ${money(order.total_amount)}`,
-      '',
-      'Ссылка на оплату:',
-      order.invoice_url,
-    ].filter(line => line !== '').join('\n');
-
+    setCopyingInvoice(true);
     try {
-      await copyTextToClipboard(text);
-      showToast('Сообщение со счётом скопировано');
-    } catch (err) {
-      showToast('Не удалось скопировать: ' + err.message, 'error');
-      return;
-    }
+      const clientName = client?.name || order.client_name || order.client_id || 'Оптовик';
+      const legalName = legal?.legal_name || order.legal_name || '';
+      const pointAddress = point?.address || order.point_address || '';
+      const invoiceNumber = order.invoice_number ? `№${order.invoice_number}` : 'без номера';
+      const invoiceDate = displayDate(order.invoice_date || order.documents_created_at || order.created_at || today());
 
-    // Отметка: счёт скопирован — не критично, при ошибке только warn
-    try {
-      const ts = new Date().toISOString();
-      await api('updateOrder', {
-        order_id: order.order_id,
-        updates: { invoice_copied_at: ts, invoice_copied_by: CURRENT_USER },
-      });
-      onMetaUpdate?.(order.order_id, { invoice_copied_at: ts, invoice_copied_by: CURRENT_USER });
-    } catch (e) {
-      showToast('Счёт скопирован, но отметка не записана: ' + e.message, 'warn');
+      const text = [
+        clientName,
+        legalName ? `Юрлицо: ${legalName}` : '',
+        pointAddress ? `Адрес: ${pointAddress}` : '',
+        '',
+        `Счёт ${invoiceNumber} от ${invoiceDate}`,
+        `Сумма: ${money(order.total_amount)}`,
+        '',
+        'Ссылка на оплату:',
+        order.invoice_url,
+      ].filter(line => line !== '').join('\n');
+
+      try {
+        await copyTextToClipboard(text);
+        showToast('Сообщение со счётом скопировано');
+      } catch (err) {
+        showToast('Не удалось скопировать: ' + err.message, 'error');
+        return;
+      }
+
+      // Отметка: счёт скопирован — не критично, при ошибке только warn
+      try {
+        const ts = new Date().toISOString();
+        await api('updateOrder', {
+          order_id: order.order_id,
+          updates: { invoice_copied_at: ts, invoice_copied_by: CURRENT_USER },
+        });
+        onMetaUpdate?.(order.order_id, { invoice_copied_at: ts, invoice_copied_by: CURRENT_USER });
+      } catch (e) {
+        showToast('Счёт скопирован, но отметка не записана: ' + e.message, 'warn');
+      }
+    } finally {
+      setCopyingInvoice(false);
     }
   };
 
   const handlePrintWaybill = async () => {
+    if (printingWaybill) return;
     if (!order.waybill_url) {
       showToast('Ссылка на ТН не найдена', 'warn');
       return;
     }
-    window.open(order.waybill_url, '_blank', 'noopener,noreferrer');
 
-    // Отметка: ТН открыта — не критично, при ошибке только warn
+    setPrintingWaybill(true);
     try {
-      const ts = new Date().toISOString();
-      await api('updateOrder', {
-        order_id: order.order_id,
-        updates: { waybill_printed_at: ts, waybill_printed_by: CURRENT_USER },
-      });
-      onMetaUpdate?.(order.order_id, { waybill_printed_at: ts, waybill_printed_by: CURRENT_USER });
-    } catch (e) {
-      showToast('ТН открыта, но отметка не записана: ' + e.message, 'warn');
+      window.open(order.waybill_url, '_blank', 'noopener,noreferrer');
+
+      // Отметка: ТН открыта — не критично, при ошибке только warn
+      try {
+        const ts = new Date().toISOString();
+        await api('updateOrder', {
+          order_id: order.order_id,
+          updates: { waybill_printed_at: ts, waybill_printed_by: CURRENT_USER },
+        });
+        onMetaUpdate?.(order.order_id, { waybill_printed_at: ts, waybill_printed_by: CURRENT_USER });
+      } catch (e) {
+        showToast('ТН открыта, но отметка не записана: ' + e.message, 'warn');
+      }
+    } finally {
+      setPrintingWaybill(false);
     }
   };
 
@@ -2418,17 +2454,19 @@ function ElbaDocumentsBlock({ order, client, point, legal, onCreated, onDetached
         {order.invoice_url && <button
           type="button"
           onClick={handleCopyInvoice}
-          className="inline-flex rounded-xl bg-slate-950 px-3 py-2 font-medium text-white hover:bg-slate-800"
+          disabled={copyingInvoice}
+          className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-3 py-2 font-medium text-white hover:bg-slate-800 disabled:opacity-50"
         >
-          Скопировать счёт
+          {copyingInvoice ? <><Spinner small /> Копирую...</> : 'Скопировать счёт'}
         </button>}
 
         {order.waybill_url && <button
           type="button"
           onClick={handlePrintWaybill}
-          className="inline-flex rounded-xl bg-white px-3 py-2 font-medium text-slate-900 border border-slate-200 hover:bg-slate-50"
+          disabled={printingWaybill}
+          className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 font-medium text-slate-900 border border-slate-200 hover:bg-slate-50 disabled:opacity-50"
         >
-          Распечатать ТН
+          {printingWaybill ? <><Spinner small /> Открываю...</> : 'Распечатать ТН'}
         </button>}
 
         {hasDocs && onDetached && <button
