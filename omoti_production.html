@@ -2087,8 +2087,6 @@ function renderTable(){
       cells+=`<td class="qty${planQty===0?' empty':''}${isToday?' today-col':''}${done?' table-cell-done':''}">${planQty||'—'}</td>`;
     });
 
-    grandTotal+=rowTotal;
-
     // Строка целиком зачёркнута только когда закрыт весь недельный план по вкусу.
     const allDaysForFlavor=rowTotal>0&&factWeekQty>=rowTotal;
     tbody+=`<tr><td class="${allDaysForFlavor?'table-name-done':''}">${escHtml(name)}</td>${cells}<td class="total${allDaysForFlavor?' table-total-done':''}">${rowRemainingTotal||'—'}</td></tr>`;
