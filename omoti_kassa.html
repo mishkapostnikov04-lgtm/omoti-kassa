@@ -61,11 +61,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 .period-dropdown-item.selected{font-weight:700;color:var(--accent)}
 .comment-input{width:100%;border:1px solid var(--border);background:#fff;border-radius:12px;padding:11px 13px;font-size:13px;font-family:inherit;color:var(--text);outline:none;resize:none;margin-top:0}.comment-input:focus{border-color:#aaa}
 .ji-comment{font-size:12px;color:var(--muted);margin-top:5px;font-style:italic;line-height:1.4}
+.restock-note{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:13px;font-size:13px;line-height:1.45;color:var(--text);margin-bottom:14px}
+.restock-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:13px;margin-bottom:12px}
+.restock-title{font-size:14px;font-weight:700;margin-bottom:10px}
+.restock-sellers{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.restock-seller-btn{border:1px solid var(--border);background:#fff;border-radius:999px;padding:9px 12px;font-size:13px;font-family:inherit;color:var(--text);cursor:pointer}
+.restock-seller-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.restock-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.restock-check{display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:12px;background:#fff;padding:10px 9px;font-size:12px;line-height:1.2;min-height:44px}
+.restock-check input{width:18px;height:18px;flex:0 0 auto;accent-color:var(--accent)}
+.restock-submit{width:100%;border:none;border-radius:14px;padding:14px 16px;background:var(--accent);color:#fff;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:4px}
+.restock-submit:disabled{opacity:.45;cursor:not-allowed}
+.restock-last{font-size:12px;color:var(--success-text);background:var(--success-bg);border:1px solid var(--success-border);border-radius:12px;padding:10px 11px;margin-bottom:12px;display:none}
+@media (max-width:380px){.restock-grid{grid-template-columns:1fr}.tab-btn{font-size:12px;padding:8px 6px}}
 </style>
 </head>
 <body>
 <div class="app">
-<div class="topbar"><span class="topbar-title">OMOTI · Новогодняя</span><div class="tab-switcher"><button class="tab-btn active" onclick="switchTab('kassa')">Касса</button><button class="tab-btn" onclick="switchTab('journal')">Журнал</button><button class="tab-btn" onclick="switchTab('stats')">Итоги</button></div></div>
+<div class="topbar"><span class="topbar-title">OMOTI · Новогодняя</span><div class="tab-switcher"><button class="tab-btn active" onclick="switchTab('kassa')">Касса</button><button class="tab-btn" onclick="switchTab('journal')">Журнал</button><button class="tab-btn" onclick="switchTab('stats')">Итоги</button><button class="tab-btn" onclick="switchTab('restock')">Что заканчивается?</button></div></div>
 
 <div class="screen active" id="screen-kassa">
 <div class="sec-label">Имя</div><div class="seller-row" id="seller-row"></div>
@@ -101,6 +114,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 <div id="brak-section" style="display:none"><div class="sec-label" style="margin-top:14px">Брак <span style="font-weight:400;color:var(--danger);text-transform:none;font-size:11px">(списано)</span></div><div id="brak-stat-list"></div></div>
 <div class="sec-label" style="margin-top:14px">Топ вкусов</div><div id="flavor-stat-list"></div>
 </div></div>
+
+<div class="screen" id="screen-restock">
+<div class="restock-note">Отметьте, что скоро закончится. Мы учтём это при следующем довозе.</div>
+<div class="restock-last" id="restock-last"></div>
+<div class="restock-card"><div class="restock-title">Кто отправляет</div><div class="restock-sellers" id="restock-sellers"></div></div>
+<div class="restock-card"><div class="restock-title">Моти</div><div class="restock-grid" id="restock-flavors"></div></div>
+<div class="restock-card"><div class="restock-title">Расходники</div><div class="restock-grid" id="restock-supplies"></div></div>
+<button class="restock-submit" id="restock-submit" onclick="submitRestock()" disabled>Отправить</button>
+</div>
 </div>
 
 <div class="overlay" id="overlay" onclick="hideModal()"></div>
@@ -115,19 +137,40 @@ const SERVER_MIRROR_ENABLED = true;
 const SERVER_MIRROR_TIMEOUT_MS = 2500;
 const CASHIER_POINT = 'Новогодняя';
 const SERVER_MIRROR_QUEUE_KEY = 'omoti_server_mirror_queue_novogodnyaya';
+const RESTOCK_API = 'https://orders.omoti.ru/b2c-api/point-restock/requests';
+const RESTOCK_LAST_SENT_KEY = 'omoti_restock_last_sent_novogodnyaya';
+const RESTOCK_SUPPLIES = [
+  ['kraft_bags_small','крафтовые пакеты маленькие'],
+  ['kraft_bags_large','крафтовые пакеты большие'],
+  ['plastic_capsules_1','пластиковые капсулы на 1 моти'],
+  ['boxes_2','коробки на 2 моти'],
+  ['boxes_3','коробки на 3 моти'],
+  ['boxes_5_8','коробки на 5-8 моти'],
+  ['boxes_15','коробки на 15 моти'],
+  ['sauce_cups','соусники'],
+  ['paper_rosettes','бумажные розеточки'],
+  ['white_thermal_labels','белые термоэтикетки для заклеивания коробок'],
+  ['round_brand_stickers','круглые бренд-наклейки'],
+  ['gloves','перчатки'],
+  ['business_cards','визитки']
+];
 
 const FLAVORS = ['Арбуз - Дыня','Бабл Гам','Банан- Нутелла','Вишня-Тонка','Дубайский шоколад','Киви-Алоэ','Клубника','Кокос-Маракуйя','Кокосовый пломбир','Кофе-Карамель','Криспи','Малина-Ваниль','Матча-Манго','Мохито','Печенье с топлёным молоком','Сливочный лимон','Смородина','Сникерс','Трюфель','Твикс','Шоколад'].sort((a,b)=>a.localeCompare(b,'ru')).concat(['Мункейки']);
 const PREMIUM = new Set(['Дубайский шоколад','Криспи']);
 const PAY_TYPES = ['Безналичный','Наличный','Перевод','Яндекс','Себе оплачено','Себе без оплаты','Брак'];
-let sellers = loadSellers(), cart = {}, seller = '', payType = '', selfPayType = 'Наличные', allChecks = [], editNum = null, editDate = '', editTime = '', comment = '', deleteTargetNum = '';
+let sellers = loadSellers(), cart = {}, seller = '', restockSender = '', payType = '', selfPayType = 'Наличные', allChecks = [], editNum = null, editDate = '', editTime = '', comment = '', deleteTargetNum = '';
 
-function loadSellers(){try{const x=JSON.parse(localStorage.getItem('omoti_sellers')||'null'); return Array.isArray(x)&&x.length?x:['Алексей','Галина','Кирилл'];}catch(e){return ['Алексей','Галина','Кирилл'];}}
+const DEFAULT_SELLERS = ['Алексей'];
+const RETIRED_SELLERS = new Set(['Галина','Кирилл']);
+const RETIRED_SELLERS_CLEANUP_KEY = 'omoti_sellers_cleanup_20260609_galina_kirill';
+function cleanRetiredSellersOnce(list){const src=Array.isArray(list)?list:[]; if(localStorage.getItem(RETIRED_SELLERS_CLEANUP_KEY)==='1') return src.length?src:DEFAULT_SELLERS.slice(); const clean=Array.from(new Set(src.map(x=>String(x||'').trim()).filter(x=>x&&!RETIRED_SELLERS.has(x)))); localStorage.setItem(RETIRED_SELLERS_CLEANUP_KEY,'1'); return clean.length?clean:DEFAULT_SELLERS.slice();}
+function loadSellers(){try{const x=JSON.parse(localStorage.getItem('omoti_sellers')||'null'); const clean=cleanRetiredSellersOnce(Array.isArray(x)&&x.length?x:DEFAULT_SELLERS); if(Array.isArray(x)&&JSON.stringify(x)!==JSON.stringify(clean)) localStorage.setItem('omoti_sellers', JSON.stringify(clean)); return clean;}catch(e){return DEFAULT_SELLERS.slice();}}
 function saveSellers(){localStorage.setItem('omoti_sellers', JSON.stringify(sellers));}
 function getPrice(name,pay){if(pay==='Брак') return 0; if(name==='Мункейки'){if(pay==='Яндекс') return 750; if(pay==='Себе оплачено'||pay==='Себе без оплаты') return 360; return 600;} const p=PREMIUM.has(name); if(pay==='Яндекс') return p?250:200; if(pay==='Себе оплачено'||pay==='Себе без оплаты') return p?110:100; return p?200:180;}
 function escHtml(s){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;");}
 function getServerMirrorComment(){const el=document.getElementById('comment-input'); return el?el.value.trim():'';}
 function readServerMirrorQueue(){try{const value=JSON.parse(localStorage.getItem(SERVER_MIRROR_QUEUE_KEY)||'[]'); return Array.isArray(value)?value:[];}catch(e){return [];}}
-function writeServerMirrorQueue(queue){localStorage.setItem(SERVER_MIRROR_QUEUE_KEY, JSON.stringify(queue.slice(0,50)));}
+function writeServerMirrorQueue(queue){localStorage.setItem(SERVER_MIRROR_QUEUE_KEY, JSON.stringify(queue.slice(-50)));}
 function buildServerMirrorPayload(payload){return Object.assign({}, payload, {comment: payload.comment || getServerMirrorComment(), mirrorSource:'github_cashier_dual_write'});}
 function enqueueServerMirror(payload,reason){const queue=readServerMirrorQueue(); const mirrorPayload=buildServerMirrorPayload(payload); const key=String(mirrorPayload.action||'save_check')+'|'+String(mirrorPayload.point||'')+'|'+String(mirrorPayload.num||'')+'|'+String(mirrorPayload.edited||false); const item={key:key,payload:mirrorPayload,attempts:0,lastError:String(reason&&reason.message||reason||''),queuedAt:new Date().toISOString()}; const filtered=queue.filter(x=>x.key!==key); filtered.push(item); writeServerMirrorQueue(filtered);}
 function sendServerMirror(payload){if(!SERVER_MIRROR_ENABLED) return Promise.resolve({ok:true,disabled:true}); const mirrorPayload=buildServerMirrorPayload(payload); const controller=new AbortController(); const timer=setTimeout(function(){controller.abort();},SERVER_MIRROR_TIMEOUT_MS); return fetch(SERVER_MIRROR_API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(mirrorPayload),signal:controller.signal}).then(function(res){clearTimeout(timer); return res.json().then(function(json){if(!res.ok||!json.ok){throw new Error(json.error||'server mirror failed');} return json;});}).catch(function(e){clearTimeout(timer); throw e;});}
@@ -149,13 +192,24 @@ function renderFlavors(){
     return `<button class="flavor-btn ${PREMIUM.has(f)?'gold':''} ${q>0?'active':''}" onclick="changeQty('${escJs(f)}',1)">${escHtml(f)}${q?`<span class="qty-badge">${q}</span>`:''}</button>`;
   }).join('');
 }
+function todayRestockKey(){const n=new Date(); return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');}
+function renderRestockLastSent(){const el=document.getElementById('restock-last'); if(!el) return; try{const data=JSON.parse(localStorage.getItem(RESTOCK_LAST_SENT_KEY)||'null'); if(data&&data.day===todayRestockKey()&&data.time){el.style.display='block'; el.textContent='Сегодня уже отправляли в '+data.time+'. Можно отправить ещё раз, если что-то добавилось.'; return;}}catch(e){} el.style.display='none'; el.textContent='';}
+function renderRestockSellers(){const el=document.getElementById('restock-sellers'); if(!el) return; el.innerHTML=sellers.map(name=>`<button type="button" class="restock-seller-btn ${name===restockSender?'active':''}" onclick="setRestockSender('${escJs(name)}')">${escHtml(name)}</button>`).join('');}
+function setRestockSender(name){restockSender=name; renderRestockSellers(); updateRestockSubmitState();}
+function restockCheckbox(name,value,type,label){return `<label class="restock-check"><input type="checkbox" data-restock-type="${type}" data-restock-value="${escHtml(value)}" data-restock-label="${escHtml(label)}" onchange="updateRestockSubmitState()"><span>${escHtml(name)}</span></label>`;}
+function renderRestockOptions(){const flavors=document.getElementById('restock-flavors'); const supplies=document.getElementById('restock-supplies'); if(!flavors||!supplies) return; flavors.innerHTML=FLAVORS.map(name=>restockCheckbox(name,name,'moti',name)).join(''); supplies.innerHTML=RESTOCK_SUPPLIES.map(x=>restockCheckbox(x[1],x[0],'supply',x[1])).join(''); renderRestockSellers(); renderRestockLastSent(); updateRestockSubmitState();}
+function selectedRestockItems(){return Array.from(document.querySelectorAll('[data-restock-type]:checked')).map(function(input){const type=input.dataset.restockType; if(type==='moti'){return {itemType:'moti',legacyFlavorName:input.dataset.restockValue,label:input.dataset.restockLabel};} return {itemType:'supply',supplyItemId:input.dataset.restockValue,label:input.dataset.restockLabel};});}
+function updateRestockSubmitState(){const btn=document.getElementById('restock-submit'); if(!btn) return; btn.disabled=!(restockSender&&selectedRestockItems().length);}
+function clearRestockSelection(){document.querySelectorAll('[data-restock-type]:checked').forEach(function(input){input.checked=false;}); updateRestockSubmitState();}
+function saveRestockSentNow(){const n=new Date(); const time=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0'); localStorage.setItem(RESTOCK_LAST_SENT_KEY, JSON.stringify({day:todayRestockKey(),time:time,ts:n.toISOString()})); renderRestockLastSent();}
+function submitRestock(){const items=selectedRestockItems(); if(!restockSender||!items.length){showToast('Выберите имя и позиции'); return;} const btn=document.getElementById('restock-submit'); btn.disabled=true; btn.textContent='Отправляю...'; const payload={locationId:'novogodnyaya',pointName:'Новогодняя',createdBy:restockSender,clientCreatedAt:new Date().toISOString(),source:'cashier_restock_tab',items:items}; fetch(RESTOCK_API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)}).then(function(res){return res.json();}).then(function(json){if(!json.ok) throw new Error(json.error||'Не удалось отправить'); clearRestockSelection(); saveRestockSentNow(); showToast('Спасибо, учтём при довозе.');}).catch(function(e){showToast('Ошибка: '+(e.message||e));}).finally(function(){btn.textContent='Отправить'; updateRestockSubmitState();});}
 function changeQty(name,delta){cart[name]=(cart[name]||0)+delta; if(cart[name]<=0) delete cart[name]; updateCart();}
 function updateCart(){const items=Object.entries(cart).filter(([k,v])=>v>0), empty=document.getElementById('cart-empty'), itemsEl=document.getElementById('cart-items'), totalEl=document.getElementById('cart-total'), btn=document.getElementById('close-btn'); renderFlavors(); if(!items.length){empty.style.display='block';itemsEl.innerHTML='';totalEl.style.display='none';btn.disabled=true;return;} empty.style.display='none'; btn.disabled=!(seller&&payType&&(payType!=='Себе оплачено'||selfPayType)); let total=0; itemsEl.innerHTML=items.map(([n,q])=>{const p=getPrice(n,payType); total+=p*q; return `<div class="cart-item"><span class="ci-name">${escHtml(n)}</span><div class="ci-ctrl"><button class="c-btn" onclick="changeQty('${escJs(n)}',-1)">−</button><span class="ci-qty">${q}</span><button class="c-btn" onclick="changeQty('${escJs(n)}',1)">+</button><span class="ci-price">${money(p*q)}</span></div></div>`;}).join(''); const totalQty=items.reduce((a,[,q])=>a+q,0); totalEl.style.display='flex'; document.getElementById('total-qty').textContent=totalQty+' шт'; document.getElementById('total-sum').textContent=money(total);}
 function setSeller(el,name){seller=name; document.querySelectorAll('.seller-btn').forEach(b=>b.classList.remove('active')); el.classList.add('active'); updateCart();}
 function setPay(el,type){payType=type; document.querySelectorAll('.pay-btn').forEach(b=>b.classList.remove('active')); el.classList.add('active'); document.getElementById('self-clarify').className='self-clarify'+(type==='Себе оплачено'?' visible':''); updateCart();}
 function setSelfPay(el,type){selfPayType=type; document.querySelectorAll('.self-sub-btn').forEach(b=>b.classList.remove('active')); el.classList.add('active'); updateCart();}
 let dataLoaded = false;
-function switchTab(tab){document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['kassa','journal','stats'][i]===tab)); document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('screen-'+tab).classList.add('active'); if(tab==='journal'||tab==='stats'){if(!dataLoaded){dataLoaded=true; loadRemoteData().then(function(){if(tab==='stats') loadStats();});}else{if(tab==='journal') renderJournal(); if(tab==='stats') loadStats();}}}
+function switchTab(tab){document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['kassa','journal','stats','restock'][i]===tab)); document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('screen-'+tab).classList.add('active'); if(tab==='restock'){renderRestockOptions(); return;} if(tab==='journal'||tab==='stats'){if(!dataLoaded){dataLoaded=true; loadRemoteData().then(function(){if(tab==='stats') loadStats();});}else{if(tab==='journal') renderJournal(); if(tab==='stats') loadStats();}}}
 function nextCheckNum(){return Date.now();}
 function nowDate(){const n=new Date(); return String(n.getDate()).padStart(2,'0')+'.'+String(n.getMonth()+1).padStart(2,'0')+'.'+n.getFullYear();}
 function nowTime(){const n=new Date(); return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
@@ -422,10 +476,11 @@ function normalizeTime(v){const s=String(v||'').trim(); if(/^\d{2}:\d{2}$/.test(
 function toNum(v){return Number(String(v||'0').replace(/\s/g,'').replace(',', '.'))||0;}
 function showModal(){document.getElementById('modal-input').value=''; document.getElementById('overlay').style.display='block'; document.getElementById('modal').style.display='block'; setTimeout(()=>document.getElementById('modal-input').focus(),50);}
 function hideModal(){document.getElementById('overlay').style.display='none'; document.getElementById('modal').style.display='none';}
-function modalConfirm(){const v=document.getElementById('modal-input').value.trim(); if(!v) return; if(!sellers.includes(v)){sellers.push(v); sellers.sort((a,b)=>a.localeCompare(b,'ru')); saveSellers();} seller=v; renderSellers(); updateCart(); hideModal();}
+function modalConfirm(){const v=document.getElementById('modal-input').value.trim(); if(!v) return; if(!sellers.includes(v)){sellers.push(v); sellers.sort((a,b)=>a.localeCompare(b,'ru')); saveSellers();} seller=v; renderSellers(); renderRestockSellers(); updateCart(); hideModal();}
 function showToast(text){const el=document.getElementById('toast'); el.textContent=text; el.classList.add('show'); clearTimeout(showToast.t); showToast.t=setTimeout(()=>el.classList.remove('show'),1800);}
 resetForm();
 buildDropdowns();
+renderRestockOptions();
 retryServerMirrorQueue();
 </script>
 </body>
