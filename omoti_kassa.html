@@ -133,7 +133,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 const API = 'https://script.google.com/macros/s/AKfycbz3ItZC39czYtZjmM_I6bmGWXov6BOPUoW7HhniV5pRs4KxoB1b1825mCxmRb1TAGzJkw/exec';
 const SERVER_MIRROR_API = 'https://orders.omoti.ru/b2c-api/b2c/cashier/save_check';
 const SERVER_MIRROR_ENABLED = true;
-const SERVER_MIRROR_TIMEOUT_MS = 2500;
+const SERVER_MIRROR_TIMEOUT_MS = 10000;
 const CASHIER_POINT = 'Новогодняя';
 const SERVER_MIRROR_QUEUE_KEY = 'omoti_server_mirror_queue_novogodnyaya';
 const RESTOCK_API = 'https://orders.omoti.ru/b2c-api/point-restock/requests';
@@ -172,13 +172,13 @@ function getServerMirrorComment(){const el=document.getElementById('comment-inpu
 function readServerMirrorQueue(){try{const value=JSON.parse(localStorage.getItem(SERVER_MIRROR_QUEUE_KEY)||'[]'); return Array.isArray(value)?value:[];}catch(e){return [];}}
 function updateServerMirrorStatus(){const el=document.getElementById('server-mirror-status'); if(!el) return; const count=readServerMirrorQueue().length; if(count>0){el.style.display='block'; el.textContent='Ожидает отправки на сервер: '+count;}else{el.style.display='none'; el.textContent='';}}
 function writeServerMirrorQueue(queue){localStorage.setItem(SERVER_MIRROR_QUEUE_KEY, JSON.stringify(queue.slice(-50))); updateServerMirrorStatus();}
-function buildServerMirrorPayload(payload){return Object.assign({}, payload, {comment: payload.comment || getServerMirrorComment(), mirrorSource:'github_cashier_dual_write'});}
+function buildServerMirrorPayload(payload){return Object.assign({}, payload, {comment: (payload.comment != null) ? payload.comment : getServerMirrorComment(), mirrorSource:'github_cashier_dual_write'});}
 function getServerMirrorKey(payload){return String(payload.action||'save_check')+'|'+String(payload.point||'')+'|'+String(payload.num||'')+'|'+String(payload.edited||false);}
 function enqueueServerMirror(payload,reason){const queue=readServerMirrorQueue(); const mirrorPayload=buildServerMirrorPayload(payload); const key=getServerMirrorKey(mirrorPayload); const existing=queue.find(x=>x.key===key); const attempts=existing?Number(existing.attempts||0):0; const item={key:key,payload:mirrorPayload,attempts:attempts,lastError:String(reason&&reason.message||reason||''),queuedAt:existing&&existing.queuedAt?existing.queuedAt:new Date().toISOString(),updatedAt:new Date().toISOString()}; const filtered=queue.filter(x=>x.key!==key); filtered.push(item); writeServerMirrorQueue(filtered); return key;}
 function sendServerMirror(payload){if(!SERVER_MIRROR_ENABLED) return Promise.resolve({ok:true,disabled:true}); const mirrorPayload=buildServerMirrorPayload(payload); const controller=new AbortController(); const timer=setTimeout(function(){controller.abort();},SERVER_MIRROR_TIMEOUT_MS); return fetch(SERVER_MIRROR_API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(mirrorPayload),signal:controller.signal,keepalive:true}).then(function(res){clearTimeout(timer); return res.json().then(function(json){if(!res.ok||!json.ok){throw new Error(json.error||'server mirror failed');} return json;});}).catch(function(e){clearTimeout(timer); throw e;});}
 let serverMirrorRetryInFlight=false;
 function mirrorPayloadToServer(payload){enqueueServerMirror(payload); retryServerMirrorQueue();}
-function retryServerMirrorQueue(){if(!SERVER_MIRROR_ENABLED||serverMirrorRetryInFlight) return Promise.resolve(); const queue=readServerMirrorQueue(); if(!queue.length){updateServerMirrorStatus(); return Promise.resolve();} serverMirrorRetryInFlight=true; const kept=[]; let chain=Promise.resolve(); queue.forEach(function(item){chain=chain.then(function(){return sendServerMirror(item.payload).catch(function(e){item.attempts=Number(item.attempts||0)+1; item.lastError=String(e&&e.message||e||''); item.updatedAt=new Date().toISOString(); kept.push(item);});});}); return chain.then(function(){writeServerMirrorQueue(kept);}).finally(function(){serverMirrorRetryInFlight=false; updateServerMirrorStatus();});}
+function retryServerMirrorQueue(){if(!SERVER_MIRROR_ENABLED||serverMirrorRetryInFlight) return Promise.resolve(); const queue=readServerMirrorQueue(); if(!queue.length){updateServerMirrorStatus(); return Promise.resolve();} serverMirrorRetryInFlight=true; const kept=[]; let chain=Promise.resolve(); queue.forEach(function(item){chain=chain.then(function(){return sendServerMirror(item.payload).catch(function(e){item.attempts=Number(item.attempts||0)+1; item.lastError=String(e&&e.message||e||''); item.updatedAt=new Date().toISOString(); kept.push(item);});});}); return chain.then(function(){var fresh=readServerMirrorQueue(); var processedKeys={}; queue.forEach(function(item){if(item&&item.key) processedKeys[item.key]=true;}); var newItems=fresh.filter(function(item){return item&&item.key&&!processedKeys[item.key];}); writeServerMirrorQueue(kept.concat(newItems));}).finally(function(){serverMirrorRetryInFlight=false; updateServerMirrorStatus();});}
 function flushServerMirrorQueueBeacon(){if(!navigator.sendBeacon) return; readServerMirrorQueue().forEach(function(item){try{navigator.sendBeacon(SERVER_MIRROR_API,new Blob([JSON.stringify(item.payload)],{type:'text/plain;charset=utf-8'}));}catch(e){}});}
 
 function escJs(s){return String(s).replaceAll('\\','\\\\').replaceAll("'","\\'");}
@@ -466,6 +466,7 @@ renderRestockOptions();
 retryServerMirrorQueue();
 window.addEventListener('online',retryServerMirrorQueue);
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible') retryServerMirrorQueue();});
+setInterval(retryServerMirrorQueue,5*60*1000);
 window.addEventListener('pagehide',flushServerMirrorQueueBeacon);
 </script>
 </body>
