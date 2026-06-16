@@ -115,8 +115,11 @@ const API = 'https://script.google.com/macros/s/AKfycbwP7_mB2CklN-iNzv8lquiQYy-K
 const SERVER_MIRROR_API = 'https://orders.omoti.ru/b2c-api/b2c/cashier/save_check';
 const SERVER_MIRROR_ENABLED = true;
 const SERVER_MIRROR_TIMEOUT_MS = 10000;
+const GOOGLE_SAVE_TIMEOUT_MS = 30000;
 const CASHIER_POINT = 'Аникина';
 const SERVER_MIRROR_QUEUE_KEY = 'omoti_server_mirror_queue_anikina';
+const PENDING_CLOSE_KEY = 'omoti_pending_close_anikina';
+const PENDING_CLOSE_MAX_AGE_MS = 6*60*60*1000;
 
 const FLAVORS = ['Арбуз - Дыня','Бабл Гам','Банан- Нутелла','Вишня-Тонка','Дубайский шоколад','Киви-Алоэ','Клубника','Кокос-Маракуйя','Кокосовый пломбир','Кофе-Карамель','Криспи','Малина-Ваниль','Матча-Манго','Мохито','Печенье с топлёным молоком','Сливочный лимон','Смородина','Сникерс','Трюфель','Твикс','Шоколад'].sort((a,b)=>a.localeCompare(b,'ru')).concat(['Мункейки']);
 const PREMIUM = new Set(['Дубайский шоколад','Криспи']);
@@ -165,15 +168,19 @@ function switchTab(tab){document.querySelectorAll('.tab-btn').forEach((b,i)=>b.c
 function nextCheckNum(){return Date.now();}
 function nowDate(){const n=new Date(); return String(n.getDate()).padStart(2,'0')+'.'+String(n.getMonth()+1).padStart(2,'0')+'.'+n.getFullYear();}
 function nowTime(){const n=new Date(); return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
+function readPendingCloseDraft(signature){try{var saved=JSON.parse(localStorage.getItem(PENDING_CLOSE_KEY)||'null'); if(!saved||saved.signature!==signature) return null; if(Date.now()-Number(saved.savedAt||0)>PENDING_CLOSE_MAX_AGE_MS){localStorage.removeItem(PENDING_CLOSE_KEY); return null;} return saved.draft||null;}catch(e){return null;}}
+function savePendingCloseDraft(draft){try{localStorage.setItem(PENDING_CLOSE_KEY,JSON.stringify({savedAt:Date.now(),signature:draft.signature,draft:draft}));}catch(e){}}
+function clearPendingCloseDraft(){try{localStorage.removeItem(PENDING_CLOSE_KEY);}catch(e){}}
 
-function buildCloseCheckDraft(items,isEdit){var itemsData=items.map(function(x){return {name:x[0],qty:x[1],price:getPrice(x[0],payType)};}); var checkComment=getServerMirrorComment(); var signature=JSON.stringify({edit:!!isEdit,editNum:String(editNum||''),seller:seller,pay:payType,selfPay:selfPayType,comment:checkComment,items:itemsData}); if(pendingCheckDraft&&pendingCheckDraft.signature===signature) return pendingCheckDraft; var num=isEdit?editNum:nextCheckNum(), date=isEdit?editDate:nowDate(), time=isEdit?editTime:nowTime(); var payload={action:'save_check',num:num,date:date,time:time,point:'Аникина',seller:seller,pay:payType,selfPay:payType==='Себе оплачено'?selfPayType:'',edited:isEdit,items:itemsData}; if(checkComment) payload.comment=checkComment; var isSelf=payType==='Себе оплачено'||payType==='Себе без оплаты'; var isBrak=payType==='Брак'; var checkSum=itemsData.reduce(function(a,x){return a+x.price*x.qty;},0); var checkEarn=(isSelf||isBrak)?0:itemsData.reduce(function(a,x){return a+x.qty*30;},0); pendingCheckDraft={signature:signature,num:num,date:date,time:time,isEdit:isEdit,payload:payload,itemsData:itemsData,checkSum:checkSum,checkEarn:checkEarn}; return pendingCheckDraft;}
+function buildCloseCheckDraft(items,isEdit){var itemsData=items.map(function(x){return {name:x[0],qty:x[1],price:getPrice(x[0],payType)};}); var checkComment=getServerMirrorComment(); var signature=JSON.stringify({edit:!!isEdit,editNum:String(editNum||''),seller:seller,pay:payType,selfPay:selfPayType,comment:checkComment,items:itemsData}); if(pendingCheckDraft&&pendingCheckDraft.signature===signature) return pendingCheckDraft; var savedDraft=!isEdit?readPendingCloseDraft(signature):null; if(savedDraft){pendingCheckDraft=savedDraft; return pendingCheckDraft;} var num=isEdit?editNum:nextCheckNum(), date=isEdit?editDate:nowDate(), time=isEdit?editTime:nowTime(); var payload={action:'save_check',num:num,date:date,time:time,point:'Аникина',seller:seller,pay:payType,selfPay:payType==='Себе оплачено'?selfPayType:'',edited:isEdit,items:itemsData}; if(checkComment) payload.comment=checkComment; var isSelf=payType==='Себе оплачено'||payType==='Себе без оплаты'; var isBrak=payType==='Брак'; var checkSum=itemsData.reduce(function(a,x){return a+x.price*x.qty;},0); var checkEarn=(isSelf||isBrak)?0:itemsData.reduce(function(a,x){return a+x.qty*30;},0); pendingCheckDraft={signature:signature,num:num,date:date,time:time,isEdit:isEdit,payload:payload,itemsData:itemsData,checkSum:checkSum,checkEarn:checkEarn}; return pendingCheckDraft;}
 function applySavedCheckLocally(draft){if(draft.isEdit){allChecks=allChecks.filter(function(x){return String(x.num)!==String(draft.num);});} var byFlavor={}; draft.itemsData.forEach(function(x){if(!byFlavor[x.name])byFlavor[x.name]={name:x.name,qty:0,sum:0}; byFlavor[x.name].qty+=x.qty; byFlavor[x.name].sum+=x.price*x.qty;}); var newCheck={num:draft.num,date:draft.date,time:draft.time,point:'Аникина',seller:draft.payload.seller,pay:draft.payload.pay,selfPay:draft.payload.selfPay,edited:draft.isEdit,items:Object.values(byFlavor),sum:draft.checkSum,earn:draft.checkEarn,comment:draft.payload.comment||''}; allChecks.unshift(newCheck); allChecks.sort(function(a,b){return parseDateTime(b.date,b.time)-parseDateTime(a.date,a.time);});}
-async function closeCheck(){if(closeCheckInFlight) return; var items=Object.entries(cart).filter(function(x){return x[1]>0;}); if(!items.length) return; var isEdit=!!editNum; var draft=buildCloseCheckDraft(items,isEdit); var btn=document.getElementById('close-btn'); closeCheckInFlight=true; btn.textContent='Сохраняю...'; btn.classList.add('loading'); btn.disabled=true; var googleSaved=false;
+async function closeCheck(){if(closeCheckInFlight) return; var items=Object.entries(cart).filter(function(x){return x[1]>0;}); if(!items.length) return; var isEdit=!!editNum; var draft=buildCloseCheckDraft(items,isEdit); var btn=document.getElementById('close-btn'); closeCheckInFlight=true; btn.textContent='Сохраняю...'; btn.classList.add('loading'); btn.disabled=true; savePendingCloseDraft(draft); var googleSaved=false;
   try{
-    var res=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(draft.payload)});
+    var res=await fetchWithTimeout(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(draft.payload)},GOOGLE_SAVE_TIMEOUT_MS);
     var json=await res.json();
     if(!json.ok) throw new Error(json.error||'Ошибка сохранения');
     googleSaved=true;
+    clearPendingCloseDraft();
     pendingCheckDraft=null;
     mirrorPayloadToServer(draft.payload);
     applySavedCheckLocally(draft);
@@ -189,7 +196,7 @@ async function closeCheck(){if(closeCheckInFlight) return; var items=Object.entr
       showToast('Чек №'+draft.num+' сохранён. Если журнал не обновился, нажмите Обновить.');
     }else{
       pendingCheckDraft=draft;
-      showToast('Ошибка сохранения: '+e.message);
+      showToast('Связь с Google зависла. Повтор будет тем же чеком №'+draft.num+', проверьте журнал.');
     }
   }finally{
     closeCheckInFlight=false;
