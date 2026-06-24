@@ -212,7 +212,7 @@ function getPrice(name,pay){if(pay==='Брак') return 0; if(name==='Мунке
 function escHtml(s){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;");}
 function getServerMirrorComment(){const el=document.getElementById('comment-input'); return el?el.value.trim():'';}
 function readServerMirrorQueue(){try{const value=JSON.parse(localStorage.getItem(SERVER_MIRROR_QUEUE_KEY)||'[]'); return Array.isArray(value)?value:[];}catch(e){return [];}}
-function updateServerMirrorStatus(){const el=document.getElementById('server-mirror-status'); if(!el) return; const count=readServerMirrorQueue().length; if(count>0){el.style.display='block'; el.textContent='Ожидает отправки на сервер: '+count;}else{el.style.display='none'; el.textContent='';}}
+function updateServerMirrorStatus(){const el=document.getElementById('server-mirror-status'); if(!el) return; el.style.display='none'; el.textContent='';}
 function writeServerMirrorQueue(queue){localStorage.setItem(SERVER_MIRROR_QUEUE_KEY, JSON.stringify(queue.slice(-50))); updateServerMirrorStatus();}
 function buildServerMirrorPayload(payload){return Object.assign({}, payload, {comment: (payload.comment != null) ? payload.comment : getServerMirrorComment(), mirrorSource:'github_cashier_dual_write'});}
 function getServerMirrorKey(payload){return String(payload.action||'save_check')+'|'+String(payload.point||'')+'|'+String(payload.saleKey||payload.idempotencyKey||payload.num||'')+'|'+String(payload.edited||false);}
