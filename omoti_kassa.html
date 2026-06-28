@@ -66,6 +66,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 .restock-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:13px;margin-bottom:12px}
 .restock-title{font-size:14px;font-weight:700;margin-bottom:10px}
 .restock-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.restock-flavor-list{display:grid;gap:9px}
+.restock-fact-card{border:1px solid var(--border);border-radius:13px;background:#fff;padding:10px}
+.restock-fact-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.restock-fact-name{font-size:13px;font-weight:700;line-height:1.2}
+.restock-stock-pill{border-radius:999px;background:#f5f7f9;color:var(--muted);font-size:11px;padding:4px 8px;white-space:nowrap}
+.restock-fact-buttons{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.restock-fact-btn{border:1px solid var(--border);background:#fff;color:var(--text);border-radius:10px;min-height:34px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer}
+.restock-fact-btn.active{background:#fff8eb;border-color:var(--gold);color:#8a4d00}
 .restock-option{border:1px solid var(--border);background:#fff;color:var(--text);border-radius:12px;min-height:48px;padding:10px 8px;font-size:12px;line-height:1.15;cursor:pointer;text-align:center;font-family:inherit}
 .restock-option.active{background:#fff8eb;border-color:var(--gold);font-weight:600}
 .restock-option.supply{min-height:54px}
@@ -141,6 +149,8 @@ const PENDING_CLOSE_KEY = 'omoti_pending_close_novogodnyaya';
 const PENDING_CLOSE_MAX_AGE_MS = 6*60*60*1000;
 const SALE_KEY_PREFIX = 'novogodnyaya-sale-v1';
 const RESTOCK_API = 'https://orders.omoti.ru/b2c-api/point-restock/requests';
+const RESTOCK_CHECK_API = RESTOCK_API;
+const RESTOCK_STOCK_API = RESTOCK_API;
 const RESTOCK_LAST_SENT_KEY = 'omoti_restock_last_sent_novogodnyaya';
 const RESTOCK_SUPPLIES = [
   ['kraft_bags_small','крафтовые пакеты маленькие'],
@@ -150,7 +160,6 @@ const RESTOCK_SUPPLIES = [
   ['boxes_3','коробки на 3 моти'],
   ['boxes_5_8','коробки на 5-8 моти'],
   ['boxes_15','коробки на 15 моти'],
-  ['sauce_cups','соусники'],
   ['paper_rosettes','бумажные розеточки'],
   ['white_thermal_labels','белые термоэтикетки для заклеивания коробок'],
   ['round_brand_stickers','круглые бренд-наклейки'],
@@ -166,6 +175,7 @@ const RETIRED_SELLERS = new Set(['Галина','Кирилл']);
 const RETIRED_SELLERS_CLEANUP_KEY = 'omoti_sellers_cleanup_20260609_galina_kirill';
 let sellers = loadSellers(), cart = {}, seller = '', payType = '', selfPayType = 'Наличные', allChecks = [], editNum = null, editDate = '', editTime = '', editSaleKey = '', comment = '', deleteTargetNum = '';
 let closeCheckInFlight = false, pendingCheckDraft = null;
+let restockMotiFacts = {}, restockSystemStock = {}, restockStockLoaded = false, restockStockLoading = false;
 
 function cleanRetiredSellersOnce(list){const src=Array.isArray(list)?list:[]; if(localStorage.getItem(RETIRED_SELLERS_CLEANUP_KEY)==='1') return src.length?src:DEFAULT_SELLERS.slice(); const clean=Array.from(new Set(src.map(x=>String(x||'').trim()).filter(x=>x&&!RETIRED_SELLERS.has(x)))); localStorage.setItem(RETIRED_SELLERS_CLEANUP_KEY,'1'); return clean.length?clean:DEFAULT_SELLERS.slice();}
 function loadSellers(){try{const x=JSON.parse(localStorage.getItem('omoti_sellers')||'null'); const clean=cleanRetiredSellersOnce(Array.isArray(x)&&x.length?x:DEFAULT_SELLERS); if(Array.isArray(x)&&JSON.stringify(x)!==JSON.stringify(clean)) localStorage.setItem('omoti_sellers', JSON.stringify(clean)); return clean;}catch(e){return DEFAULT_SELLERS.slice();}}
@@ -203,13 +213,20 @@ function renderFlavors(){
 function todayRestockKey(){const n=new Date(); return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');}
 function renderRestockLastSent(){const el=document.getElementById('restock-last'); if(!el) return; try{const data=JSON.parse(localStorage.getItem(RESTOCK_LAST_SENT_KEY)||'null'); if(data&&data.day===todayRestockKey()&&data.time){el.style.display='block'; el.textContent='Сегодня уже отправляли в '+data.time+'. Можно отправить ещё раз, если что-то добавилось.'; return;}}catch(e){} el.style.display='none'; el.textContent='';}
 function restockOption(name,value,type,label){return `<button type="button" class="restock-option ${type==='supply'?'supply':''}" data-restock-type="${type}" data-restock-value="${escHtml(value)}" data-restock-label="${escHtml(label)}" onclick="toggleRestockOption(this)">${escHtml(name)}</button>`;}
-function renderRestockOptions(){const flavors=document.getElementById('restock-flavors'); const supplies=document.getElementById('restock-supplies'); if(!flavors||!supplies) return; flavors.innerHTML=FLAVORS.map(name=>restockOption(name,name,'moti',name)).join(''); supplies.innerHTML=RESTOCK_SUPPLIES.map(x=>restockOption(x[1],x[0],'supply',x[1])).join(''); renderRestockLastSent(); updateRestockSubmitState();}
+function restockStockBadge(name){if(Object.prototype.hasOwnProperty.call(restockSystemStock,name)){return `<span class="restock-stock-pill">по системе: ${Number(restockSystemStock[name]||0)}</span>`;} return restockStockLoading?'<span class="restock-stock-pill">обновляем</span>':'';}
+function restockFactButton(name,mode,qty,label){const current=restockMotiFacts[name]; const active=current&&current.mode===mode&&Number(current.qty)===Number(qty); return `<button type="button" class="restock-fact-btn ${active?'active':''}" onclick="setRestockMotiFact('${escJs(name)}','${mode}',${qty})">${label}</button>`;}
+function restockMotiCard(name){return `<div class="restock-fact-card"><div class="restock-fact-head"><span class="restock-fact-name">${escHtml(name)}</span>${restockStockBadge(name)}</div><div class="restock-fact-buttons">${[0,1,2,3,4,5].map(q=>restockFactButton(name,'exact',q,String(q))).join('')}${restockFactButton(name,'more_than_5',6,'6+')}</div></div>`;}
+function renderRestockOptions(){const flavors=document.getElementById('restock-flavors'); const supplies=document.getElementById('restock-supplies'); if(!flavors||!supplies) return; flavors.className='restock-flavor-list'; flavors.innerHTML=FLAVORS.map(name=>restockMotiCard(name)).join(''); supplies.innerHTML=RESTOCK_SUPPLIES.map(x=>restockOption(x[1],x[0],'supply',x[1])).join(''); renderRestockLastSent(); updateRestockSubmitState(); if(!restockStockLoaded&&!restockStockLoading) loadRestockStock();}
 function toggleRestockOption(el){el.classList.toggle('active'); updateRestockSubmitState();}
-function selectedRestockItems(){return Array.from(document.querySelectorAll('.restock-option.active')).map(function(input){const type=input.dataset.restockType; if(type==='moti'){return {itemType:'moti',legacyFlavorName:input.dataset.restockValue,label:input.dataset.restockLabel};} return {itemType:'supply',supplyItemId:input.dataset.restockValue,label:input.dataset.restockLabel};});}
+function setRestockMotiFact(name,mode,qty){const current=restockMotiFacts[name]; if(current&&current.mode===mode&&Number(current.qty)===Number(qty)){delete restockMotiFacts[name];}else{restockMotiFacts[name]={mode:mode,qty:Number(qty)};} renderRestockOptions();}
+function selectedRestockMotiItems(){return Object.entries(restockMotiFacts).map(function(entry){const name=entry[0], fact=entry[1]; return {itemType:'moti',legacyFlavorName:name,label:name,mode:fact.mode,qty:Number(fact.qty),sixPlus:fact.mode==='more_than_5'};});}
+function selectedRestockSupplyItems(){return Array.from(document.querySelectorAll('.restock-option.active')).map(function(input){return {itemType:'supply',supplyItemId:input.dataset.restockValue,label:input.dataset.restockLabel};});}
+function selectedRestockItems(){return selectedRestockMotiItems().concat(selectedRestockSupplyItems());}
 function updateRestockSubmitState(){const btn=document.getElementById('restock-submit'); if(!btn) return; btn.disabled=!selectedRestockItems().length;}
-function clearRestockSelection(){document.querySelectorAll('.restock-option.active').forEach(function(input){input.classList.remove('active');}); updateRestockSubmitState();}
+function clearRestockSelection(){restockMotiFacts={}; document.querySelectorAll('.restock-option.active').forEach(function(input){input.classList.remove('active');}); renderRestockOptions();}
 function saveRestockSentNow(){const n=new Date(); const time=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0'); localStorage.setItem(RESTOCK_LAST_SENT_KEY, JSON.stringify({day:todayRestockKey(),time:time,ts:n.toISOString()})); renderRestockLastSent();}
-function submitRestock(){const items=selectedRestockItems(); if(!items.length){showToast('Выберите позиции'); return;} const btn=document.getElementById('restock-submit'); btn.disabled=true; btn.textContent='Отправляю...'; const payload={locationId:'novogodnyaya',pointName:'Новогодняя',createdBy:'касса',clientCreatedAt:new Date().toISOString(),source:'cashier_restock_tab',items:items}; fetch(RESTOCK_API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)}).then(function(res){return res.json();}).then(function(json){if(!json.ok) throw new Error(json.error||'Не удалось отправить'); clearRestockSelection(); saveRestockSentNow(); showToast('Спасибо, учтём при довозе.');}).catch(function(e){showToast('Ошибка: '+(e.message||e));}).finally(function(){btn.textContent='Отправить'; updateRestockSubmitState();});}
+function loadRestockStock(){restockStockLoading=true; const payload={action:'stock',locationId:'novogodnyaya'}; fetch(RESTOCK_STOCK_API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)}).then(function(res){return res.json();}).then(function(json){if(!json.ok) throw new Error(json.error||'stock failed'); restockSystemStock={}; (json.items||[]).forEach(function(item){restockSystemStock[item.legacyFlavorName]=Number(item.qty||0);}); restockStockLoaded=true;}).catch(function(){restockStockLoaded=true;}).finally(function(){restockStockLoading=false; renderRestockOptions();});}
+function submitRestock(){const items=selectedRestockItems(); if(!items.length){showToast('Выберите позиции'); return;} const btn=document.getElementById('restock-submit'); btn.disabled=true; btn.textContent='Отправляю...'; const payload={action:'check',locationId:'novogodnyaya',pointName:'Новогодняя',createdBy:'касса',clientCreatedAt:new Date().toISOString(),countedAt:new Date().toISOString(),source:'cashier_restock_tab',items:items}; fetch(RESTOCK_CHECK_API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)}).then(function(res){return res.json();}).then(function(json){if(!json.ok) throw new Error(json.error||'Не удалось отправить'); clearRestockSelection(); saveRestockSentNow(); restockStockLoaded=false; loadRestockStock(); showToast('Спасибо, учтём при довозе.');}).catch(function(e){showToast('Ошибка: '+(e.message||e));}).finally(function(){btn.textContent='Отправить'; updateRestockSubmitState();});}
 function changeQty(name,delta){cart[name]=(cart[name]||0)+delta; if(cart[name]<=0) delete cart[name]; updateCart();}
 function updateCart(){const items=Object.entries(cart).filter(([k,v])=>v>0), empty=document.getElementById('cart-empty'), itemsEl=document.getElementById('cart-items'), totalEl=document.getElementById('cart-total'), btn=document.getElementById('close-btn'); renderFlavors(); if(!items.length){empty.style.display='block';itemsEl.innerHTML='';totalEl.style.display='none';btn.disabled=true;return;} empty.style.display='none'; btn.disabled=closeCheckInFlight||!(seller&&payType&&(payType!=='Себе оплачено'||selfPayType)); let total=0; itemsEl.innerHTML=items.map(([n,q])=>{const p=getPrice(n,payType); total+=p*q; return `<div class="cart-item"><span class="ci-name">${escHtml(n)}</span><div class="ci-ctrl"><button class="c-btn" onclick="changeQty('${escJs(n)}',-1)">−</button><span class="ci-qty">${q}</span><button class="c-btn" onclick="changeQty('${escJs(n)}',1)">+</button><span class="ci-price">${money(p*q)}</span></div></div>`;}).join(''); const totalQty=items.reduce((a,[,q])=>a+q,0); totalEl.style.display='flex'; document.getElementById('total-qty').textContent=totalQty+' шт'; document.getElementById('total-sum').textContent=money(total);}
 function setSeller(el,name){seller=name; document.querySelectorAll('.seller-btn').forEach(b=>b.classList.remove('active')); el.classList.add('active'); updateCart();}
