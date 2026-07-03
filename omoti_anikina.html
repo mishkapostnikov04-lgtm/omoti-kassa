@@ -178,30 +178,21 @@ function clearPendingCloseDraft(){try{localStorage.removeItem(PENDING_CLOSE_KEY)
 
 function buildCloseCheckDraft(items,isEdit){var itemsData=normalizeSaleItems(items.map(function(x){return {name:x[0],qty:x[1],price:getPrice(x[0],payType)};})); var checkComment=getServerMirrorComment(); var fingerprint=JSON.stringify({editNum:String(editNum||''),editDate:editDate,editTime:editTime,seller:seller,pay:payType,selfPay:selfPayType,comment:checkComment,items:saleItemsFingerprint(itemsData)}); if(pendingCheckDraft&&pendingCheckDraft.fingerprint===fingerprint) return pendingCheckDraft; var savedDraft=!isEdit?readPendingCloseDraft(fingerprint):null; if(savedDraft){pendingCheckDraft=savedDraft; return pendingCheckDraft;} var num=isEdit?editNum:nextCheckNum(), date=isEdit?editDate:nowDate(), time=isEdit?editTime:nowTime(); var saleKey=isEdit?(editSaleKey||newSaleKey(num)):newSaleKey(num); var payload={action:'save_check',num:num,date:date,time:time,point:'Аникина',seller:seller,pay:payType,selfPay:payType==='Себе оплачено'?selfPayType:'',edited:isEdit,items:itemsData,comment:checkComment,saleKey:saleKey,idempotencyKey:saleKey}; var isSelf=payType==='Себе оплачено'||payType==='Себе без оплаты'; var isBrak=payType==='Брак'; var checkSum=itemsData.reduce(function(a,x){return a+x.price*x.qty;},0); var checkEarn=(isSelf||isBrak)?0:itemsData.reduce(function(a,x){return a+x.qty*30;},0); pendingCheckDraft={fingerprint:fingerprint,num:num,date:date,time:time,isEdit:isEdit,saleKey:saleKey,payload:payload,itemsData:itemsData,checkSum:checkSum,checkEarn:checkEarn}; return pendingCheckDraft;}
 function applySavedCheckLocally(draft){if(draft.isEdit){allChecks=allChecks.filter(function(x){return String(x.num)!==String(draft.num);});} var byFlavor={}; draft.itemsData.forEach(function(x){if(!byFlavor[x.name])byFlavor[x.name]={name:x.name,qty:0,sum:0}; byFlavor[x.name].qty+=x.qty; byFlavor[x.name].sum+=x.price*x.qty;}); var newCheck={num:draft.num,date:draft.date,time:draft.time,point:'Аникина',seller:draft.payload.seller,pay:draft.payload.pay,selfPay:draft.payload.selfPay,edited:draft.isEdit,saleKey:draft.saleKey,items:Object.values(byFlavor),sum:draft.checkSum,earn:draft.checkEarn,comment:draft.payload.comment||''}; allChecks.unshift(newCheck); allChecks.sort(function(a,b){return parseDateTime(b.date,b.time)-parseDateTime(a.date,a.time);});}
-async function closeCheck(){if(closeCheckInFlight) return; var items=Object.entries(cart).filter(function(x){return x[1]>0;}); if(!items.length) return; var isEdit=!!editNum; var draft=buildCloseCheckDraft(items,isEdit); var btn=document.getElementById('close-btn'); closeCheckInFlight=true; btn.textContent='Сохраняю...'; btn.classList.add('loading'); btn.disabled=true; savePendingCloseDraft(draft); var googleSaved=false;
+function draftExistsLocally(draft){return allChecks.some(function(x){return (draft.saleKey&&String(x.saleKey||'')===String(draft.saleKey))||String(x.num)===String(draft.num);});}
+function rowsContainDraft(rows,draft){var dataRows=Array.isArray(rows)?rows.slice(1):[]; return dataRows.some(function(r){if(!r) return false; var rowSaleKey=String(r[15]||'').trim(); if(draft.saleKey&&rowSaleKey&&rowSaleKey===String(draft.saleKey)) return true; return String(r[0]||'').trim()===String(draft.num)&&String(r[1]||'').trim()===String(draft.date);});}
+async function confirmDraftSavedInGoogle(draft){try{var res=await fetchWithTimeout(API+'?limit=80&_=' + Date.now(),{cache:'no-store'},15000); var json=await res.json(); var rows=Array.isArray(json.rows)?json.rows:[]; if(!rowsContainDraft(rows,draft)) return false; allChecks=parseChecksFromRows(rows); saveCacheChecks(allChecks); renderJournal(); loadStats(); return true;}catch(e){return false;}}
+function finishSavedDraft(draft,message){clearPendingCloseDraft(); pendingCheckDraft=null; mirrorPayloadToServer(draft.payload); if(!draftExistsLocally(draft)) applySavedCheckLocally(draft); resetForm(); renderJournal(); loadStats(); switchTab('kassa'); showToast(message);}
+async function closeCheck(){if(closeCheckInFlight) return; var items=Object.entries(cart).filter(function(x){return x[1]>0;}); if(!items.length) return; var isEdit=!!editNum; var draft=buildCloseCheckDraft(items,isEdit); var btn=document.getElementById('close-btn'); closeCheckInFlight=true; btn.textContent='Сохраняю...'; btn.classList.add('loading'); btn.disabled=true; savePendingCloseDraft(draft);
   try{
     var res=await fetchWithTimeout(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(draft.payload)},GOOGLE_SAVE_TIMEOUT_MS);
     var json=await res.json();
     if(!json.ok) throw new Error(json.error||'Ошибка сохранения');
-    googleSaved=true;
-    clearPendingCloseDraft();
-    pendingCheckDraft=null;
-    mirrorPayloadToServer(draft.payload);
-    applySavedCheckLocally(draft);
-    resetForm();
-    renderJournal();
-    loadStats();
-    switchTab('kassa');
-    showToast(draft.isEdit?'Чек №'+draft.num+' обновлён':'Чек №'+draft.num+' сохранён');
+    finishSavedDraft(draft,draft.isEdit?'Чек №'+draft.num+' обновлён':'Чек №'+draft.num+' сохранён');
   }catch(e){
-    if(googleSaved){
-      pendingCheckDraft=null;
-      cart={}; editNum=null; editDate=''; editTime=''; comment='';
-      showToast('Чек №'+draft.num+' сохранён. Если журнал не обновился, нажмите Обновить.');
-    }else{
-      pendingCheckDraft=draft;
-      showToast('Связь с Google зависла. Повтор будет тем же чеком №'+draft.num+', проверьте журнал.');
-    }
+    btn.textContent='Проверяю журнал...';
+    var confirmed=await confirmDraftSavedInGoogle(draft);
+    if(confirmed){finishSavedDraft(draft,'Чек №'+draft.num+' сохранён. Google ответил долго, но запись найдена.');}
+    else{pendingCheckDraft=draft; showToast('Связь с Google зависла. Повтор будет тем же чеком №'+draft.num+', проверьте журнал.');}
   }finally{
     closeCheckInFlight=false;
     btn.textContent=editNum?'Сохранить изменения':'Закрыть чек';
