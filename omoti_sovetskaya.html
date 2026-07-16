@@ -396,12 +396,12 @@ function getPastWeeks(n){
   const result=[];
   const currentWeekStart=weekStartIso(nskTodayIso());
   if(n>0){
-    const dateFrom=addIsoDays(currentWeekStart,-7), dateTo=addIsoDays(dateFrom,6);
-    result.push({dateFrom:dateFrom,dateTo:dateTo,label:formatIsoDate(dateFrom)+' - '+formatIsoDate(dateTo)});
+    const dateFrom=currentWeekStart, dateTo=addIsoDays(dateFrom,6);
+    result.push({dateFrom:dateFrom,dateTo:dateTo,label:formatIsoDate(dateFrom)+' - '+formatIsoDate(dateTo)+' (текущая, неполная)'});
   }
   if(n>1){
-    const dateFrom=currentWeekStart, dateTo=addIsoDays(dateFrom,6);
-    result.push({dateFrom:dateFrom,dateTo:dateTo,label:formatIsoDate(dateFrom)+' - '+formatIsoDate(dateTo)+' (текущая)'});
+    const dateFrom=addIsoDays(currentWeekStart,-7), dateTo=addIsoDays(dateFrom,6);
+    result.push({dateFrom:dateFrom,dateTo:dateTo,label:formatIsoDate(dateFrom)+' - '+formatIsoDate(dateTo)+' (прошлая завершённая)'});
   }
   for(let i=2;result.length<n;i++){
     const dateFrom=addIsoDays(currentWeekStart,-i*7), dateTo=addIsoDays(dateFrom,6);
@@ -425,7 +425,7 @@ function getPastMonths(n){
 function buildDropdowns(){
   const weeks=getPastWeeks(5);
   document.getElementById('menu-week').innerHTML=weeks.map((w,i)=>
-    `<button class="period-dropdown-item${i===0?' selected':''}" onclick="selectWeek(${i})">${w.label}</button>`
+    `<button class="period-dropdown-item${i===1?' selected':''}" onclick="selectWeek(${i})">${w.label}</button>`
   ).join('');
 
   const months=getPastMonths(6);
@@ -433,8 +433,8 @@ function buildDropdowns(){
     `<button class="period-dropdown-item${i===0?' selected':''}" onclick="selectMonth(${i})">${m.label}</button>`
   ).join('');
 
-  // Default: first completed week
-  currentPeriodRange=weeks[0];
+  // Default: previous completed week; the current incomplete week remains first in the menu.
+  currentPeriodRange=weeks[1]||weeks[0];
 }
 
 function toggleDropdown(type,e){
