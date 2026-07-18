@@ -227,7 +227,7 @@ function formatIsoDate(iso){const p=String(iso||'').split('-'); return p.length=
 function parseDate(s){const p=String(s).split('.'); if(p.length!==3) return null; return new Date(Date.UTC(Number(p[2]),Number(p[1])-1,Number(p[0]),0,0,0,0));}
 function formatDate(d){return String(d.getUTCDate()).padStart(2,'0')+'.'+String(d.getUTCMonth()+1).padStart(2,'0')+'.'+d.getUTCFullYear();}
 
-// Previous fully completed Monday-Sunday week first.
+// Current Monday-Sunday week first.
 function getPastWeeks(n){
   const result=[];
   const currentWeekStart=weekStartIso(nskTodayIso());
@@ -261,7 +261,7 @@ function getPastMonths(n){
 function buildDropdowns(){
   const weeks=getPastWeeks(5);
   document.getElementById('menu-week').innerHTML=weeks.map((w,i)=>
-    `<button class="period-dropdown-item${i===1?' selected':''}" onclick="selectWeek(${i})">${w.label}</button>`
+    `<button class="period-dropdown-item${i===0?' selected':''}" onclick="selectWeek(${i})">${w.label}</button>`
   ).join('');
 
   const months=getPastMonths(6);
@@ -269,8 +269,8 @@ function buildDropdowns(){
     `<button class="period-dropdown-item${i===0?' selected':''}" onclick="selectMonth(${i})">${m.label}</button>`
   ).join('');
 
-  // Default: previous completed week; the current incomplete week remains first in the menu.
-  currentPeriodRange=weeks[1]||weeks[0];
+  // Default: current Monday-Sunday week.
+  currentPeriodRange=weeks[0];
 }
 
 function toggleDropdown(type,e){
