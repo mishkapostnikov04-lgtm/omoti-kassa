@@ -244,6 +244,8 @@ const FLAVORS = ['Арбуз - Дыня','Бабл Гам','Базилик кл�
 const UI_FLAVOR_BY_CATALOG_ID = Object.freeze({cat_arbuz_dynya:'Арбуз - Дыня',cat_banan_nutella:'Банан- Нутелла'});
 const UI_FLAVOR_ALIASES = Object.freeze({'Арбуз-Дыня':'Арбуз - Дыня','Банан-Нутелла':'Банан- Нутелла'});
 const PREMIUM = new Set(['Дубайский шоколад','Криспи','Базилик клубника лайм','Улун персик']);
+const YANDEX_UNIFORM_MOCHI_PRICE = 250;
+const YANDEX_UNIFORM_MOCHI_PRICE_FROM = '2026-08-25';
 const PAY_TYPES = ['Безналичный','Наличный','Перевод','Смешанная','Яндекс','Себе оплачено','Себе без оплаты','Брак'];
 const DEFAULT_SELLERS = ['Анастасия','Александра'];
 let sellers = loadSellers(), cart = {}, seller = '', payType = '', selfPayType = 'Наличные', allChecks = [], editNum = null, editDate = '', editTime = '', editSaleKey = '', editOriginalPayType = '', editPromotionId = '', editPromotionName = '', editPromotionDiscountPercent = 0, comment = '', deleteTargetNum = '';
@@ -254,7 +256,10 @@ let restockMotiFacts = {}, restockExpandedFlavor = '', restockExactEditorFlavor 
 
 function loadSellers(){try{const x=JSON.parse(localStorage.getItem('omoti_sellers_sovetskaya')||'null'); return Array.isArray(x)&&x.length?x:DEFAULT_SELLERS.slice();}catch(e){return DEFAULT_SELLERS.slice();}}
 function saveSellers(){localStorage.setItem('omoti_sellers_sovetskaya', JSON.stringify(sellers));}
-function getPrice(name,pay){if(pay==='Брак') return 0; if(name==='Мункейки'){if(pay==='Яндекс') return 750; if(pay==='Себе оплачено'||pay==='Себе без оплаты') return 360; return 600;} const p=PREMIUM.has(name); if(pay==='Яндекс') return p?250:200; if(pay==='Себе оплачено'||pay==='Себе без оплаты') return p?110:100; return p?200:180;}
+function priceDateIso(value){const s=String(value||'').trim(),m=s.match(/^(\d{2})\.(\d{2})\.(\d{4})$/); if(m)return m[3]+'-'+m[2]+'-'+m[1]; return /^\d{4}-\d{2}-\d{2}/.test(s)?s.slice(0,10):'';}
+function activePriceDateIso(){if(editNum&&editDate)return priceDateIso(editDate); return new Date(promotionNow().getTime()+7*60*60*1000).toISOString().slice(0,10);}
+function yandexMochiPrice(name){return activePriceDateIso()>=YANDEX_UNIFORM_MOCHI_PRICE_FROM?YANDEX_UNIFORM_MOCHI_PRICE:(PREMIUM.has(name)?250:200);}
+function getPrice(name,pay){if(pay==='Брак') return 0; if(name==='Мункейки'){if(pay==='Яндекс') return 750; if(pay==='Себе оплачено'||pay==='Себе без оплаты') return 360; return 600;} const p=PREMIUM.has(name); if(pay==='Яндекс') return yandexMochiPrice(name); if(pay==='Себе оплачено'||pay==='Себе без оплаты') return p?110:100; return p?200:180;}
 function promotionNow(){return new Date(Date.now()+promotionClockOffsetMs);}
 function promotionById(id){return (promotionConfig&&Array.isArray(promotionConfig.promotions)?promotionConfig.promotions:[]).find(function(x){return x.id===id;})||null;}
 function promotionAppliesAt(promotion,type,at){return !!(promotion&&promotion.enabled&&at>=new Date(promotion.startsAt).getTime()&&at<new Date(promotion.endsAt).getTime()&&Array.isArray(promotion.eligiblePayTypes)&&promotion.eligiblePayTypes.includes(type));}
