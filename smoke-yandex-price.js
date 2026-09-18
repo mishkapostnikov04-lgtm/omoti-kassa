@@ -18,6 +18,7 @@ for (const file of FILES) {
     YANDEX_UNIFORM_MOCHI_PRICE_FROM: '2026-08-25',
     editNum: null,
     editDate: '',
+    cashierKnownAssortment: {},
     promotionNow: () => new Date('2026-08-24T17:00:00.000Z'),
   });
   vm.runInContext([
