@@ -6,7 +6,9 @@
 <title>OMOTI · Касса</title>
 <link rel="apple-touch-icon" sizes="180x180" href="Dark.png">
 <link rel="icon" type="image/png" href="Dark.png">
+<link rel="manifest" href="omoti_kassa.webmanifest">
 <meta name="theme-color" content="#1a1a1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{--bg:#f7f6f2;--card:#fff;--text:#1a1a1a;--muted:#888;--border:#e0ddd6;--accent:#1a1a1a;--accent-fg:#fff;--gold:#d3aa4f;--radius:16px;--success-bg:#edf8ef;--success-border:#cfe5d3;--success-text:#234b2b;--danger:#d95555}
@@ -507,5 +509,6 @@ setInterval(function(){loadPromotionConfig();},60*1000);
 setInterval(function(){retryOperationQueue();},5*60*1000);
 window.addEventListener('pagehide',flushOperationQueueBeacon);
 </script>
+<script src="cashier-notices-client.js" data-point="novogodnyaya" data-page="omoti_kassa.html"></script>
 </body>
 </html>
