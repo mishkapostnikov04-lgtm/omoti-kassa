@@ -23,7 +23,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 .seller-btn,.pay-btn,.self-sub-btn,.modal-btn{border:1px solid var(--border);background:#fff;border-radius:12px;padding:11px 12px;font-size:13px;color:var(--text);cursor:pointer}
 .seller-btn{flex:1 1 calc(33.333% - 6px);min-width:110px}.seller-btn.active,.pay-btn.active,.self-sub-btn.active{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
 .add-btn{font-weight:700}
-.flavors-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.flavors-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:1fr;gap:8px}
 .flavor-btn{position:relative;border:1px solid var(--border);background:#fff;color:var(--text);border-radius:12px;min-height:48px;padding:8px 6px;font-size:12px;line-height:1.15;cursor:pointer;text-align:center}
 .flavor-btn.gold{border-color:var(--gold)}.flavor-btn.active{background:#fff8eb;border-color:var(--gold);font-weight:600}
 .qty-badge{position:absolute;right:6px;top:6px;min-width:18px;height:18px;padding:0 4px;border-radius:999px;background:var(--accent);color:#fff;font-size:11px;line-height:18px;font-weight:700}
@@ -247,6 +247,7 @@ function flushOperationQueueBeacon(){/* sendBeacon cannot carry the device token
 function escJs(s){return escHtml(String(s).replaceAll('\\','\\\\').replaceAll("'","\\'").replaceAll('\r',' ').replaceAll('\n',' '));}
 function money(n){return Number(n||0).toLocaleString('ru-RU')+' ₽';}
 function uiFlavorName(name,catalogItemId){return UI_FLAVOR_BY_CATALOG_ID[String(catalogItemId||'')]||UI_FLAVOR_ALIASES[String(name||'')]||String(name||'');}
+function flavorButtonLabel(name){return name==='Печенье с топлёным молоком'?'Печенье с топл. мол.':name;}
 
 function parseDateTime(dateStr,timeStr){const d=String(dateStr||'').split('.'); const t=String(timeStr||'').split(':'); if(d.length!==3) return 0; return new Date(Number(d[2]),Number(d[1])-1,Number(d[0]),Number(t[0]||0),Number(t[1]||0),0,0).getTime();}
 
@@ -259,7 +260,10 @@ function renderFlavors(){
   document.getElementById('flavors-grid').innerHTML=available.concat(Object.keys(cart).filter(function(name){return cart[name]>0&&!available.includes(name);})).map(f=>{
     const q=cart[f]||0;
     const hidden=!available.includes(f);
-    return `<button class="flavor-btn ${PREMIUM.has(f)||cashierKnownAssortment[f]?.isPremium?'gold':''} ${q>0?'active':''}" ${hidden?'disabled title="Вкус больше не доступен в кассе"':''} onclick="changeQty('${escJs(f)}',1)">${escHtml(f)}${hidden?' · скрыт':''}${q?`<span class="qty-badge">${q}</span>`:''}</button>`;
+    const label=flavorButtonLabel(f);
+    const title=hidden?'Вкус больше не доступен в кассе':label!==f?f:'';
+    const accessibleName=label!==f?`aria-label="${escHtml(f)}${q?', в чеке '+q+' шт.':''}"`:'';
+    return `<button class="flavor-btn ${PREMIUM.has(f)||cashierKnownAssortment[f]?.isPremium?'gold':''} ${q>0?'active':''}" ${hidden?'disabled':''} ${title?`title="${escHtml(title)}"`:''} ${accessibleName} onclick="changeQty('${escJs(f)}',1)">${escHtml(label)}${hidden?' · скрыт':''}${q?`<span class="qty-badge">${q}</span>`:''}</button>`;
   }).join('');
 }
 function novosibirskNow(){const utc=new Date(); const nsk=new Date(utc.getTime()+7*60*60*1000); const iso=nsk.toISOString(); return {date:iso.slice(0,10),time:iso.slice(11,16),dateTime:iso.slice(0,19)+'+07:00',utc:utc.toISOString(),timezone:'Asia/Novosibirsk'};}
