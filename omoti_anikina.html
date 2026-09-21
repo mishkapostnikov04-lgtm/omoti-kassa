@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" href="Dark.png">
 <link rel="manifest" href="omoti_anikina.webmanifest">
 <meta name="theme-color" content="#1a1a1a">
-<link rel="stylesheet" href="./anikina-loyalty-v1.css?v=20260921-clean">
+<link rel="stylesheet" href="./anikina-loyalty-v1.css?v=20260921-scanner2">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -141,11 +141,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 
 <dialog id="loyalty-camera" class="loyalty-camera" aria-labelledby="loyalty-camera-title" aria-describedby="loyalty-camera-note">
 <h2 id="loyalty-camera-title">Сканировать карту</h2>
+<div id="loyalty-camera-view" class="loyalty-camera-view">
 <video id="loyalty-video" autoplay muted playsinline aria-label="Изображение с камеры"></video>
+<div id="loyalty-camera-guide" class="loyalty-camera-guide" aria-hidden="true" hidden></div>
+</div>
 <p id="loyalty-camera-note" role="status"></p>
 <button type="button" id="loyalty-camera-close" autofocus>Закрыть камеру</button>
 </dialog>
-<script src="./anikina-loyalty-v1.js?v=20260921-clean"></script>
+<script src="./anikina-loyalty-v1.js?v=20260921-scanner2"></script>
 <script>
 const CASHIER_SAVE_API = 'https://orders.omoti.ru/b2c-api/b2c/cashier/save_check';
 const CASHIER_CHECKS_API = 'https://orders.omoti.ru/b2c-api/b2c/cashier/anikina/checks';

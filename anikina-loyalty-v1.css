@@ -25,5 +25,8 @@
 .loyalty-camera::backdrop { background: rgba(0,0,0,.65); }
 .loyalty-camera h2 { font-size: 18px; margin-bottom: 10px; }
 .loyalty-camera p { margin: 10px 0; font-size: 14px; line-height: 1.5; }
-.loyalty-camera video { width: 100%; max-height: 48dvh; object-fit: contain; background: #171717; border-radius: 10px; }
+.loyalty-camera-view { --camera-ratio: 1; position: relative; width: 100%; max-width: calc(48dvh * var(--camera-ratio)); aspect-ratio: var(--camera-ratio); margin-inline: auto; overflow: hidden; border-radius: 10px; background: #171717; }
+.loyalty-camera video { display: block; width: 100%; height: 100%; object-fit: contain; }
+.loyalty-camera-guide { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); border: 2px solid #fff; border-radius: 8px; box-shadow: 0 0 0 100vmax rgba(0,0,0,.35); pointer-events: none; }
+.loyalty-camera-guide[hidden] { display: none; }
 .loyalty-camera button { width: 100%; margin-top: 8px; }
