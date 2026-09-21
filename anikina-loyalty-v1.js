@@ -30,7 +30,7 @@
   }
   function eligible() { return !hooks.editing() && ['Безналичный', 'Наличный', 'Перевод', 'Смешанная'].includes(hooks.payment()); }
   function isActive() { return !!($('loyalty-card').value.trim() || $('loyalty-balance').value || $('loyalty-amount').value || state.scanning); }
-  function message(text) { $('loyalty-status').textContent = text; }
+  function message(text) { $('loyalty-status').textContent = text; $('loyalty-status').hidden = !text; }
   function update() {
     if (!hooks) return;
     const total = Math.max(0, Math.round(hooks.total() * 100));
@@ -42,12 +42,12 @@
     $('loyalty-due').textContent = result && !result.exceeded ? rub(result.due) : '—';
     $('loyalty-max').disabled = !result || total === 0;
     $('loyalty-preview-note').textContent = !eligible()
-      ? 'Расчёт доступен только для нового обычного чека: наличные, безналичные, перевод или смешанная оплата.'
-      : !state.card ? 'Сначала отсканируйте или укажите номер карты.'
-      : balance === null ? 'Введите проверенный баланс для тестового расчёта (в рублях, не баллы «Мои Места»).'
-      : amount === null ? 'Укажите неотрицательную сумму, не больше двух знаков после запятой.'
+      ? (hooks.editing() || hooks.payment() ? 'Бонусы недоступны для этого чека.' : '')
+      : !state.card ? ''
+      : balance === null ? ($('loyalty-balance').value ? 'Проверьте сумму баланса.' : '')
+      : amount === null ? 'Проверьте сумму бонусов.'
       : result.exceeded ? 'Сумма выше лимита. Нажмите «Максимум» или уменьшите её.'
-      : 'Это только пример расчёта, не сумма для приёма оплаты. Лимит — 30% суммы после действующей акции. Совмещение с персональной скидкой ещё не настроено.';
+      : '';
     $('loyalty-checkout-warning').hidden = !isActive();
     if (isActive()) $('close-btn').disabled = true;
   }
@@ -55,14 +55,14 @@
     stopCamera(); state.card = '';
     ['loyalty-card', 'loyalty-balance', 'loyalty-amount'].forEach(id => { $(id).value = ''; });
     $('loyalty-preview').open = false;
-    message('API ещё не подключён. Баланс, начисление и списание недоступны.');
+    message('');
   }
   function acceptCard(raw) {
     const value = cardNumber(raw);
     if (!value) { message('Нужен цифровой номер карты. Проверьте цифры под штрихкодом.'); return false; }
     state.card = value; $('loyalty-card').value = value;
     $('loyalty-balance').value = ''; $('loyalty-amount').value = '';
-    message('Карта ' + value + ' считана. Она ещё не проверена в «Мои Места»: API не подключён.');
+    message('Карта № ' + value);
     hooks.refresh(); return true;
   }
   function loadDecoder() {
@@ -116,10 +116,10 @@
     lastFocus = document.activeElement;
     const dialog = $('loyalty-camera');
     if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia || !dialog.showModal) {
-      message('Камера недоступна. Откройте кассу по HTTPS в Safari или Chrome либо введите номер вручную.'); return;
+      message('Камера недоступна. Откройте кассу в Safari или Chrome либо введите номер карты.'); return;
     }
     state.scanning = true; const generation = ++state.generation;
-    dialog.showModal(); $('loyalty-camera-note').textContent = 'Разрешите доступ к камере. Изображение не отправляется на сервер.';
+    dialog.showModal(); $('loyalty-camera-note').textContent = 'Разрешите доступ к камере.';
     hooks.refresh();
     try {
       await loadDecoder();
@@ -130,10 +130,10 @@
       const video = $('loyalty-video'); video.srcObject = stream; await video.play();
       if (generation !== state.generation) return;
       const started = Date.now(); let rotate = false, previous = '', hits = 0;
-      $('loyalty-camera-note').textContent = 'Наведите на весь штрихкод, оставьте белые поля по краям. Если мешают блики, слегка наклоните телефон.';
+      $('loyalty-camera-note').textContent = 'Наведите камеру на штрихкод карты.';
       const scan = () => {
         if (generation !== state.generation) return;
-        if (Date.now() - started > 45000) { closeCamera(); message('Не удалось прочитать за 45 секунд. Попробуйте ещё раз или введите номер карты.'); return; }
+        if (Date.now() - started > 45000) { closeCamera(); message('Штрихкод не распознан. Попробуйте ещё раз или введите номер карты.'); return; }
         const value = decodeFrame(video, rotate); rotate = !rotate;
         if (value && cardNumber(value)) {
           hits = value === previous ? hits + 1 : 1; previous = value;
@@ -162,7 +162,7 @@
     $('loyalty-card').addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); acceptCard(event.target.value); } });
     $('loyalty-card').addEventListener('input', () => {
       state.card = ''; $('loyalty-balance').value = ''; $('loyalty-amount').value = '';
-      message('Подтвердите номер карты. API ещё не подключён.'); hooks.refresh();
+      message(''); hooks.refresh();
     });
     ['loyalty-balance', 'loyalty-amount'].forEach(id => $(id).addEventListener('input', () => hooks.refresh()));
     $('loyalty-max').addEventListener('click', () => {

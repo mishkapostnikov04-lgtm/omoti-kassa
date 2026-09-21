@@ -3,7 +3,7 @@
 .loyalty h2 { font-size: 16px; margin: 0; }
 .loyalty[hidden] { display: none !important; }
 .loyalty > summary { font-size: 16px; padding: 0; min-height: 24px; }
-.loyalty-stage { display: block; margin: 3px 0 0 17px; color: #704b00; font-size: 12px; font-weight: 400; }
+.loyalty p:empty { display: none; }
 .loyalty p { margin: 7px 0 12px; color: #625e56; }
 .loyalty label { display: block; margin: 12px 0 5px; font-weight: 600; }
 .loyalty input { width: 100%; min-width: 0; font: inherit; font-size: 16px; padding: 11px 12px; border: 1px solid #bbb5aa; border-radius: 10px; color: #1a1a1a; background: #fff; }
@@ -13,7 +13,7 @@
 .loyalty button:focus-visible, .loyalty input:focus-visible, .loyalty summary:focus-visible, .loyalty-camera button:focus-visible { outline: 3px solid #986800; outline-offset: 3px; }
 .loyalty .loyalty-scan { display: flex; gap: 10px; justify-content: center; align-items: center; width: 100%; background: #1a1a1a; color: #fff; border-color: #1a1a1a; font-weight: 600; }
 .loyalty-inline { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
-.loyalty .loyalty-status { margin: 12px 0; padding: 10px; border-radius: 10px; background: #fff5df; color: #704b00; overflow-wrap: anywhere; }
+.loyalty .loyalty-status { margin: 12px 0; padding: 10px; border-radius: 10px; background: #f7f6f2; color: #625e56; overflow-wrap: anywhere; }
 .loyalty summary { min-height: 44px; padding: 11px 0; cursor: pointer; font-weight: 600; }
 .loyalty-preview { border-top: 1px solid var(--border); }
 .loyalty-totals { margin: 14px 0; font-variant-numeric: tabular-nums; }
