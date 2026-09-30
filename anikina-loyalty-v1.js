@@ -8,7 +8,7 @@
   const CAP_PERCENT = 30;
   const PAYMENT_TYPES = ['Безналичный', 'Наличный', 'Перевод', 'Смешанная'];
   const PENDING_KEY = 'omoti_anikina_loyalty_pending_v1';
-  const state = { card: '', balance: null, scanning: false, generation: 0, stream: null, timer: null,
+  const state = { card: '', cardHolderName: '', balance: null, scanning: false, generation: 0, stream: null, timer: null,
     revision: 0, lookup: false, calculation: null, quoteKey: '', waitingKey: '', failedKey: '',
     quoteTimer: null, quoteError: '', pending: null, sending: false, storageBlocked: false, maximumSelected: false };
   let decoderPromise, reader, fastReader, decodeCanvas, lastFocus, hooks;
@@ -76,28 +76,29 @@
     const canQuote=state.card && eligible() && total>0 && local && !local.exceeded && !state.pending && !state.lookup;
     if(canQuote && key!==state.quoteKey && key!==state.waitingKey && key!==state.failedKey) requestQuote(input,key);
     const checked=canQuote && state.quoteKey===key ? state.calculation : null;
-    $('loyalty-card-summary').textContent=state.card ? 'Карта •••• '+state.card.slice(-4) : 'Мои Места · необязательно';
+    $('loyalty-card-summary').textContent=state.card
+      ? (state.cardHolderName ? state.cardHolderName+' · карта' : 'Карта')+' •••• '+state.card.slice(-4)
+      : 'Мои Места · необязательно';
     $('loyalty-clear').hidden=!isActive() || !!state.pending;
     $('loyalty-scan').disabled=state.lookup || !!state.pending || hooks.busy();
     $('loyalty-card-confirm').disabled=state.lookup || !!state.pending;
     $('loyalty-card-confirm').textContent=state.lookup ? 'Проверяем…' : 'Найти';
     $('loyalty-payment').hidden=!state.card || total===0;
     $('cart-total-label').textContent=state.card ? 'Сумма чека' : 'К оплате';
-    $('loyalty-balance-text').textContent=state.balance===null ? '' : 'Доступно целыми бонусами '+rub(Math.floor(state.balance/100)*100);
+    $('loyalty-balance-text').textContent=state.balance===null ? '' : 'Доступно '+rub(Math.floor(state.balance/100)*100);
     $('loyalty-limit-text').textContent=maximum ? 'Можно списать до '+rub(maximum.limit)+' · не больше 30% после акции' : '';
     $('loyalty-max').disabled=!maximum || total===0 || !!state.pending;
     $('loyalty-amount').disabled=!canPrepare() || !!state.pending;
     // Cached HTML from checkout1 has no new hook/label; retain its safe payment guard.
-    const dueLabel=$('loyalty-due-label'), preview=dueLabel && !hooks.payment() && local && !local.exceeded;
-    if(dueLabel) dueLabel.textContent=preview ? 'Предварительно к оплате' : 'К оплате';
-    $('loyalty-due').textContent=checked ? rub(checked.dueMinor) : preview ? rub(local.due) : '—';
+    const dueLabel=$('loyalty-due-label');
+    if(dueLabel) dueLabel.textContent='К оплате';
+    $('loyalty-due').textContent=checked ? rub(checked.dueMinor) : local && !local.exceeded ? rub(local.due) : '—';
     $('loyalty-earn').hidden=!checked || checked.earnMinor===null;
     $('loyalty-earn').textContent=checked && checked.earnMinor!==null ? 'Начислим '+rub(checked.earnMinor)+' · '+checked.accrualPercent+'% от оплаты деньгами, округляем вверх' : '';
     $('loyalty-rounding').hidden=!checked || !checked.roundingMinor;
     const note=!canPrepare() ? 'Для этой операции бонусы недоступны. Уберите карту.'
       : amount===null ? 'Введите целое число бонусных рублей, например 50.'
       : local?.exceeded ? 'Сумма выше лимита. Уменьшите её или нажмите «Максимум».'
-      : !hooks.payment() ? 'Уточним расчёт с учётом акции после выбора оплаты.'
       : state.quoteError && state.failedKey===key ? state.quoteError
       : checked && checked.totalMinor!==total ? 'Цена на сервере изменилась. Обновите кассу и проверьте состав.'
       : checked && !checked.settlementEnabled ? 'Проведение бонусных покупок ещё не включено.'
@@ -114,7 +115,7 @@
   }
   function clear() {
     if(isPending()) return false;
-    stopCamera(); invalidate(); state.card = ''; state.balance=null; state.lookup=false; state.maximumSelected=false;
+    stopCamera(); invalidate(); state.card = ''; state.cardHolderName=''; state.balance=null; state.lookup=false; state.maximumSelected=false;
     $('loyalty-card').value=''; $('loyalty-amount').value='0';
     $('loyalty-manual').hidden=true; $('loyalty-manual-toggle').setAttribute('aria-expanded','false');
     message('');
@@ -125,12 +126,13 @@
     const value = cardNumber(raw);
     if (!value) { message('Нужен цифровой номер карты. Проверьте цифры под штрихкодом.'); return false; }
     invalidate(); const revision=state.revision;
-    state.card=''; state.balance=null; state.lookup=true; state.maximumSelected=false; $('loyalty-card').value=value; $('loyalty-amount').value='0';
+    state.card=''; state.cardHolderName=''; state.balance=null; state.lookup=true; state.maximumSelected=false; $('loyalty-card').value=value; $('loyalty-amount').value='0';
     message('Проверяем карту…'); hooks.refresh();
     try {
       const result=await hooks.request('card',{cardCode:value});
       if(revision!==state.revision) return false;
       state.card=value; state.balance=result.balanceMinor;
+      state.cardHolderName=typeof result.cardHolderName==='string' ? result.cardHolderName.trim().slice(0,200) : '';
       $('loyalty-manual').hidden=true; $('loyalty-manual-toggle').setAttribute('aria-expanded','false');
       message(''); return true;
     } catch(error) {
@@ -317,7 +319,7 @@
     $('loyalty-card-confirm').addEventListener('click', () => acceptCard($('loyalty-card').value));
     $('loyalty-card').addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); acceptCard(event.target.value); } });
     $('loyalty-card').addEventListener('input', () => {
-      invalidate(); state.card = ''; state.balance=null; state.lookup=false; state.maximumSelected=false; $('loyalty-amount').value = '0';
+      invalidate(); state.card = ''; state.cardHolderName=''; state.balance=null; state.lookup=false; state.maximumSelected=false; $('loyalty-amount').value = '0';
       message(''); hooks.refresh();
     });
     $('loyalty-manual-toggle').addEventListener('click', () => {

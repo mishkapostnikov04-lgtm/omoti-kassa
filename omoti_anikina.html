@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" href="Dark.png">
 <link rel="manifest" href="omoti_anikina.webmanifest">
 <meta name="theme-color" content="#1a1a1a">
-<link rel="stylesheet" href="./anikina-loyalty-v1.css?v=20260930-checkout1">
+<link rel="stylesheet" href="./anikina-loyalty-v1.css?v=20260930-reporting">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -147,7 +147,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 <p id="loyalty-camera-note" role="status"></p>
 <button type="button" id="loyalty-camera-close" autofocus>Закрыть камеру</button>
 </dialog>
-<script src="./anikina-loyalty-v1.js?v=20260930-payment-selection"></script>
+<script src="./anikina-loyalty-v1.js?v=20260930-reporting"></script>
 <script>
 const CASHIER_SAVE_API = 'https://orders.omoti.ru/b2c-api/b2c/cashier/save_check';
 const CASHIER_CHECKS_API = 'https://orders.omoti.ru/b2c-api/b2c/cashier/anikina/checks';
@@ -189,7 +189,7 @@ function getPrice(name,pay){if(pay==='Брак') return 0; const item=cashierKno
 function promotionNow(){return new Date(Date.now()+promotionClockOffsetMs);}
 function promotionById(id){return (promotionConfig&&Array.isArray(promotionConfig.promotions)?promotionConfig.promotions:[]).find(function(x){return x.id===id;})||null;}
 function promotionAppliesAt(promotion,type,at){return !!(promotion&&promotion.enabled&&at>=new Date(promotion.startsAt).getTime()&&at<new Date(promotion.endsAt).getTime()&&Array.isArray(promotion.eligiblePayTypes)&&promotion.eligiblePayTypes.includes(type));}
-function activePromotion(type){const rows=promotionConfig&&Array.isArray(promotionConfig.promotions)?promotionConfig.promotions:[], at=editNum?parseDateTime(editDate,editTime):promotionNow().getTime(); if(editNum){const original=editPromotionId?(promotionById(editPromotionId)||{id:editPromotionId,name:editPromotionName,discountPercent:editPromotionDiscountPercent}):null; if(type===editOriginalPayType)return original; if(original)return promotionAppliesAt(original,type,at)?original:null; return rows.find(function(x){return promotionAppliesAt(x,type,at);})||null;} return rows.find(function(x){return promotionAppliesAt(x,type,at);})||null;}
+function activePromotion(type){const rows=promotionConfig&&Array.isArray(promotionConfig.promotions)?promotionConfig.promotions:[], at=editNum?parseDateTime(editDate,editTime):promotionNow().getTime(); if(editNum){const original=editPromotionId?(promotionById(editPromotionId)||{id:editPromotionId,name:editPromotionName,discountPercent:editPromotionDiscountPercent}):null; if(type===editOriginalPayType)return original; if(original)return promotionAppliesAt(original,type,at)?original:null; return rows.find(function(x){return promotionAppliesAt(x,type,at);})||null;} const pricingType=type||'Безналичный'; return rows.find(function(x){return promotionAppliesAt(x,pricingType,at);})||null;}
 function effectivePrice(name,type){const list=getPrice(name,type), promo=activePromotion(type); return promo?Math.round((list*(100-Number(promo.discountPercent||0))/100+Number.EPSILON)*100)/100:list;}
 function renderPromotionStatus(){const el=document.getElementById('promotion-status'); if(!el)return; const rows=promotionConfig&&Array.isArray(promotionConfig.promotions)?promotionConfig.promotions:[], now=promotionNow().getTime(), active=rows.find(function(x){return x.enabled&&now>=new Date(x.startsAt).getTime()&&now<new Date(x.endsAt).getTime();}), upcoming=rows.find(function(x){return x.enabled&&now<new Date(x.startsAt).getTime();}); if(active){const eligible=Array.isArray(active.eligiblePayTypes)&&active.eligiblePayTypes.includes(payType); el.className='promotion-status visible active'; el.innerHTML='<strong>Акция −'+Number(active.discountPercent)+'%</strong> · '+(payType&&!eligible?'для выбранной оплаты скидка не действует':'цены в чеке уже со скидкой'); return;} if(upcoming){const start=new Date(upcoming.startsAt).toLocaleDateString('ru-RU',{timeZone:'Asia/Novosibirsk',day:'2-digit',month:'2-digit'}); el.className='promotion-status visible'; el.innerHTML='<strong>Акция −'+Number(upcoming.discountPercent)+'%</strong> автоматически начнётся '+start; return;} el.className='promotion-status'; el.textContent='';}
 function cachePromotionConfig(value){try{localStorage.setItem(PROMOTION_CACHE_KEY,JSON.stringify(value));}catch(e){}}

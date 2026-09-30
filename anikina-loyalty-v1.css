@@ -2,6 +2,7 @@
 .loyalty [hidden], .loyalty-payment [hidden], .loyalty-pending [hidden], .loyalty[hidden], .loyalty-payment[hidden], .loyalty-pending[hidden], .loyalty-camera[hidden] { display: none !important; }
 .loyalty h2, .loyalty-payment h2 { font-size: 14px; font-weight: 600; margin: 0; }
 .loyalty-heading { display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+.loyalty-heading > div { min-width: 0; overflow-wrap: anywhere; }
 .loyalty-heading span { display: block; color: #625e56; font-size: 12px; margin-top: 3px; }
 .loyalty-links { display: flex; gap: 16px; justify-content: space-between; }
 .loyalty p:empty { display: none; }
