@@ -1,14 +1,18 @@
-/* Anikina loyalty foundation. Deliberately no remote calls or checkout mutations.
- * Real redemption must be a server-authorized, durable operation, never a UI flag.
- * ZXing is loaded from the same site; camera frames and card data stay in memory.
+/* Anikina loyalty. Only authenticated OMOTI API calls; no provider key in Pages.
+ * Loyalty sales never enter the ordinary offline queue. A durable server intent
+ * owns retries. The browser retains only the pending sale identity, never cards.
+ * ZXing is loaded from the same site; camera frames stay in memory.
  */
 (function () {
   'use strict';
   const CAP_PERCENT = 30;
-  const state = { card: '', scanning: false, generation: 0, stream: null, timer: null };
+  const PENDING_KEY = 'omoti_anikina_loyalty_pending_v1';
+  const state = { card: '', balance: null, scanning: false, generation: 0, stream: null, timer: null,
+    revision: 0, lookup: false, calculation: null, quoteKey: '', waitingKey: '', failedKey: '',
+    quoteTimer: null, quoteError: '', pending: null, sending: false, storageBlocked: false };
   let decoderPromise, reader, fastReader, decodeCanvas, lastFocus, hooks;
   const $ = id => document.getElementById(id);
-  const rub = cents => new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 2 }).format(cents / 100);
+  const rub = cents => new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(cents / 100);
   function cardNumber(raw) {
     const text = String(raw).trim();
     if (!/^\d(?:[\d ]*\d)?$/.test(text)) return null;
@@ -16,57 +20,165 @@
     return digits.length <= 16 && Number.isSafeInteger(Number(digits)) ? digits : null;
   }
   function cents(raw) {
-    const text = String(raw).trim().replace(',', '.');
-    if (!/^\d+(?:\.\d{1,2})?$/.test(text)) return null;
-    const parts = text.split('.');
-    const value = Number(parts[0]) * 100 + Number((parts[1] || '').padEnd(2, '0'));
+    const text = String(raw).trim();
+    if (!/^\d+$/.test(text)) return null;
+    const value = Number(text) * 100;
     return Number.isSafeInteger(value) && value <= 100000000 ? value : null;
   }
   function quote(total, balance, requested) {
     const valid = [total, balance, requested].every(n => Number.isSafeInteger(n) && n >= 0);
-    if (!valid) return null;
-    const limit = Math.min(balance, Math.floor(total * CAP_PERCENT / 100));
-    return { limit, redeem: Math.min(requested, limit), due: total - Math.min(requested, limit), exceeded: requested > limit };
+    if (!valid || requested % 100) return null;
+    const limit = Math.floor(Math.min(balance, Math.floor(total * CAP_PERCENT / 100)) / 100) * 100;
+    return { limit, redeem: Math.min(requested, limit), due: Math.floor((total - Math.min(requested, limit))/100)*100, exceeded: requested > limit };
   }
   function eligible() { return !hooks.editing() && ['Безналичный', 'Наличный', 'Перевод', 'Смешанная'].includes(hooks.payment()); }
-  function isActive() { return !!($('loyalty-card').value.trim() || $('loyalty-balance').value || $('loyalty-amount').value || state.scanning); }
+  function isActive() { return !!(isPending() || state.card || $('loyalty-card').value.trim() || state.scanning || state.lookup); }
+  function isPending() { return !!state.pending || state.storageBlocked; }
   function message(text) { $('loyalty-status').textContent = text; $('loyalty-status').hidden = !text; }
+  function invalidate() {
+    state.revision++; clearTimeout(state.quoteTimer); state.quoteTimer=null;
+    state.calculation=null; state.quoteKey=''; state.waitingKey=''; state.failedKey=''; state.quoteError='';
+  }
+  function quoteInput() { return { ...hooks.input(), cardCode:state.card, redeemMinor:cents($('loyalty-amount').value || '0') }; }
+  function inputKey(input) { return JSON.stringify([input, Math.round(hooks.total()*100)]); }
+  function requestQuote(input,key) {
+    state.waitingKey=key; const revision=++state.revision;
+    clearTimeout(state.quoteTimer);
+    state.quoteTimer=setTimeout(async () => {
+      try {
+        const result=await hooks.request('quote',input);
+        if (revision!==state.revision || key!==inputKey(quoteInput())) return;
+        state.calculation=result; state.balance=result.balanceMinor; state.quoteKey=key; state.quoteError='';
+      } catch(error) {
+        if (revision!==state.revision) return;
+        state.failedKey=key; state.quoteError=error.message || 'Не удалось рассчитать бонусы.';
+      } finally {
+        if (revision===state.revision) { state.waitingKey=''; hooks.refresh(); }
+      }
+    },250);
+  }
   function update() {
     if (!hooks) return;
     const total = Math.max(0, Math.round(hooks.total() * 100));
-    const balance = cents($('loyalty-balance').value), amount = cents($('loyalty-amount').value || '0');
-    // The limit does not depend on the amount being edited. Maximum also repairs invalid input.
-    const maximum = eligible() && state.card ? quote(total, balance, 0) : null;
-    const result = maximum && amount !== null ? quote(total, balance, amount) : null;
-    $('loyalty-base').textContent = rub(total);
-    $('loyalty-limit').textContent = maximum ? rub(maximum.limit) : '—';
-    $('loyalty-redeem').textContent = result && !result.exceeded ? rub(result.redeem) : '—';
-    $('loyalty-due').textContent = result && !result.exceeded ? rub(result.due) : '—';
-    $('loyalty-max').disabled = !maximum || total === 0;
-    $('loyalty-preview-note').textContent = !eligible()
-      ? (hooks.editing() || hooks.payment() ? 'Бонусы недоступны для этого чека.' : 'Выберите способ оплаты.')
-      : !state.card ? 'Сканируйте карту или подтвердите её номер.'
-      : balance === null ? ($('loyalty-balance').value ? 'Проверьте сумму баланса.' : 'Укажите баланс — рассчитаем максимум.')
-      : total === 0 ? 'Добавьте товары в чек.'
-      : amount === null ? 'Проверьте сумму бонусов.'
-      : result.exceeded ? 'Сумма выше лимита. Нажмите «Максимум» или уменьшите её.'
-      : '';
-    $('loyalty-checkout-warning').hidden = !isActive();
-    if (isActive()) $('close-btn').disabled = true;
+    const amount = cents($('loyalty-amount').value || '0');
+    const maximum = state.card && eligible() ? quote(total,state.balance,0) : null;
+    const local = maximum && amount!==null ? quote(total,state.balance,amount) : null;
+    const input=quoteInput(), key=inputKey(input);
+    const canQuote=state.card && eligible() && total>0 && local && !local.exceeded && !state.pending && !state.lookup;
+    if(canQuote && key!==state.quoteKey && key!==state.waitingKey && key!==state.failedKey) requestQuote(input,key);
+    const checked=canQuote && state.quoteKey===key ? state.calculation : null;
+    $('loyalty-card-summary').textContent=state.card ? 'Карта •••• '+state.card.slice(-4) : 'Мои Места · необязательно';
+    $('loyalty-clear').hidden=!isActive() || !!state.pending;
+    $('loyalty-scan').disabled=state.lookup || !!state.pending || hooks.busy();
+    $('loyalty-card-confirm').disabled=state.lookup || !!state.pending;
+    $('loyalty-card-confirm').textContent=state.lookup ? 'Проверяем…' : 'Найти';
+    $('loyalty-payment').hidden=!state.card || total===0;
+    $('cart-total-label').textContent=state.card ? 'Сумма чека' : 'К оплате';
+    $('loyalty-balance-text').textContent=state.balance===null ? '' : 'Доступно целыми бонусами '+rub(Math.floor(state.balance/100)*100);
+    $('loyalty-limit-text').textContent=maximum ? 'Можно списать до '+rub(maximum.limit)+' · не больше 30% после акции' : '';
+    $('loyalty-max').disabled=!maximum || total===0 || !!state.pending;
+    $('loyalty-amount').disabled=!eligible() || !!state.pending;
+    $('loyalty-due').textContent=checked ? rub(checked.dueMinor) : '—';
+    $('loyalty-earn').hidden=!checked || checked.earnMinor===null;
+    $('loyalty-earn').textContent=checked && checked.earnMinor!==null ? 'Начислим '+rub(checked.earnMinor)+' · '+checked.accrualPercent+'% от оплаты деньгами, округляем вверх' : '';
+    $('loyalty-rounding').hidden=!checked || !checked.roundingMinor;
+    const note=!eligible() ? (hooks.editing() || hooks.payment() ? 'Для этой операции бонусы недоступны. Уберите карту.' : 'Выберите способ оплаты ниже.')
+      : amount===null ? 'Введите целое число бонусных рублей, например 50.'
+      : local?.exceeded ? 'Сумма выше лимита. Уменьшите её или нажмите «Максимум».'
+      : state.quoteError && state.failedKey===key ? state.quoteError
+      : checked && checked.totalMinor!==total ? 'Цена на сервере изменилась. Обновите кассу и проверьте состав.'
+      : checked && !checked.settlementEnabled ? 'Проведение бонусных покупок ещё не включено.'
+      : canQuote && !checked ? 'Проверяем расчёт…' : '';
+    $('loyalty-preview-note').textContent=note; $('loyalty-preview-note').hidden=!note;
+    $('loyalty-retry').hidden=!(state.quoteError && state.failedKey===key);
+    if (isActive()) {
+      const due=checked ? checked.dueMinor/100 : null;
+      if (due!==null) hooks.renderPayment(due);
+      $('close-btn').disabled=!!state.pending || state.sending || state.lookup || state.scanning || hooks.busy()
+        || !checked || !checked.settlementEnabled || checked.totalMinor!==total || !hooks.ready(due);
+    }
+    if(isPending()) hooks.lock(true);
   }
   function clear() {
-    stopCamera(); state.card = '';
-    ['loyalty-card', 'loyalty-balance', 'loyalty-amount'].forEach(id => { $(id).value = ''; });
-    $('loyalty-preview').open = false;
+    if(isPending()) return false;
+    stopCamera(); invalidate(); state.card = ''; state.balance=null; state.lookup=false;
+    $('loyalty-card').value=''; $('loyalty-amount').value='0';
+    $('loyalty-manual').hidden=true; $('loyalty-manual-toggle').setAttribute('aria-expanded','false');
     message('');
+    return true;
   }
-  function acceptCard(raw) {
+  async function acceptCard(raw) {
+    if(state.pending || hooks.busy()) return false;
     const value = cardNumber(raw);
     if (!value) { message('Нужен цифровой номер карты. Проверьте цифры под штрихкодом.'); return false; }
-    state.card = value; $('loyalty-card').value = value;
-    $('loyalty-balance').value = ''; $('loyalty-amount').value = '';
-    message('Карта № ' + value);
-    hooks.refresh(); return true;
+    invalidate(); const revision=state.revision;
+    state.card=''; state.balance=null; state.lookup=true; $('loyalty-card').value=value; $('loyalty-amount').value='0';
+    message('Проверяем карту…'); hooks.refresh();
+    try {
+      const result=await hooks.request('card',{cardCode:value});
+      if(revision!==state.revision) return false;
+      state.card=value; state.balance=result.balanceMinor;
+      $('loyalty-manual').hidden=true; $('loyalty-manual-toggle').setAttribute('aria-expanded','false');
+      message(''); return true;
+    } catch(error) {
+      if(revision===state.revision) message(error.message || 'Не удалось проверить карту. Повторите или уберите карту.');
+      return false;
+    } finally { if(revision===state.revision) {state.lookup=false; hooks.refresh();} }
+  }
+  function pendingMessage(text,canCancel=false) {
+    $('loyalty-pending').hidden=false; $('loyalty-pending-message').textContent=text;
+    $('loyalty-cancel-attempt').hidden=!canCancel;
+  }
+  function rememberPending(payload) {
+    const identity={saleKey:payload.saleKey,num:String(payload.num)};
+    localStorage.setItem(PENDING_KEY,JSON.stringify(identity));
+    if(localStorage.getItem(PENDING_KEY)!==JSON.stringify(identity)) throw Error('Не удалось сохранить защиту от повтора. Покупка не отправлена.');
+    state.pending=identity;
+  }
+  function forgetPending() {
+    localStorage.removeItem(PENDING_KEY); state.pending=null; state.sending=false;
+    $('loyalty-pending').hidden=true; hooks.lock(false);
+  }
+  function finish(result) {
+    // Keep the identity if clearing storage fails; repeated status is read/reconcile only.
+    forgetPending(); clear(); hooks.completed(result); hooks.refresh();
+  }
+  async function submit() {
+    if(state.pending || state.sending || hooks.busy() || $('close-btn').disabled) return;
+    const input=quoteInput(), key=inputKey(input), calculation=state.calculation;
+    if(!calculation || state.quoteKey!==key || !calculation.settlementEnabled) return;
+    const payload={...hooks.buildPayload(),cardCode:state.card,redeemMinor:input.redeemMinor,expectedTotalMinor:calculation.totalMinor};
+    try { rememberPending(payload); } catch(error) { message(error.message || 'Нет доступа к хранилищу. Покупка не отправлена.'); return; }
+    state.sending=true; invalidate(); hooks.lock(true);
+    pendingMessage('Проводим покупку. Не закрывайте кассу и не создавайте второй чек.');
+    try {
+      const result=await hooks.request('checkout',payload);
+      if(result.state==='completed') finish(result);
+      else pendingMessage('Нужно подтвердить результат покупки. Нажмите «Проверить статус».');
+    } catch(error) { pendingMessage(error.message || 'Связь прервалась. Не создавайте второй чек — проверьте статус.'); }
+    finally {state.sending=false; $('loyalty-check-status').disabled=false; hooks.refresh();}
+  }
+  async function checkStatus() {
+    if(!state.pending || state.sending) return;
+    state.sending=true; $('loyalty-check-status').disabled=true;
+    try {
+      const result=await hooks.request('status',state.pending);
+      if(result.state==='completed') finish(result);
+      else if(result.state==='cancelled') {forgetPending(); clear(); hooks.discardIdentity(); hooks.refresh();}
+      else if(['not_found','prepared'].includes(result.state)) pendingMessage('Покупка ещё не отправлена в «Мои Места». Можно безопасно вернуться к чеку.',true);
+      else pendingMessage('Результат пока не подтверждён. Не повторяйте покупку; проверьте статус позже или обратитесь к владельцу.');
+    } catch(error) {pendingMessage(error.message || 'Нет связи. Повторите проверку статуса.');}
+    finally {state.sending=false; $('loyalty-check-status').disabled=false; hooks.refresh();}
+  }
+  async function cancelAttempt() {
+    if(!state.pending || state.sending) return;
+    state.sending=true; $('loyalty-cancel-attempt').disabled=true;
+    try {
+      const result=await hooks.request('cancel',state.pending);
+      if(result.state==='completed') finish(result);
+      else if(result.state==='cancelled') {forgetPending(); clear(); hooks.discardIdentity(); hooks.refresh();}
+    } catch(error) {pendingMessage(error.message || 'Не удалось отменить попытку. Проверьте статус.');}
+    finally {state.sending=false; $('loyalty-cancel-attempt').disabled=false; hooks.refresh();}
   }
   function loadDecoder() {
     if (window.ZXing) return Promise.resolve(window.ZXing);
@@ -123,7 +235,7 @@
   }
   function closeCamera() { stopCamera(); hooks.refresh(); if (lastFocus) lastFocus.focus(); }
   async function startCamera() {
-    if (state.scanning || hooks.busy()) return;
+    if (state.scanning || hooks.busy() || state.pending || state.lookup) return;
     lastFocus = document.activeElement;
     const dialog = $('loyalty-camera');
     if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia || !dialog.showModal) {
@@ -192,18 +304,40 @@
     $('loyalty-card-confirm').addEventListener('click', () => acceptCard($('loyalty-card').value));
     $('loyalty-card').addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); acceptCard(event.target.value); } });
     $('loyalty-card').addEventListener('input', () => {
-      state.card = ''; $('loyalty-balance').value = ''; $('loyalty-amount').value = '';
+      invalidate(); state.card = ''; state.balance=null; state.lookup=false; $('loyalty-amount').value = '0';
       message(''); hooks.refresh();
     });
-    ['loyalty-balance', 'loyalty-amount'].forEach(id => $(id).addEventListener('input', () => hooks.refresh()));
-    $('loyalty-max').addEventListener('click', () => {
-      const result = quote(Math.round(hooks.total() * 100), cents($('loyalty-balance').value), 0);
-      if (!eligible() || !state.card || !result) return;
-      $('loyalty-amount').value = (result.limit / 100).toFixed(2); hooks.refresh();
+    $('loyalty-manual-toggle').addEventListener('click', () => {
+      const open=$('loyalty-manual').hidden;
+      $('loyalty-manual').hidden=!open; $('loyalty-manual-toggle').setAttribute('aria-expanded',String(open));
+      if(open) $('loyalty-card').focus();
     });
+    $('loyalty-amount').addEventListener('input', () => {invalidate(); hooks.refresh();});
+    $('loyalty-retry').addEventListener('click', () => {invalidate(); hooks.refresh();});
+    $('loyalty-max').addEventListener('click', () => {
+      const result = quote(Math.round(hooks.total() * 100), state.balance, 0);
+      if (!eligible() || !state.card || !result) return;
+      $('loyalty-amount').value = String(result.limit / 100); invalidate(); hooks.refresh();
+    });
+    $('loyalty-check-status').addEventListener('click',checkStatus);
+    $('loyalty-cancel-attempt').addEventListener('click',cancelAttempt);
     document.addEventListener('visibilitychange', () => { if (document.hidden && state.scanning) closeCamera(); });
     window.addEventListener('pagehide', stopCamera);
+    try {
+      const saved=JSON.parse(localStorage.getItem(PENDING_KEY) || 'null');
+      if(saved !== null && (!saved || typeof saved.saleKey!=='string' || !saved.saleKey || typeof saved.num!=='string' || !saved.num)) throw Error('Invalid saved identity');
+      if(saved) {
+        state.pending={saleKey:saved.saleKey,num:saved.num};
+        pendingMessage('Есть незавершённая бонусная покупка. Сначала проверьте её статус.');
+        hooks.lock(true);
+      }
+    } catch (_) {
+      state.storageBlocked=true;
+      pendingMessage('Не удалось прочитать сохранённый статус покупки. Не очищайте данные браузера: сначала нужна сверка с владельцем.');
+      $('loyalty-check-status').disabled=true;
+      hooks.lock(true);
+    }
     update();
   }
-  window.AnikinaLoyalty = Object.freeze({ init, update, clear, stopCamera, isActive, cardNumber, cents, quote, decodeFrame, loadDecoder });
+  window.AnikinaLoyalty = Object.freeze({ init, update, clear, stopCamera, isActive, isPending, submit, cardNumber, cents, quote, decodeFrame, loadDecoder });
 })();
