@@ -7,7 +7,7 @@
   'use strict';
   const CAP_PERCENT = 30;
   const PAYMENT_TYPES = ['Безналичный', 'Наличный', 'Перевод', 'Смешанная'];
-  const PENDING_KEY = 'omoti_anikina_loyalty_pending_v1';
+  let PENDING_KEY = 'omoti_anikina_loyalty_pending_v1';
   const state = { card: '', cardHolderName: '', balance: null, scanning: false, generation: 0, stream: null, timer: null,
     revision: 0, lookup: false, calculation: null, quoteKey: '', waitingKey: '', failedKey: '',
     quoteTimer: null, quoteError: '', pending: null, sending: false, storageBlocked: false, maximumSelected: false };
@@ -360,6 +360,11 @@
   }
   function init(options) {
     hooks = options;
+    // Preserve the Anikina key for existing pending purchases. Other cashiers
+    // keep their own identities even on the same browser/provider POS.
+    const point=options.point || 'anikina';
+    if (!['anikina','novogodnyaya','sovetskaya'].includes(point)) throw Error('Unknown loyalty cashier');
+    PENDING_KEY='omoti_'+point+'_loyalty_pending_v1';
     $('loyalty-panel').hidden = false;
     $('loyalty-scan').addEventListener('click', startCamera);
     $('loyalty-camera-close').addEventListener('click', closeCamera);
