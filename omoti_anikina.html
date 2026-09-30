@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" href="Dark.png">
 <link rel="manifest" href="omoti_anikina.webmanifest">
 <meta name="theme-color" content="#1a1a1a">
-<link rel="stylesheet" href="./anikina-loyalty-v1.css?v=20260930-reporting">
+<link rel="stylesheet" href="./anikina-loyalty-v1.css?v=20260930-scanner-clarity">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -81,7 +81,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 <div class="screen active" id="screen-kassa">
 <div class="sec-label">Имя</div><div class="seller-row" id="seller-row"></div>
 <section class="loyalty" id="loyalty-panel" aria-label="Карта клиента" hidden>
-<div class="loyalty-heading"><div><h2>Карта клиента</h2><span id="loyalty-card-summary">Мои Места · необязательно</span></div>
+<div class="loyalty-heading"><div><div class="loyalty-card-title"><svg id="loyalty-card-check" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" hidden><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg><h2 id="loyalty-card-title">Карта клиента</h2></div><span id="loyalty-card-summary" role="status" aria-live="polite">Мои Места · необязательно</span></div>
 <button type="button" id="loyalty-scan" class="loyalty-scan"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 8V4h4m8 0h4v4M4 16v4h4m8 0h4v-4M8 8v8m4-8v8m4-8v8"/></svg>Сканировать</button></div>
 <div class="loyalty-links"><button type="button" id="loyalty-manual-toggle" class="loyalty-link" aria-expanded="false" aria-controls="loyalty-manual">Ввести номер</button><button type="button" id="loyalty-clear" class="loyalty-link" hidden>Убрать карту</button></div>
 <div id="loyalty-manual" hidden><label for="loyalty-card">Номер под штрихкодом</label><div class="loyalty-inline"><input id="loyalty-card" type="text" inputmode="numeric" autocomplete="off" maxlength="24" placeholder="Номер карты" aria-describedby="loyalty-status"><button type="button" id="loyalty-card-confirm">Найти</button></div></div>
@@ -91,9 +91,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 <div class="sec-label" style="margin-top:16px">Чек</div>
 <div class="cart-box"><div class="cart-empty" id="cart-empty">Выбери вкусы</div><div id="cart-items"></div><div class="promo-summary" id="promotion-summary"></div><div class="cart-total" id="cart-total" style="display:none"><span><span id="cart-total-label">К оплате</span> <span id="total-qty" style="font-weight:700;font-size:15px;margin-left:6px"></span></span><span id="total-sum"></span></div>
 <section class="loyalty-payment" id="loyalty-payment" aria-label="Бонусы и оплата" hidden>
-<div class="loyalty-payment-heading"><h2>Бонусы</h2><span id="loyalty-balance-text"></span></div>
+<div class="loyalty-payment-heading"><h2>Бонусы</h2></div>
+<div class="loyalty-balances"><div><span>На карте</span><strong id="loyalty-balance-text">—</strong></div><div class="loyalty-limit-stat"><span>Можно списать</span><strong id="loyalty-limit-value">—</strong></div></div>
 <label for="loyalty-amount">Списать бонусами, ₽</label><div class="loyalty-inline"><input id="loyalty-amount" type="text" inputmode="numeric" autocomplete="off" value="0" aria-describedby="loyalty-limit-text loyalty-preview-note"><button type="button" id="loyalty-max">Максимум</button></div>
-<p id="loyalty-limit-text" class="loyalty-hint">Лимит — до 30% суммы после акции.</p>
+<p id="loyalty-limit-text" class="loyalty-hint">Не больше 30% суммы после акции.</p>
 <p id="loyalty-preview-note" role="status" hidden></p><button type="button" id="loyalty-retry" class="loyalty-link" hidden>Повторить расчёт</button>
 <div class="loyalty-due"><span id="loyalty-due-label">К оплате</span><strong id="loyalty-due">—</strong></div>
 <p id="loyalty-rounding" class="loyalty-hint" hidden>Сумма округлена вниз в пользу клиента.</p>
@@ -147,7 +148,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 <p id="loyalty-camera-note" role="status"></p>
 <button type="button" id="loyalty-camera-close" autofocus>Закрыть камеру</button>
 </dialog>
-<script src="./anikina-loyalty-v1.js?v=20260930-reporting"></script>
+<script src="./anikina-loyalty-v1.js?v=20260930-scanner-clarity"></script>
 <script>
 const CASHIER_SAVE_API = 'https://orders.omoti.ru/b2c-api/b2c/cashier/save_check';
 const CASHIER_CHECKS_API = 'https://orders.omoti.ru/b2c-api/b2c/cashier/anikina/checks';

@@ -11,7 +11,7 @@
   const state = { card: '', cardHolderName: '', balance: null, scanning: false, generation: 0, stream: null, timer: null,
     revision: 0, lookup: false, calculation: null, quoteKey: '', waitingKey: '', failedKey: '',
     quoteTimer: null, quoteError: '', pending: null, sending: false, storageBlocked: false, maximumSelected: false };
-  let decoderPromise, reader, fastReader, decodeCanvas, lastFocus, hooks;
+  let decoderPromise, reader, fastReader, rowReader, decodeCanvas, lastFocus, hooks;
   const $ = id => document.getElementById(id);
   const rub = cents => new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(cents / 100);
   function cardNumber(raw) {
@@ -79,14 +79,20 @@
     $('loyalty-card-summary').textContent=state.card
       ? (state.cardHolderName ? state.cardHolderName+' · карта' : 'Карта')+' •••• '+state.card.slice(-4)
       : 'Мои Места · необязательно';
+    $('loyalty-panel').classList.toggle('is-selected',!!state.card);
+    if($('loyalty-card-title')) $('loyalty-card-title').textContent=state.card ? 'Карта выбрана' : 'Карта клиента';
+    if($('loyalty-card-check')) $('loyalty-card-check').toggleAttribute('hidden',!state.card);
     $('loyalty-clear').hidden=!isActive() || !!state.pending;
     $('loyalty-scan').disabled=state.lookup || !!state.pending || hooks.busy();
     $('loyalty-card-confirm').disabled=state.lookup || !!state.pending;
     $('loyalty-card-confirm').textContent=state.lookup ? 'Проверяем…' : 'Найти';
     $('loyalty-payment').hidden=!state.card || total===0;
     $('cart-total-label').textContent=state.card ? 'Сумма чека' : 'К оплате';
-    $('loyalty-balance-text').textContent=state.balance===null ? '' : 'Доступно '+rub(Math.floor(state.balance/100)*100);
-    $('loyalty-limit-text').textContent=maximum ? 'Можно списать до '+rub(maximum.limit)+' · не больше 30% после акции' : '';
+    const limitValue=$('loyalty-limit-value');
+    $('loyalty-balance-text').textContent=state.balance===null ? '' : (limitValue ? '' : 'На карте ')+rub(Math.floor(state.balance/100)*100);
+    if(limitValue) limitValue.textContent=maximum ? rub(maximum.limit) : '—';
+    $('loyalty-limit-text').textContent=maximum ? (limitValue ? 'Не больше 30% суммы после акции.' : 'Можно списать до '+rub(maximum.limit)+' · не больше 30% после акции') : '';
+    $('loyalty-max').textContent=maximum ? 'Максимум · '+rub(maximum.limit) : 'Максимум';
     $('loyalty-max').disabled=!maximum || total===0 || !!state.pending;
     $('loyalty-amount').disabled=!canPrepare() || !!state.pending;
     // Cached HTML from checkout1 has no new hook/label; retain its safe payment guard.
@@ -121,13 +127,13 @@
     message('');
     return true;
   }
-  async function acceptCard(raw) {
+  async function acceptCard(raw,fromScan=false) {
     if(state.pending || hooks.busy()) return false;
     const value = cardNumber(raw);
     if (!value) { message('Нужен цифровой номер карты. Проверьте цифры под штрихкодом.'); return false; }
     invalidate(); const revision=state.revision;
     state.card=''; state.cardHolderName=''; state.balance=null; state.lookup=true; state.maximumSelected=false; $('loyalty-card').value=value; $('loyalty-amount').value='0';
-    message('Проверяем карту…'); hooks.refresh();
+    message(fromScan ? 'Штрихкод считан. Проверяем карту…' : 'Проверяем карту…'); hooks.refresh();
     try {
       const result=await hooks.request('card',{cardCode:value});
       if(revision!==state.revision) return false;
@@ -209,6 +215,41 @@
     return decoderPromise;
   }
   // Rotation is explicit: the sample client card has a vertical Code 128 barcode.
+  function decodeRows(ctx,width,height) {
+    // CODE128 is one-dimensional. Read a few native-detail lines, not a whole
+    // luminance matrix. Per-line threshold also handles a dim screen/low contrast.
+    const ZX=window.ZXing;
+    rowReader ||= new ZX.Code128Reader();
+    let plausible=false;
+    const pixels=ctx.getImageData(0,0,width,height).data;
+    for(const fraction of [.5,.42,.58,.35,.65,.2,.8]) {
+      const y=Math.min(height-1,Math.round(height*fraction));
+      const luminance=new Uint8Array(width);let low=255,high=0;
+      for(let x=0;x<width;x++) {
+        const p=(y*width+x)*4,value=(pixels[p]*3+pixels[p+1]*4+pixels[p+2])>>>3;
+        luminance[x]=value;low=Math.min(low,value);high=Math.max(high,value);
+      }
+      if(high-low<24) continue;
+      for(const level of [.5,.66,.33]) {
+        const threshold=low+(high-low)*level,row=new ZX.BitArray(width);let transitions=0,previous=false;
+        for(let x=0;x<width;x++) {
+          const black=luminance[x]<threshold;
+          if(black) row.set(x);
+          if(black!==previous) transitions++;
+          previous=black;
+        }
+        // A CODE128 has many alternating bars. A wrong orientation/blank image
+        // must not invoke the expensive full-matrix decoder on each center pass.
+        if(transitions<16) continue;
+        plausible=true;
+        for(let direction=0;direction<2;direction++) {
+          if(direction) row.reverse();
+          try {return {value:rowReader.decodeRow(y,row,null).getText(),plausible:true};} catch(_) { /* Try the next line/threshold/direction. */ }
+        }
+      }
+    }
+    return {value:null,plausible};
+  }
   function decodeFrame(source, rotate, centerOnly = false) {
     const ZX = window.ZXing;
     if (!reader) {
@@ -230,6 +271,9 @@
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (rotate) { ctx.translate(sh, 0); ctx.rotate(Math.PI / 2); }
     ctx.drawImage(source, (w - cw) / 2, (h - ch) / 2, cw, ch, 0, 0, sw, sh);
+    const rowResult=decodeRows(ctx,canvas.width,canvas.height);
+    if(rowResult.value) return rowResult.value;
+    if(centerOnly && !rowResult.plausible) return null;
     const activeReader = centerOnly ? fastReader : reader;
     try {
       const bitmap = new ZX.BinaryBitmap(new ZX.HybridBinarizer(new ZX.HTMLCanvasElementLuminanceSource(canvas)));
@@ -257,7 +301,7 @@
       message('Камера недоступна. Откройте кассу в Safari или Chrome либо введите номер карты.'); return;
     }
     state.scanning = true; const generation = ++state.generation;
-    dialog.showModal(); $('loyalty-camera-note').textContent = 'Разрешите доступ к камере.';
+    dialog.showModal(); $('loyalty-camera-note').textContent = 'Открываем камеру. Разрешите доступ, если браузер спросит.';
     hooks.refresh();
     try {
       await loadDecoder();
@@ -282,11 +326,15 @@
         guide.style.width = (side / w * 100) + '%'; guide.style.height = (side / h * 100) + '%'; guide.hidden = false;
       };
       video.onresize = alignGuide; alignGuide();
-      const started = Date.now(); let attempt = 0, previous = '', hits = 0, matchedAt = 0, preferred = null, lastFrame = -1;
-      $('loyalty-camera-note').textContent = 'Поместите весь штрихкод в рамку и задержите телефон.';
+      const started = Date.now(); let attempt = 0, previous = '', hits = 0, matchedAt = 0, preferred = null, lastFrame = -1, guidanceShown=false;
+      $('loyalty-camera-note').textContent = 'Поместите весь штрихкод в рамку. Если изображение размыто, немного отодвиньте телефон.';
       const scan = () => {
         if (generation !== state.generation) return;
         if (Date.now() - started > 45000) { closeCamera(); message('Штрихкод не распознан. Попробуйте ещё раз или введите номер карты.'); return; }
+        if(!hits && !guidanceShown && Date.now()-started>4000) {
+          guidanceShown=true;
+          $('loyalty-camera-note').textContent='Выровняйте штрихкод и держите его целиком в рамке. Если он размыт, немного отодвиньте телефон.';
+        }
         // One decode per pass yields to the UI. Reuse the successful orientation for confirmation.
         if (video.readyState < 2 || video.currentTime === lastFrame) { state.timer = setTimeout(scan, 100); return; }
         lastFrame = video.currentTime;
@@ -295,7 +343,8 @@
         if (value && cardNumber(value)) {
           hits = value === previous && Date.now() - matchedAt < 1500 ? hits + 1 : 1;
           previous = value; matchedAt = Date.now(); preferred = mode;
-          if (hits >= 2) { closeCamera(); acceptCard(value); return; }
+          $('loyalty-camera-note').textContent='Штрихкод найден — удержите телефон на месте.';
+          if (hits >= 2) { closeCamera(); acceptCard(value,true); return; }
         }
         state.timer = setTimeout(scan, 100);
       };
