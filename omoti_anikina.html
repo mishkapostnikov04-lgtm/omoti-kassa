@@ -95,7 +95,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 <label for="loyalty-amount">Списать бонусами, ₽</label><div class="loyalty-inline"><input id="loyalty-amount" type="text" inputmode="numeric" autocomplete="off" value="0" aria-describedby="loyalty-limit-text loyalty-preview-note"><button type="button" id="loyalty-max">Максимум</button></div>
 <p id="loyalty-limit-text" class="loyalty-hint">Лимит — до 30% суммы после акции.</p>
 <p id="loyalty-preview-note" role="status" hidden></p><button type="button" id="loyalty-retry" class="loyalty-link" hidden>Повторить расчёт</button>
-<div class="loyalty-due"><span>К оплате</span><strong id="loyalty-due">—</strong></div>
+<div class="loyalty-due"><span id="loyalty-due-label">К оплате</span><strong id="loyalty-due">—</strong></div>
 <p id="loyalty-rounding" class="loyalty-hint" hidden>Сумма округлена вниз в пользу клиента.</p>
 <p id="loyalty-earn" class="loyalty-hint" hidden></p>
 </section></div>
@@ -147,7 +147,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 <p id="loyalty-camera-note" role="status"></p>
 <button type="button" id="loyalty-camera-close" autofocus>Закрыть камеру</button>
 </dialog>
-<script src="./anikina-loyalty-v1.js?v=20260930-checkout1"></script>
+<script src="./anikina-loyalty-v1.js?v=20260930-payment-selection"></script>
 <script>
 const CASHIER_SAVE_API = 'https://orders.omoti.ru/b2c-api/b2c/cashier/save_check';
 const CASHIER_CHECKS_API = 'https://orders.omoti.ru/b2c-api/b2c/cashier/anikina/checks';
@@ -442,6 +442,14 @@ if(window.AnikinaLoyalty){
   AnikinaLoyalty.init({
     total:cartTotal,payment:function(){return payType;},editing:function(){return !!editNum;},
     busy:function(){return closeCheckInFlight;},refresh:function(){updateCart();},
+    paymentOptions:function(allowed){
+      document.querySelectorAll('#pay-grid .pay-btn').forEach(function(button){button.hidden=!!allowed&&!allowed.includes(button.textContent);});
+      if(!allowed||!payType||allowed.includes(payType))return false;
+      payType='';
+      document.querySelectorAll('#pay-grid .pay-btn').forEach(function(button){button.classList.remove('active');button.setAttribute('aria-pressed','false');});
+      document.getElementById('self-clarify').className='self-clarify';
+      return true;
+    },
     input:function(){
       const promo=activePromotion(payType);
       return {pay:payType,seller:seller,promotionId:promo?promo.id:'',edited:!!editNum,

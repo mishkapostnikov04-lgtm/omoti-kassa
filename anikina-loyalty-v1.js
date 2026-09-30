@@ -6,10 +6,11 @@
 (function () {
   'use strict';
   const CAP_PERCENT = 30;
+  const PAYMENT_TYPES = ['Безналичный', 'Наличный', 'Перевод', 'Смешанная'];
   const PENDING_KEY = 'omoti_anikina_loyalty_pending_v1';
   const state = { card: '', balance: null, scanning: false, generation: 0, stream: null, timer: null,
     revision: 0, lookup: false, calculation: null, quoteKey: '', waitingKey: '', failedKey: '',
-    quoteTimer: null, quoteError: '', pending: null, sending: false, storageBlocked: false };
+    quoteTimer: null, quoteError: '', pending: null, sending: false, storageBlocked: false, maximumSelected: false };
   let decoderPromise, reader, fastReader, decodeCanvas, lastFocus, hooks;
   const $ = id => document.getElementById(id);
   const rub = cents => new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(cents / 100);
@@ -31,7 +32,8 @@
     const limit = Math.floor(Math.min(balance, Math.floor(total * CAP_PERCENT / 100)) / 100) * 100;
     return { limit, redeem: Math.min(requested, limit), due: Math.floor((total - Math.min(requested, limit))/100)*100, exceeded: requested > limit };
   }
-  function eligible() { return !hooks.editing() && ['Безналичный', 'Наличный', 'Перевод', 'Смешанная'].includes(hooks.payment()); }
+  function eligible() { return !hooks.editing() && PAYMENT_TYPES.includes(hooks.payment()); }
+  function canPrepare() { return !hooks.editing() && (!hooks.payment() || eligible()); }
   function isActive() { return !!(isPending() || state.card || $('loyalty-card').value.trim() || state.scanning || state.lookup); }
   function isPending() { return !!state.pending || state.storageBlocked; }
   function message(text) { $('loyalty-status').textContent = text; $('loyalty-status').hidden = !text; }
@@ -59,9 +61,16 @@
   }
   function update() {
     if (!hooks) return;
+    // A confirmed card narrows payment choices. Never discard a pending financial intent.
+    if (!isPending() && hooks.paymentOptions?.(state.card ? PAYMENT_TYPES : null)) {
+      invalidate(); hooks.refresh(); return;
+    }
     const total = Math.max(0, Math.round(hooks.total() * 100));
+    const maximum = state.card && canPrepare() ? quote(total,state.balance,0) : null;
+    // Keep the explicit "maximum" choice within the new cap after a price/promotion change.
+    // Manually entered redemption is never silently changed.
+    if (state.maximumSelected && maximum && !isPending()) $('loyalty-amount').value=String(maximum.limit/100);
     const amount = cents($('loyalty-amount').value || '0');
-    const maximum = state.card && eligible() ? quote(total,state.balance,0) : null;
     const local = maximum && amount!==null ? quote(total,state.balance,amount) : null;
     const input=quoteInput(), key=inputKey(input);
     const canQuote=state.card && eligible() && total>0 && local && !local.exceeded && !state.pending && !state.lookup;
@@ -77,14 +86,18 @@
     $('loyalty-balance-text').textContent=state.balance===null ? '' : 'Доступно целыми бонусами '+rub(Math.floor(state.balance/100)*100);
     $('loyalty-limit-text').textContent=maximum ? 'Можно списать до '+rub(maximum.limit)+' · не больше 30% после акции' : '';
     $('loyalty-max').disabled=!maximum || total===0 || !!state.pending;
-    $('loyalty-amount').disabled=!eligible() || !!state.pending;
-    $('loyalty-due').textContent=checked ? rub(checked.dueMinor) : '—';
+    $('loyalty-amount').disabled=!canPrepare() || !!state.pending;
+    // Cached HTML from checkout1 has no new hook/label; retain its safe payment guard.
+    const dueLabel=$('loyalty-due-label'), preview=dueLabel && !hooks.payment() && local && !local.exceeded;
+    if(dueLabel) dueLabel.textContent=preview ? 'Предварительно к оплате' : 'К оплате';
+    $('loyalty-due').textContent=checked ? rub(checked.dueMinor) : preview ? rub(local.due) : '—';
     $('loyalty-earn').hidden=!checked || checked.earnMinor===null;
     $('loyalty-earn').textContent=checked && checked.earnMinor!==null ? 'Начислим '+rub(checked.earnMinor)+' · '+checked.accrualPercent+'% от оплаты деньгами, округляем вверх' : '';
     $('loyalty-rounding').hidden=!checked || !checked.roundingMinor;
-    const note=!eligible() ? (hooks.editing() || hooks.payment() ? 'Для этой операции бонусы недоступны. Уберите карту.' : 'Выберите способ оплаты ниже.')
+    const note=!canPrepare() ? 'Для этой операции бонусы недоступны. Уберите карту.'
       : amount===null ? 'Введите целое число бонусных рублей, например 50.'
       : local?.exceeded ? 'Сумма выше лимита. Уменьшите её или нажмите «Максимум».'
+      : !hooks.payment() ? 'Уточним расчёт с учётом акции после выбора оплаты.'
       : state.quoteError && state.failedKey===key ? state.quoteError
       : checked && checked.totalMinor!==total ? 'Цена на сервере изменилась. Обновите кассу и проверьте состав.'
       : checked && !checked.settlementEnabled ? 'Проведение бонусных покупок ещё не включено.'
@@ -101,7 +114,7 @@
   }
   function clear() {
     if(isPending()) return false;
-    stopCamera(); invalidate(); state.card = ''; state.balance=null; state.lookup=false;
+    stopCamera(); invalidate(); state.card = ''; state.balance=null; state.lookup=false; state.maximumSelected=false;
     $('loyalty-card').value=''; $('loyalty-amount').value='0';
     $('loyalty-manual').hidden=true; $('loyalty-manual-toggle').setAttribute('aria-expanded','false');
     message('');
@@ -112,7 +125,7 @@
     const value = cardNumber(raw);
     if (!value) { message('Нужен цифровой номер карты. Проверьте цифры под штрихкодом.'); return false; }
     invalidate(); const revision=state.revision;
-    state.card=''; state.balance=null; state.lookup=true; $('loyalty-card').value=value; $('loyalty-amount').value='0';
+    state.card=''; state.balance=null; state.lookup=true; state.maximumSelected=false; $('loyalty-card').value=value; $('loyalty-amount').value='0';
     message('Проверяем карту…'); hooks.refresh();
     try {
       const result=await hooks.request('card',{cardCode:value});
@@ -304,7 +317,7 @@
     $('loyalty-card-confirm').addEventListener('click', () => acceptCard($('loyalty-card').value));
     $('loyalty-card').addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); acceptCard(event.target.value); } });
     $('loyalty-card').addEventListener('input', () => {
-      invalidate(); state.card = ''; state.balance=null; state.lookup=false; $('loyalty-amount').value = '0';
+      invalidate(); state.card = ''; state.balance=null; state.lookup=false; state.maximumSelected=false; $('loyalty-amount').value = '0';
       message(''); hooks.refresh();
     });
     $('loyalty-manual-toggle').addEventListener('click', () => {
@@ -312,12 +325,12 @@
       $('loyalty-manual').hidden=!open; $('loyalty-manual-toggle').setAttribute('aria-expanded',String(open));
       if(open) $('loyalty-card').focus();
     });
-    $('loyalty-amount').addEventListener('input', () => {invalidate(); hooks.refresh();});
+    $('loyalty-amount').addEventListener('input', () => {state.maximumSelected=false; invalidate(); hooks.refresh();});
     $('loyalty-retry').addEventListener('click', () => {invalidate(); hooks.refresh();});
     $('loyalty-max').addEventListener('click', () => {
       const result = quote(Math.round(hooks.total() * 100), state.balance, 0);
-      if (!eligible() || !state.card || !result) return;
-      $('loyalty-amount').value = String(result.limit / 100); invalidate(); hooks.refresh();
+      if (!canPrepare() || isPending() || !state.card || !result) return;
+      state.maximumSelected=true; $('loyalty-amount').value = String(result.limit / 100); invalidate(); hooks.refresh();
     });
     $('loyalty-check-status').addEventListener('click',checkStatus);
     $('loyalty-cancel-attempt').addEventListener('click',cancelAttempt);
