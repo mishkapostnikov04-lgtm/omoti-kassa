@@ -228,13 +228,13 @@ function renderFlavors(){
   var h=document.getElementById('flavor-edit-hint');
   if(h) h.remove();
   const available=activeFlavors();
-  document.getElementById('flavors-grid').innerHTML=available.concat(Object.keys(cart).filter(function(name){return cart[name]>0&&!available.includes(name);})).map(f=>{
+  document.getElementById('flavors-grid').innerHTML=available.concat(Object.keys(cart).filter(function(name){return cart[name]>0&&!available.includes(name);})).sort((a,b)=>Number(cashierKnownAssortment[a]?.itemType==='set')-Number(cashierKnownAssortment[b]?.itemType==='set')).map(f=>{
     const q=cart[f]||0;
     const hidden=!available.includes(f);
-    const label=flavorButtonLabel(f), info=cashierKnownAssortment[f], noStock=info?.itemType==='set'&&!editNum&&Number(info.availableQty||0)<=0;
+    const info=cashierKnownAssortment[f], label=info?.itemType==='set'?flavorButtonLabel(f).replace(/\s+на\s+(\d+)\s*шт\.?/iu,' · $1 шт.'):flavorButtonLabel(f), noStock=info?.itemType==='set'&&!editNum&&Number(info.availableQty||0)<=0;
     const title=hidden?'Вкус больше не доступен в кассе':label!==f?f:'';
     const accessibleName=label!==f?`aria-label="${escHtml(f)}${q?', в чеке '+q+' шт.':''}"`:'';
-    return `<button class="flavor-btn ${PREMIUM.has(f)||cashierKnownAssortment[f]?.isPremium?'gold':''} ${q>0?'active':''}" ${hidden||noStock?'disabled':''} ${title?`title="${escHtml(title)}"`:''} ${accessibleName} onclick="changeQty('${escJs(f)}',1)">${escHtml(label)}${info?.itemType==='set'?'<small style="display:block;margin-top:4px">'+info.mochiQty+' моти · '+money(getPrice(f,'Наличный'))+' · '+Number(info.availableQty||0)+' набор.</small>':''}${hidden?' · скрыт':''}${q?`<span class="qty-badge">${q}</span>`:''}</button>`;
+    return `<button class="flavor-btn ${PREMIUM.has(f)||cashierKnownAssortment[f]?.isPremium?'gold':''} ${q>0?'active':''}" ${hidden||noStock?'disabled':''} ${title?`title="${escHtml(title)}"`:''} ${accessibleName} onclick="changeQty('${escJs(f)}',1)">${escHtml(label)}${noStock?'<small style="display:block">Нет в наличии</small>':''}${hidden?' · скрыт':''}${q?`<span class="qty-badge">${q}</span>`:''}</button>`;
   }).join('');
 }
 function novosibirskNow(){const utc=new Date(); const nsk=new Date(utc.getTime()+7*60*60*1000); const iso=nsk.toISOString(); return {date:iso.slice(0,10),time:iso.slice(11,16),dateTime:iso.slice(0,19)+'+07:00',utc:utc.toISOString(),timezone:'Asia/Novosibirsk'};}
