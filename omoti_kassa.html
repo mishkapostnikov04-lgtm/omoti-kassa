@@ -121,7 +121,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 <div class="loyalty-heading"><div><div class="loyalty-card-title"><svg id="loyalty-card-check" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" hidden><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg><h2 id="loyalty-card-title">Карта клиента</h2></div><span id="loyalty-card-summary" role="status" aria-live="polite">Мои Места · необязательно</span></div>
 <button type="button" id="loyalty-scan" class="loyalty-scan"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 8V4h4m8 0h4v4M4 16v4h4m8 0h4v-4M8 8v8m4-8v8m4-8v8"/></svg>Сканировать</button></div>
 <div class="loyalty-links"><button type="button" id="loyalty-manual-toggle" class="loyalty-link" aria-expanded="false" aria-controls="loyalty-manual">Ввести номер</button><button type="button" id="loyalty-clear" class="loyalty-link" hidden>Убрать карту</button></div>
-<div id="loyalty-manual" hidden><label for="loyalty-card">Номер под штрихкодом</label><div class="loyalty-inline"><input id="loyalty-card" type="text" inputmode="numeric" autocomplete="off" maxlength="24" placeholder="Номер карты" aria-describedby="loyalty-status"><button type="button" id="loyalty-card-confirm">Найти</button></div></div>
+<div id="loyalty-manual" hidden><label for="loyalty-card">Полный номер карты</label><div class="loyalty-inline"><input id="loyalty-card" type="text" inputmode="numeric" autocomplete="off" maxlength="24" placeholder="Номер карты" aria-describedby="loyalty-status"><button type="button" id="loyalty-card-confirm">Найти</button></div></div>
 <p id="loyalty-status" class="loyalty-status" role="status" hidden></p>
 </section>
 <div class="sec-label" style="margin-top:16px">Вкус</div><div class="flavors-grid" id="flavors-grid"></div>
@@ -192,7 +192,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 <p id="loyalty-camera-note" role="status"></p>
 <button type="button" id="loyalty-camera-close" autofocus>Закрыть камеру</button>
 </dialog>
-<script src="./anikina-loyalty-v1.js?v=20260930-three-points"></script>
+<script src="./anikina-loyalty-v1.js?v=20261001-full-card-number"></script>
 <script>
 const CASHIER_SAVE_API = 'https://orders.omoti.ru/b2c-api/b2c/cashier/save_check';
 const CASHIER_CHECKS_API = 'https://orders.omoti.ru/b2c-api/b2c/cashier/novogodnyaya/checks';

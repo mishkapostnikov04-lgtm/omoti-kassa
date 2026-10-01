@@ -16,8 +16,9 @@
   const rub = cents => new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(cents / 100);
   function cardNumber(raw) {
     const text = String(raw).trim();
-    if (!/^\d(?:[\d ]*\d)?$/.test(text)) return null;
-    const digits = text.replace(/ /g, '');
+    // Keep the complete identifier; spaces on printed/copied cards are grouping only.
+    if (!/^\d(?:[\d \u00a0\u202f]*\d)?$/.test(text)) return null;
+    const digits = text.replace(/[ \u00a0\u202f]/g, '');
     return digits.length <= 16 && Number.isSafeInteger(Number(digits)) ? digits : null;
   }
   function cents(raw) {
@@ -133,7 +134,7 @@
     if (!value) { message('Нужен цифровой номер карты. Проверьте цифры под штрихкодом.'); return false; }
     invalidate(); const revision=state.revision;
     state.card=''; state.cardHolderName=''; state.balance=null; state.lookup=true; state.maximumSelected=false; $('loyalty-card').value=value; $('loyalty-amount').value='0';
-    message(fromScan ? 'Штрихкод считан. Проверяем карту…' : 'Проверяем карту…'); hooks.refresh();
+    message(fromScan ? 'Считан номер '+value+'. Проверяем карту…' : 'Проверяем карту…'); hooks.refresh();
     try {
       const result=await hooks.request('card',{cardCode:value});
       if(revision!==state.revision) return false;
@@ -142,7 +143,14 @@
       $('loyalty-manual').hidden=true; $('loyalty-manual-toggle').setAttribute('aria-expanded','false');
       message(''); return true;
     } catch(error) {
-      if(revision===state.revision) message(error.message || 'Не удалось проверить карту. Повторите или уберите карту.');
+      if(revision===state.revision) {
+        // Keep the full scanned value visible for correction, without logging or storing it.
+        $('loyalty-manual').hidden=false;
+        $('loyalty-manual-toggle').setAttribute('aria-expanded','true');
+        message(error.code==='LOYALTY_CARD_NOT_FOUND'
+          ? '«Мои Места» не нашли карту '+value+'. Сверьте полный номер с картой. Если он совпадает, нужна проверка карты в «Моих Местах».'
+          : error.message || 'Не удалось проверить карту. Повторите или уберите карту.');
+      }
       return false;
     } finally { if(revision===state.revision) {state.lookup=false; hooks.refresh();} }
   }
