@@ -458,6 +458,19 @@
     }
     finally {state.sending=false; $('loyalty-check-status').disabled=false; hooks.refresh();}
   }
+  async function acknowledgeSavedStatus() {
+    if(!state.pending || state.sending || state.storageBlocked) return;
+    const identity=state.pending;
+    state.sending=true; $('loyalty-check-status').disabled=true;
+    try {
+      const result=await hooks.request('status',{...identity,readOnly:true});
+      if(state.pending!==identity || result.readOnly!==true) return;
+      if(result.state==='completed') finish(result);
+      else if(result.state==='cancelled') {forgetPending(); clear(); hooks.discardIdentity(identity); hooks.refresh();}
+      // Unknown/prepared/confirmed/not_found remain blocked and user-controlled.
+    } catch(_) { /* Keep the identity and explicit status button on any failure. */ }
+    finally {state.sending=false; $('loyalty-check-status').disabled=state.storageBlocked; hooks.refresh();}
+  }
   async function checkStatus() {
     if(!state.pending || state.sending) return;
     state.sending=true; $('loyalty-check-status').disabled=true;
@@ -670,7 +683,11 @@
     });
     $('loyalty-check-status').addEventListener('click',checkStatus);
     $('loyalty-cancel-attempt').addEventListener('click',cancelAttempt);
-    document.addEventListener('visibilitychange', () => { if (document.hidden && state.scanning) closeCamera(); });
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && state.scanning) closeCamera();
+      if (!document.hidden) acknowledgeSavedStatus();
+    });
+    window.addEventListener('online',acknowledgeSavedStatus);
     window.addEventListener('pagehide', stopCamera);
     try {
       const saved=JSON.parse(localStorage.getItem(PENDING_KEY) || 'null');
@@ -687,6 +704,7 @@
       hooks.lock(true);
     }
     update();
+    if(state.pending) acknowledgeSavedStatus();
   }
   window.AnikinaLoyalty = Object.freeze({ init, update, clear, stopCamera, isActive, isPending, submit, cardNumber, cents, quote, decodeFrame, loadDecoder });
 })();
