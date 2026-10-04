@@ -1,0 +1,50 @@
+/* Anikina only. Does not alter cashier/payment/loyalty calculations. */
+.loyalty .registration-qr-links { justify-content: flex-start; flex-wrap: wrap; gap: 0 18px; }
+#registration-qr-open { display: inline-flex; align-items: center; gap: 6px; }
+.registration-qr {
+  width: min(480px, calc(100vw - 32px));
+  height: min(660px, calc(100dvh - 32px));
+  max-width: none;
+  max-height: none;
+  margin: auto;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  overflow: auto;
+}
+.registration-qr[open] { display: flex; flex-direction: column; gap: 20px; }
+.registration-qr [hidden] { display: none !important; }
+.registration-qr::backdrop { background: rgba(0, 0, 0, .55); }
+.registration-qr-heading { display: flex; justify-content: space-between; gap: 12px; }
+.registration-qr h2 { font-size: 20px; font-weight: 700; line-height: 1.25; }
+.registration-qr-heading p { margin-top: 6px; font-size: 14px; line-height: 1.4; color: #625e56; }
+.registration-qr button { font: inherit; cursor: pointer; min-height: 44px; color: var(--text); }
+.registration-qr button:focus-visible { outline: 3px solid #986800; outline-offset: 3px; }
+.registration-qr-close { display: grid; place-items: center; width: 44px; flex: 0 0 44px; align-self: flex-start; background: transparent; border: 1px solid var(--border); border-radius: 10px; }
+.registration-qr-switch { display: flex; gap: 8px; }
+.registration-qr-switch button { flex: 1; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); font-size: 15px; font-weight: 600; }
+.registration-qr-switch button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.registration-qr-content { flex: 1 0 auto; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: min-content; }
+.registration-qr-choice { max-width: 270px; text-align: center; font-size: 16px; line-height: 1.5; color: #625e56; }
+.registration-qr-preview { width: 100%; text-align: center; }
+.registration-qr-preview img { display: block; width: min(100%, 360px, calc(100dvh - 280px)); min-width: 160px; height: auto; aspect-ratio: 1; margin: 0 auto; background: #fff; }
+.registration-qr-preview p { margin-top: 12px; color: #625e56; font-size: 15px; line-height: 1.4; }
+.registration-qr-status { color: #625e56; font-size: 14px; line-height: 1.4; text-align: center; }
+.registration-qr-status:empty { display: none; }
+.registration-qr-return { flex-shrink: 0; width: 100%; padding: 14px 16px; border: 1px solid var(--accent); border-radius: 12px; background: var(--accent); color: var(--accent-fg) !important; font-weight: 600 !important; font-size: 15px !important; }
+@media (max-width: 520px) {
+  .registration-qr { width: 100%; height: 100dvh; margin: 0; border: 0; border-radius: 0; padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom)); }
+}
+@media (min-width: 521px) and (min-height: 481px) {
+  .registration-qr-preview img { width: min(100%, 340px, calc(min(660px, calc(100dvh - 32px)) - 310px)); }
+}
+@media (max-height: 480px) and (min-width: 521px) {
+  .registration-qr { height: calc(100dvh - 16px); padding: 16px; }
+  .registration-qr[open] { display: grid; grid-template-columns: minmax(0, 1fr) minmax(160px, 1fr); grid-template-rows: auto auto 1fr; gap: 12px 20px; }
+  .registration-qr-heading, .registration-qr-switch, .registration-qr-return { grid-column: 1; }
+  .registration-qr-content { grid-column: 2; grid-row: 1 / 4; }
+  .registration-qr-return { align-self: end; }
+  .registration-qr-preview img { width: min(100%, calc(100dvh - 100px)); }
+}
