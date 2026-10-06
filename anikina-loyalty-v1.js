@@ -257,7 +257,7 @@
   const PAYMENT_TYPES = ['Безналичный', 'Наличный', 'Перевод', 'Смешанная'];
   let PENDING_KEY = 'omoti_anikina_loyalty_pending_v1';
   const state = { card: '', cardHolderName: '', balance: null, scanning: false, generation: 0, stream: null, timer: null,
-    revision: 0, lookup: false, calculation: null, quoteKey: '', waitingKey: '', failedKey: '',
+    revision: 0, lookup: false, lookupFailed: false, calculation: null, quoteKey: '', waitingKey: '', failedKey: '',
     quoteTimer: null, quoteError: '', pending: null, sending: false, storageBlocked: false, maximumSelected: false, priceBasis:null, registrationUnconfirmed:false };
   let decoderPromise, reader, fastReader, rowReader, decodeCanvas, lastFocus, hooks;
   const $ = id => document.getElementById(id);
@@ -343,7 +343,7 @@
     $('loyalty-clear').hidden=!isActive() || !!state.pending;
     $('loyalty-scan').disabled=state.lookup || !!state.pending || hooks.busy();
     $('loyalty-card-confirm').disabled=state.lookup || !!state.pending;
-    $('loyalty-card-confirm').textContent=state.lookup ? 'Проверяем…' : 'Найти';
+    $('loyalty-card-confirm').textContent=state.lookup ? 'Проверяем…' : state.lookupFailed ? 'Повторить поиск' : 'Найти';
     $('loyalty-payment').hidden=!state.card || total===0;
     $('cart-total-label').textContent=state.card ? 'Сумма чека' : 'К оплате';
     const limitValue=$('loyalty-limit-value');
@@ -384,7 +384,7 @@
   }
   function clear() {
     if(isPending()) return false;
-    stopCamera(); invalidate(); state.card = ''; state.cardHolderName=''; state.balance=null; state.lookup=false; state.maximumSelected=false; state.priceBasis=null; state.registrationUnconfirmed=false;
+    stopCamera(); invalidate(); state.card = ''; state.cardHolderName=''; state.balance=null; state.lookup=false; state.lookupFailed=false; state.maximumSelected=false; state.priceBasis=null; state.registrationUnconfirmed=false;
     $('loyalty-card').value=''; $('loyalty-amount').value='0';
     $('loyalty-manual').hidden=true; $('loyalty-manual-toggle').setAttribute('aria-expanded','false');
     message('');
@@ -395,7 +395,7 @@
     const value = cardNumber(raw);
     if (!value) { message('Нужен цифровой номер карты. Проверьте цифры под штрихкодом.'); return false; }
     invalidate(); const revision=state.revision;
-    state.card=''; state.cardHolderName=''; state.balance=null; state.lookup=true; state.maximumSelected=false; state.priceBasis=null; state.registrationUnconfirmed=false; $('loyalty-card').value=value; $('loyalty-amount').value='0';
+    state.card=''; state.cardHolderName=''; state.balance=null; state.lookup=true; state.lookupFailed=false; state.maximumSelected=false; state.priceBasis=null; state.registrationUnconfirmed=false; $('loyalty-card').value=value; $('loyalty-amount').value='0';
     message(fromScan ? 'Считан номер '+value+'. Проверяем карту…' : 'Проверяем карту…'); hooks.refresh();
     try {
       const result=await hooks.request('card',{cardCode:value});
@@ -407,6 +407,7 @@
       message(''); return true;
     } catch(error) {
       if(revision===state.revision) {
+        state.lookupFailed=true;
         // Keep the full scanned value visible for correction, without logging or storing it.
         $('loyalty-manual').hidden=false;
         $('loyalty-manual-toggle').setAttribute('aria-expanded','true');
@@ -665,7 +666,7 @@
     $('loyalty-card-confirm').addEventListener('click', () => acceptCard($('loyalty-card').value));
     $('loyalty-card').addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); acceptCard(event.target.value); } });
     $('loyalty-card').addEventListener('input', () => {
-      invalidate(); state.card = ''; state.cardHolderName=''; state.balance=null; state.lookup=false; state.maximumSelected=false; state.priceBasis=null; state.registrationUnconfirmed=false; $('loyalty-amount').value = '0';
+      invalidate(); state.card = ''; state.cardHolderName=''; state.balance=null; state.lookup=false; state.lookupFailed=false; state.maximumSelected=false; state.priceBasis=null; state.registrationUnconfirmed=false; $('loyalty-amount').value = '0';
       message(''); hooks.refresh();
     });
     $('loyalty-manual-toggle').addEventListener('click', () => {

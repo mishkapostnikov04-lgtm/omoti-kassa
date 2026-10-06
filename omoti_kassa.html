@@ -220,7 +220,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
   <button type="button" id="registration-qr-return" class="registration-qr-return">Вернуться к продаже</button>
 </dialog>
 <script src="./cashier-registration-qr-v1.js?v=20261004"></script>
-<script src="./anikina-loyalty-v1.js?v=20261001-passive-status"></script>
+<script src="./cashier-loyalty-connection-v1.js?v=20261006"></script>
+<script src="./anikina-loyalty-v1.js?v=20261006-connection"></script>
 <script>
 /* Preserve ordinary sales if the separately cached bonus module fails to load.
  * Missing bonus code must never route a bonus correction into the offline queue. */
@@ -553,7 +554,8 @@ let cashierAuthPromise=null;
 let cashierAuthRetryTimer=null;
 function cashierAuthMessage(message){let el=document.getElementById('cashier-auth-message'); if(!el){el=document.createElement('div');el.id='cashier-auth-message';el.style.cssText='position:fixed;z-index:99999;top:0;left:0;right:0;padding:12px 16px;background:#fff3d5;color:#332400;text-align:center;font:600 15px/1.4 Arial,sans-serif;box-shadow:0 2px 8px #0003';document.body.appendChild(el);} el.textContent=message||'';el.style.display=message?'block':'none';}
 function cashierAuthRetry(){if(cashierAuthRetryTimer)return;cashierAuthRetryTimer=setTimeout(function(){cashierAuthRetryTimer=null;cashierAuthPromise=null;cashierToken().then(function(){retryOperationQueue(true);refreshData();}).catch(function(){});},15000);}
-async function cashierAuthJson(url,opts){const controller=new AbortController(),timer=setTimeout(function(){controller.abort();},8000);try{const res=await fetch(url,Object.assign({},opts,{signal:controller.signal}));return {res:res,data:await res.json()};}finally{clearTimeout(timer);}}
+async function cashierAuthJson(url,opts){return CashierConnection.authJson(url,opts);}
+function cashierInvalidateAccess(){cashierAuthPromise=null;cashierAuthMessage('Доступ кассы не подтверждён. Ранее сохранённые чеки останутся в очереди.');cashierAuthRetry();}
 async function cashierToken(){if(cashierAuthPromise)return cashierAuthPromise;cashierAuthPromise=(async function(){let token=localStorage.getItem(CASHIER_DEVICE_KEY);if(!token){const bytes=new Uint8Array(32);crypto.getRandomValues(bytes);token=btoa(String.fromCharCode.apply(null,bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');localStorage.setItem(CASHIER_DEVICE_KEY,token);}let {res,data}=await cashierAuthJson(CASHIER_ACCESS_API+'/status?point='+CASHIER_ACCESS_POINT,{headers:{Authorization:'Bearer '+token},cache:'no-store'});if(res.status===401){({res,data}=await cashierAuthJson(CASHIER_ACCESS_API+'/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({point:CASHIER_ACCESS_POINT,token:token,label:'Касса '+CASHIER_POINT})}));}if(!res.ok||!data.ok)throw new Error(data.error||'Не удалось проверить доступ кассы');if(data.device.status!=='approved'&&!(data.device.status==='pending'&&Date.parse(data.serverNow)<Date.parse(data.automaticWindowStartsAt))){cashierAuthMessage('Касса ждёт разрешения владельца. Новые продажи пока не проводите.');cashierAuthRetry();throw new Error('Касса ожидает разрешения владельца');}cashierAuthMessage('');return token;})();try{return await cashierAuthPromise;}catch(e){cashierAuthPromise=null;throw e;}}
 async function fetchWithTimeout(url,opts,ms){
   const token=await cashierToken();
@@ -599,13 +601,7 @@ if(window.AnikinaLoyalty){
     ready:function(total){return !!seller&&!!payType&&Object.values(cart).some(q=>q>0)&&
       !Object.keys(cart).some(n=>cart[n]>0&&!activeFlavors().includes(n))&&
       (payType!=='Смешанная'||mixedPaymentIsValid(total));},
-    request:async function(action,payload){
-      const response=await fetchWithTimeout('https://orders.omoti.ru/b2c-api/b2c/cashier/novogodnyaya/loyalty/'+action,
-        {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)},30000);
-      let json;try{json=await response.json();}catch(_){throw Error('Сервер не подтвердил ответ. Проверьте статус покупки.');}
-      if(!response.ok||!json.ok){const error=Error(json.error||'Запрос не завершён. Проверьте статус.');error.code=json.code;throw error;}
-      return json;
-    },
+    request:async function(action,payload){return CashierConnection.loyalty('https://orders.omoti.ru/b2c-api/b2c/cashier/novogodnyaya/loyalty/',action,payload,cashierToken);},
     buildPayload:function(){return buildCloseCheckDraft(Object.entries(cart).filter(x=>x[1]>0),false).payload;},
     discardIdentity:function(identity){cashierLastCheckNum=Math.max(cashierLastCheckNum,Number(identity?.num||pendingCheckDraft?.num||0));pendingCheckDraft=null;clearPendingCloseDraft();updateCart();},
     lock:function(locked){
