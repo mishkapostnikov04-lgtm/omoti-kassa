@@ -53,8 +53,9 @@
     const state = check.loyaltyCorrection?.state || check.loyaltyOperationState || saved.state;
     const pending = Boolean(check.loyaltyPending || pendingStates.has(state) || window.CashierLoyaltyCorrections?.receiptPending(check));
     const suffix = String(saved.cardSuffix || '').replace(/\D/g, '').slice(-4);
+    const fullCode = /^\d{1,16}$/.test(String(saved.cardCode || '')) ? String(saved.cardCode) : '';
     const missing = count(saved.redeemMinor) === null || count(saved.earnMinor) === null;
-    return '<div class="ji-loyalty"><div class="ji-loyalty-title">Бонусы' + (suffix ? ' · карта •••• ' + suffix : '') + '</div>'
+    return '<div class="ji-loyalty"><div class="ji-loyalty-title">Бонусы' + (fullCode ? ' · карта ' + fullCode : suffix ? ' · карта •••• ' + suffix : '') + '</div>'
       + '<dl class="ji-bonus-values"><div><dt>Списано</dt><dd>' + money(saved.redeemMinor) + '</dd></div><div><dt>Начислено</dt><dd>' + money(saved.earnMinor) + '</dd></div></dl>'
       + (Number(saved.retainedEarnMinor || check.loyaltyCorrection?.forgivenMinor || saved.forgivenMinor || 0)>0 ? '<p class="ji-bonus-note">После правок у клиента оставлено '+money(saved.retainedEarnMinor || check.loyaltyCorrection?.forgivenMinor || saved.forgivenMinor)+' уже потраченных бонусов.</p>' : '')
       + (pending ? '<p class="ji-bonus-note" role="status">Ожидает сверки. Показаны последние сохранённые суммы.</p>'
@@ -79,7 +80,11 @@
       + (activity && Number(activity.changesCount)>0 ? '<p class="ji-bonus-note">Правок за период: '+Number(activity.changesCount)+' · отменено чеков: '+Number(activity.cancelledCount || 0)+'.<br>Изменение списаний: '+signedMoney(activity.spentAdjustmentMinor)+' · начислений: '+signedMoney(activity.earnedAdjustmentMinor)+'. Эти изменения показаны отдельно, не прибавлены к суммам чеков.'+(Number(activity.forgivenMinor)>0?'<br>У клиентов оставлено '+money(activity.forgivenMinor)+' уже потраченных бонусов.':'')+'</p>' : '');
   }
 
-  window.CashierReceiptDetails = Object.freeze({ quantity, quantityLabel, itemLabel, receiptLoyaltyHtml, renderLoyaltySummary });
+  function receiptLabel(check) {
+    const number = String(check.receiptNumber || '');
+    return /^[1-9]\d*$/.test(number) ? '№' + number : check.pending ? 'Новый чек' : 'Чек';
+  }
+  window.CashierReceiptDetails = Object.freeze({ quantity, quantityLabel, itemLabel, receiptLoyaltyHtml, renderLoyaltySummary, receiptLabel });
 })();
 
 /* Corrections of staff input mistakes. Separate durable identity; never the
@@ -139,7 +144,7 @@
   function renderQuote() {
     const original=state.editing;
     if(!original) return;
-    $('loyalty-correction-title').textContent='Исправление чека №'+original.num;
+    $('loyalty-correction-title').textContent='Исправление '+window.CashierReceiptDetails.receiptLabel(original);
     const suffix=String(original.loyalty.cardSuffix || '').replace(/\D/g,'').slice(-4);
     $('loyalty-correction-card').textContent=(suffix ? 'Карта •••• '+suffix+' останется прежней.' : 'Карта клиента останется прежней.')+' Если ошиблись в номере карты, удалите этот чек и оформите новый с правильной картой.';
     $('loyalty-correction-values').innerHTML=state.quote
@@ -180,29 +185,31 @@
   }
   function complete(result) {
     const identity=state.pending;
+    if(identity?.kind==='delete' && result.result?.deleted!==true) throw Error('Сервер не подтвердил удаление. Проверьте статус этой правки.');
     forget(); state.editing=null; invalidate(); $('loyalty-correction-preview').hidden=true;
     hooks.completed(result,identity); hooks.refresh();
   }
   async function reconcileAfterError(error) {
     try {
       const result=await hooks.request('status',state.pending);
-      if(result.state==='completed') { complete(result); return; }
+      if(result.state==='completed') { complete(result); return {state:'completed'}; }
       if(['not_found','cancelled','failed'].includes(result.state)) {
-        forget(); if(await staleRevision(error)) return;
+        forget(); if(await staleRevision(error)) return {state:'rejected',message:error.message};
         state.error=error.message || 'Сервер отклонил правку. Проверьте чек и повторите.';
-        hooks.notify(state.error); hooks.refresh(); return;
+        hooks.notify(state.error); hooks.refresh(); return {state:'rejected',message:state.error};
       }
     } catch (_) { /* The identity remains durable on response loss. */ }
     pendingNote((error.message ? error.message+' ' : '')+'Не создавайте второй чек. Проверьте статус этой правки.');
+    return {state:'pending',message:'Результат пока не подтверждён. Проверьте статус этой правки.'};
   }
   async function send(kind,check,reason) {
-    if(state.busy || isPending() || !check?.loyalty || !canChange(check)) return;
+    if(state.busy || isPending() || !check?.loyalty || !canChange(check)) return {state:'blocked',message:'Сначала завершите сверку текущей бонусной операции.'};
     state.busy=true; hooks.refresh();
     try {
       const payload=input(kind,check); if(kind==='delete') payload.reason=String(reason || '').trim();
       const quote=await hooks.request('quote',payload);
       if(!quoteValid(quote)) throw Error('Сервер не подтвердил расчёт. Чек не изменён.');
-      if(kind==='edit' && !window.confirm('Сохранить исправление чека №'+check.num+'?\nК оплате: '+money(Math.round(check.sum*100))+' → '+money(quote.dueMinor)+'\nБонусами: '+money(quote.redeemMinor)+' · начисление: '+money(quote.earnMinor)+(quote.forgivenMinor>0?'\nУ клиента останется '+money(quote.forgivenMinor)+' уже потраченных бонусов.':'')+'\nСостав, остатки и отчёты обновятся после подтверждения бонусов.')) return;
+      if(kind==='edit' && !window.confirm('Сохранить исправление '+window.CashierReceiptDetails.receiptLabel(check)+'?\nК оплате: '+money(Math.round(check.sum*100))+' → '+money(quote.dueMinor)+'\nБонусами: '+money(quote.redeemMinor)+' · начисление: '+money(quote.earnMinor)+(quote.forgivenMinor>0?'\nУ клиента останется '+money(quote.forgivenMinor)+' уже потраченных бонусов.':'')+'\nСостав, остатки и отчёты обновятся после подтверждения бонусов.')) return {state:'cancelled'};
       const changeKey=crypto.randomUUID();
       const identity={saleKey:payload.saleKey,num:payload.num,changeKey,kind,correction:true};
       remember(identity); invalidate();
@@ -210,10 +217,10 @@
       pendingNote(kind==='delete' ? 'Отменяем ошибочный чек и сверяем бонусы. Не создавайте повторное удаление.' : 'Исправляем чек и сверяем бонусы. Не создавайте второй чек.');
       try {
         const result=await hooks.request('checkout',request);
-        if(result.state==='completed') complete(result);
-        else pendingNote('Правка ещё не подтверждена. Проверьте её статус. Старый чек пока сохранён.');
-      } catch(error) { await reconcileAfterError(error); }
-    } catch(error) { if(!(await staleRevision(error))) { state.error=error.message || 'Не удалось проверить правку. Чек не изменён.'; hooks.notify(state.error); } }
+        if(result.state==='completed') { complete(result); return {state:'completed'}; }
+        else { pendingNote('Правка ещё не подтверждена. Проверьте её статус. Старый чек пока сохранён.'); return {state:'pending'}; }
+      } catch(error) { return await reconcileAfterError(error); }
+    } catch(error) { if(!(await staleRevision(error))) { state.error=error.message || 'Не удалось проверить правку. Чек не изменён.'; hooks.notify(state.error); } return {state:'rejected',message:error.message || state.error}; }
     finally { state.busy=false; hooks.refresh(); }
   }
   async function submit() { if(state.editing) return send('edit',state.editing); }
