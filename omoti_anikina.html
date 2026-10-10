@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="omoti-ui-build" content="20261010-anikina-flow">
 <title>OMOTI · Касса</title>
 <link rel="apple-touch-icon" sizes="180x180" href="Dark.png">
 <link rel="icon" type="image/png" href="Dark.png">
@@ -72,6 +73,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 .loyalty-correction{padding:14px 0;margin:0 0 14px;border-block:1px solid var(--border)}.loyalty-correction h2{font-size:16px;font-weight:600}.loyalty-correction p{font-size:13px;line-height:1.45;margin-top:5px}.loyalty-correction label{display:block;margin-top:12px;font-size:14px}.loyalty-correction label span{color:#666;font-size:13px}.loyalty-correction input{width:100%;font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;margin-top:6px}.loyalty-correction-values{display:grid;gap:7px;margin-top:12px;font-variant-numeric:tabular-nums}.loyalty-correction-values>div{display:flex;justify-content:space-between;gap:12px;font-size:14px}.loyalty-correction-values strong{white-space:nowrap;font-weight:600}.loyalty-correction-actions{display:flex;gap:14px;margin-top:12px;flex-wrap:wrap}.loyalty-correction-actions button{font:inherit;font-size:14px;background:none;border:none;padding:5px 0;color:#1a5f9e;cursor:pointer}.loyalty-correction-actions button:focus-visible,#loyalty-correction-status:focus-visible{outline:2px solid #1a5f9e;outline-offset:4px}.ji-actions button:disabled{color:#666;cursor:not-allowed}.ji-foot{flex-wrap:wrap}.ji-who{flex-wrap:wrap;min-width:0}.ji-meta{flex-shrink:0}
 @media (max-width:380px){.tab-btn{font-size:12px;padding:8px 6px}}
 .loyalty.is-unconfirmed{border-color:#d5b774;background:#fff8e9}.loyalty.is-unconfirmed .loyalty-card-title,.loyalty.is-unconfirmed #loyalty-card-summary{color:#705014}.loyalty.is-unconfirmed .loyalty-card-title{font-size:14px;line-height:1.45}.loyalty.is-unconfirmed #loyalty-card-summary{font-size:14px}.loyalty-correction[hidden],.loyalty-correction [hidden]{display:none!important}
+#loyalty-card-balance{font-size:16px;line-height:1.5;color:#514c44}#loyalty-load-note,#seller-context{color:#514c44}
 </style>
 </head>
 <body>
@@ -84,19 +86,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 
 <div class="screen active" id="screen-kassa">
 <div class="sec-label">Имя</div><div class="seller-row" id="seller-row"></div>
+<div class="sec-label" style="margin-top:16px">Вкус</div><div class="flavors-grid" id="flavors-grid"></div>
+<div class="sec-label" style="margin-top:16px">Чек</div>
+<div class="cart-box"><div class="cart-empty" id="cart-empty">Выбери вкусы</div><div id="cart-items"></div><div class="promo-summary" id="promotion-summary"></div><div class="cart-total" id="cart-total" style="display:none"><span><span id="cart-total-label">К оплате</span> <span id="total-qty" style="font-weight:700;font-size:15px;margin-left:6px"></span></span><span id="total-sum"></span></div>
+</div>
+<section class="loyalty" id="loyalty-load-state" aria-labelledby="loyalty-load-title">
+<h2 id="loyalty-load-title">Карта клиента</h2><p id="loyalty-load-note" class="loyalty-hint" role="status">Загружаем бонусный модуль…</p><button type="button" id="loyalty-load-retry" onclick="retryAnikinaLoyalty()" disabled>Повторить загрузку</button>
+</section>
 <section class="loyalty" id="loyalty-panel" aria-label="Карта клиента" hidden>
 <div class="loyalty-heading"><div><div class="loyalty-card-title"><svg id="loyalty-card-check" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" hidden><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg><h2 id="loyalty-card-title">Карта клиента</h2></div><span id="loyalty-card-summary" role="status" aria-live="polite">Мои Места · необязательно</span></div>
 <button type="button" id="loyalty-scan" class="loyalty-scan"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 8V4h4m8 0h4v4M4 16v4h4m8 0h4v-4M8 8v8m4-8v8m4-8v8"/></svg>Сканировать</button></div>
+<p id="loyalty-card-balance" class="loyalty-hint" hidden>На карте <strong id="loyalty-balance-text">—</strong></p>
 <div class="loyalty-links registration-qr-links"><button type="button" id="loyalty-manual-toggle" class="loyalty-link" aria-expanded="false" aria-controls="loyalty-manual">Ввести номер</button><button type="button" id="registration-qr-open" class="loyalty-link" aria-haspopup="dialog" aria-controls="registration-qr-dialog" hidden><svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M2 2h6v6H2zM12 2h6v6h-6zM2 12h6v6H2zM12 12h2v2h-2zM16 12h2v6h-6v-2" stroke="currentColor" stroke-width="1.5"/></svg>Показать QR-код</button><button type="button" id="loyalty-clear" class="loyalty-link" hidden>Убрать карту</button></div>
 <div id="loyalty-manual" hidden><label for="loyalty-card">Полный номер карты</label><div class="loyalty-inline"><input id="loyalty-card" type="text" inputmode="numeric" autocomplete="off" maxlength="24" placeholder="Номер карты" aria-describedby="loyalty-status"><button type="button" id="loyalty-card-confirm">Найти</button></div></div>
 <p id="loyalty-status" class="loyalty-status" role="status" hidden></p>
 </section>
-<div class="sec-label" style="margin-top:16px">Вкус</div><div class="flavors-grid" id="flavors-grid"></div>
-<div class="sec-label" style="margin-top:16px">Чек</div>
-<div class="cart-box"><div class="cart-empty" id="cart-empty">Выбери вкусы</div><div id="cart-items"></div><div class="promo-summary" id="promotion-summary"></div><div class="cart-total" id="cart-total" style="display:none"><span><span id="cart-total-label">К оплате</span> <span id="total-qty" style="font-weight:700;font-size:15px;margin-left:6px"></span></span><span id="total-sum"></span></div>
 <section class="loyalty-payment" id="loyalty-payment" aria-label="Бонусы и оплата" hidden>
 <div class="loyalty-payment-heading"><h2>Бонусы</h2></div>
-<div class="loyalty-balances"><div><span>На карте</span><strong id="loyalty-balance-text">—</strong></div><div class="loyalty-limit-stat"><span>Можно списать</span><strong id="loyalty-limit-value">—</strong></div></div>
+<div class="loyalty-balances"><div class="loyalty-limit-stat"><span>Можно списать</span><strong id="loyalty-limit-value">—</strong></div></div>
 <label for="loyalty-amount">Списать бонусами, ₽</label><div class="loyalty-inline"><input id="loyalty-amount" type="text" inputmode="numeric" autocomplete="off" value="0" aria-describedby="loyalty-limit-text loyalty-preview-note"><button type="button" id="loyalty-max">Максимум</button></div>
 <p id="loyalty-limit-text" class="loyalty-hint">Не больше 30% суммы после акции.</p>
 <p id="loyalty-preview-note" role="status" hidden></p><button type="button" id="loyalty-retry" class="loyalty-link" hidden>Повторить расчёт</button>
@@ -104,7 +111,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 <p id="loyalty-rounding" class="loyalty-hint" hidden>Сумма округлена вниз в пользу клиента.</p>
 <p id="loyalty-earn" class="loyalty-hint" hidden></p>
 <p id="loyalty-personal-discount" class="loyalty-hint" hidden></p>
-</section></div>
+</section>
 <section id="loyalty-pending" class="loyalty-pending" aria-live="polite" hidden><p id="loyalty-pending-message"></p><button type="button" id="loyalty-check-status">Проверить статус</button><button type="button" id="loyalty-cancel-attempt" hidden>Вернуться к чеку</button></section>
 <section id="loyalty-correction-preview" class="loyalty-correction" aria-labelledby="loyalty-correction-title" hidden><h2 id="loyalty-correction-title">Исправление чека</h2><p id="loyalty-correction-card"></p><div id="loyalty-correction-values" class="loyalty-correction-values"></div><label for="loyalty-correction-reason">Что исправляем <span>(необязательно)</span></label><input id="loyalty-correction-reason" type="text" maxlength="300" autocomplete="off" placeholder="Например: забыли добавить вкус"><p id="loyalty-correction-note" class="ji-bonus-note" role="status" hidden></p><div class="loyalty-correction-actions"><button type="button" id="loyalty-correction-retry">Повторить расчёт</button><button type="button" id="loyalty-correction-cancel">Отмена правки</button></div></section>
 <section id="loyalty-correction-pending" class="loyalty-pending" aria-live="polite" hidden><p id="loyalty-correction-pending-note"></p><button type="button" id="loyalty-correction-status">Проверить статус правки</button></section>
@@ -113,7 +120,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 <div class="mixed-payment" id="mixed-payment" aria-hidden="true"><div class="mixed-row"><label class="mixed-label" for="mixed-cash-input">Наличными получили</label><input class="mixed-input" id="mixed-cash-input" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0 ₽" oninput="setMixedAmount('cash',this.value)"></div><div class="mixed-mode" aria-label="Что произошло с переводом"><button type="button" class="mixed-mode-btn active" id="mixed-mode-received" onclick="setMixedTransferMode('received')">Переводом получили</button><button type="button" class="mixed-mode-btn" id="mixed-mode-refund" onclick="setMixedTransferMode('refund')">Вернули сдачу</button></div><div class="mixed-row"><label class="mixed-label" id="mixed-transfer-label" for="mixed-transfer-input">Переводом получили</label><input class="mixed-input" id="mixed-transfer-input" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0 ₽" oninput="setMixedAmount('transfer',this.value)"></div><div class="mixed-equation" id="mixed-equation" aria-live="polite">Укажите обе суммы</div></div>
 <div class="sec-label" style="margin-top:12px">Комментарий <span style="font-weight:400;color:var(--muted)">(необязательно)</span></div>
 <textarea class="comment-input" id="comment-input" rows="2" placeholder="Например: пожелание клиента"></textarea>
-<button class="close-btn" id="close-btn" onclick="closeCheck()" disabled style="margin-top:14px">Закрыть чек</button>
+<p id="seller-context" class="loyalty-hint" role="status" aria-live="polite" style="margin-top:14px"></p>
+<button class="close-btn" id="close-btn" onclick="closeCheck()" disabled style="margin-top:8px">Закрыть чек</button>
 </div>
 
 <div class="screen" id="screen-journal"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span class="sec-label" style="margin:0">История чеков</span><button id="journal-refresh" onclick="refreshData()" style="font-size:12px;color:#1a73e8;background:none;border:none;cursor:pointer;font-family:inherit;padding:4px 0">↻ Обновить</button></div><div class="spinner" id="journal-spinner">Загружаю...</div><div id="journal-list"></div></div>
@@ -210,6 +218,7 @@ const CHECKS_CACHE_KEY = 'omoti_checks_cache_server_anikina_v1';
 const CHECKS_CACHE_TS_KEY = 'omoti_checks_cache_server_anikina_ts_v1';
 const SALE_KEY_PREFIX = 'anikina-sale-v1';
 const SELLERS_KEY = 'omoti_sellers_anikina';
+const LAST_SELLER_KEY = 'omoti_last_seller_anikina_v1';
 
 const FLAVORS = ['Арбуз - Дыня','Бабл Гам','Базилик клубника лайм','Банан- Нутелла','Вишня-Тонка','Дубайский шоколад','Киви-Алоэ','Клубника','Кокос-Маракуйя','Кокосовый пломбир','Кофе-Карамель','Криспи','Малина-Ваниль','Матча-Манго','Мохито','Печенье с топлёным молоком','Сливочный лимон','Смородина','Сникерс','Трюфель','Твикс','Улун персик','Шоколад'].sort((a,b)=>a.localeCompare(b,'ru')).concat(['Мункейки']);
 const UI_FLAVOR_BY_CATALOG_ID = Object.freeze({cat_arbuz_dynya:'Арбуз - Дыня',cat_banan_nutella:'Банан- Нутелла'});
@@ -220,7 +229,7 @@ const YANDEX_UNIFORM_MOCHI_PRICE_FROM = '2026-08-25';
 const PAY_TYPES = ['Безналичный','Наличный','Перевод','Смешанная','Яндекс','Себе оплачено','Себе без оплаты','Брак'];
 const DEFAULT_SELLERS = ['Анна','Евгений','Людмила','Марина'];
 const OWNERS = new Set(['Анна','Евгений']);
-let sellers = loadSellers(), cart = {}, seller = '', payType = '', selfPayType = 'Наличные', allChecks = [], editNum = null, editDate = '', editTime = '', editSaleKey = '', editOriginalPayType = '', editPromotionId = '', editPromotionName = '', editPromotionDiscountPercent = 0, comment = '', deleteTargetNum = '';
+let sellers = loadSellers(), rememberedSeller = loadRememberedSeller(), cart = {}, seller = rememberedSeller, payType = '', selfPayType = 'Наличные', allChecks = [], editNum = null, editDate = '', editTime = '', editSaleKey = '', editOriginalPayType = '', editPromotionId = '', editPromotionName = '', editPromotionDiscountPercent = 0, comment = '', deleteTargetNum = '';
 let deleteSubmitting = false;
 let promotionConfig = null, promotionClockOffsetMs = 0, promotionLoadPromise = null;
 let cashierKnownAssortment = {};
@@ -229,6 +238,8 @@ let mixedCashReceived = 0, mixedTransferAmount = 0, mixedTransferMode = 'receive
 
 function loadSellers(){try{const x=JSON.parse(localStorage.getItem(SELLERS_KEY)||'null'); return Array.isArray(x)&&x.length?x:DEFAULT_SELLERS.slice();}catch(e){return DEFAULT_SELLERS.slice();}}
 function saveSellers(){localStorage.setItem(SELLERS_KEY, JSON.stringify(sellers));}
+function loadRememberedSeller(){try{const name=localStorage.getItem(LAST_SELLER_KEY)||'';return sellers.includes(name)?name:'';}catch(_){return '';}}
+function rememberSeller(name){if(editNum)return;rememberedSeller=sellers.includes(name)?name:'';try{if(rememberedSeller)localStorage.setItem(LAST_SELLER_KEY,rememberedSeller);else localStorage.removeItem(LAST_SELLER_KEY);}catch(_){/* Keep this session usable when browser storage is unavailable. */}}
 function priceDateIso(value){const s=String(value||'').trim(),m=s.match(/^(\d{2})\.(\d{2})\.(\d{4})$/); if(m)return m[3]+'-'+m[2]+'-'+m[1]; return /^\d{4}-\d{2}-\d{2}/.test(s)?s.slice(0,10):'';}
 function activePriceDateIso(){if(editNum&&editDate)return priceDateIso(editDate); return new Date(promotionNow().getTime()+7*60*60*1000).toISOString().slice(0,10);}
 function yandexMochiPrice(name){return activePriceDateIso()>=YANDEX_UNIFORM_MOCHI_PRICE_FROM?YANDEX_UNIFORM_MOCHI_PRICE:(PREMIUM.has(name)?250:200);}
@@ -295,7 +306,7 @@ function renderMixedPayment(total){const panel=document.getElementById('mixed-pa
 function setMixedAmount(kind,value){const parsed=Math.max(0,Number(String(value||'0').replace(',','.'))||0); if(kind==='cash') mixedCashReceived=parsed; else mixedTransferAmount=parsed; updateCart();}
 function setMixedTransferMode(mode){mixedTransferMode=mode==='refund'?'refund':'received'; updateCart();}
 function updateCart(){const items=Object.entries(cart).filter(function(x){return x[1]>0;}), empty=document.getElementById('cart-empty'), itemsEl=document.getElementById('cart-items'), totalEl=document.getElementById('cart-total'), promoEl=document.getElementById('promotion-summary'), btn=document.getElementById('close-btn'), promo=activePromotion(payType); renderFlavors(); renderPromotionStatus(); let total=0,listTotal=0; if(!items.length){empty.style.display='block';itemsEl.innerHTML='';totalEl.style.display='none';promoEl.className='promo-summary';promoEl.innerHTML='';renderMixedPayment(0);btn.disabled=true;return;} empty.style.display='none'; itemsEl.innerHTML=items.map(function(x){const n=x[0],q=x[1],list=getPrice(n,payType),p=effectivePrice(n,payType); listTotal+=list*q; total+=p*q; const old=promo&&p<list?`<span class="promo-old">${money(list*q)}</span>`:''; return `<div class="cart-item"><span class="ci-name">${escHtml(n)}${cashierKnownAssortment[n]?.itemType==='set'?'<small style="display:block">'+bundleMochiCount(n)+' моти в наборе</small>':''}</span><div class="ci-ctrl"><button class="c-btn" aria-label="Уменьшить ${escHtml(n)}" onclick="changeQty('${escJs(n)}',-1)">−</button><span class="ci-qty">${q}</span><button class="c-btn" aria-label="Добавить ${escHtml(n)}" onclick="changeQty('${escJs(n)}',1)">+</button><span class="ci-price">${old}${money(p*q)}</span></div></div>`;}).join(''); if(promo){promoEl.className='promo-summary visible'; promoEl.innerHTML='<span>Без скидки</span><span>'+money(listTotal)+'</span><span class="discount">Скидка '+Number(promo.discountPercent)+'%</span><span class="discount">−'+money(listTotal-total)+'</span>';}else{promoEl.className='promo-summary';promoEl.innerHTML='';} totalEl.style.display='flex'; document.getElementById('total-qty').textContent=CashierReceiptDetails.quantityLabel(cartQuantityItems()); document.getElementById('total-sum').textContent=money(total); renderMixedPayment(total); const ordinaryReady=seller&&payType&&(payType!=='Себе оплачено'||selfPayType); const mixedReady=payType!=='Смешанная'||mixedPaymentIsValid(total); btn.disabled=closeCheckInFlight||!(ordinaryReady&&mixedReady);}
-function setSeller(el,name){seller=name; document.querySelectorAll('.seller-btn').forEach(function(b){b.classList.remove('active');b.setAttribute('aria-pressed','false');}); el.classList.add('active'); el.setAttribute('aria-pressed','true'); updateCart();}
+function setSeller(el,name){seller=name;rememberSeller(name); document.querySelectorAll('.seller-btn').forEach(function(b){b.classList.remove('active');b.setAttribute('aria-pressed','false');}); el.classList.add('active'); el.setAttribute('aria-pressed','true'); updateCart();}
 function setPay(el,type){payType=type; document.querySelectorAll('.pay-btn').forEach(function(b){b.classList.remove('active');b.setAttribute('aria-pressed','false');}); el.classList.add('active'); el.setAttribute('aria-pressed','true'); document.getElementById('self-clarify').className='self-clarify'+(type==='Себе оплачено'?' visible':''); renderPromotionStatus(); updateCart();}
 function setSelfPay(el,type){selfPayType=type; document.querySelectorAll('.self-sub-btn').forEach(b=>b.classList.remove('active')); el.classList.add('active'); updateCart();}
 let dataLoaded = false;
@@ -320,7 +331,7 @@ async function closeCheck(){if(window.CashierLoyaltyCorrections&&CashierLoyaltyC
   try{savePendingCloseDraft(draft); queued=enqueueOperation(draft.payload,draft); const json=await sendOperation(queued); removeOperation(queued.key); clearPendingCloseDraft(draft.saleKey); pendingCheckDraft=null; applySavedCheckLocally(draft,false); resetForm(); renderJournal(); dataLoaded=false; showToast(draft.isEdit?'Чек №'+draft.num+' обновлён':'Чек №'+draft.num+' сохранён'); return json;}
   catch(e){if(!queued){showToast('Не удалось сохранить чек на телефоне'); return;} if(e&&e.permanent){removeOperation(queued.key); clearPendingCloseDraft(draft.saleKey); pendingCheckDraft=null; showToast(e.message||'Сервер отклонил чек'); await restoreProtectedReceipt(e); return;} const queue=readOperationQueue(), item=queue.find(function(x){return x.key===queued.key;}); if(item){item.attempts=Number(item.attempts||0)+1; item.lastError=String(e&&e.message||e||'Ошибка отправки'); item.updatedAt=new Date().toISOString(); writeOperationQueue(queue);} applySavedCheckLocally(draft,true); pendingCheckDraft=null; resetForm(); renderJournal(); showToast(e.code==='CASHIER_ITEM_HIDDEN'?'Чек сохранён на телефоне, но вкус скрыт. Сообщите владельцу.':'Чек сохранён на телефоне и отправится автоматически');}
   finally{closeCheckInFlight=false; btn.textContent=editNum?'Сохранить изменения':'Закрыть чек'; btn.classList.remove('loading'); updateCart();}}
-function resetForm(){if(window.CashierLoyaltyCorrections&&CashierLoyaltyCorrections.isPending())return;if(window.CashierLoyaltyCorrections)CashierLoyaltyCorrections.clearEdit();if(window.AnikinaLoyalty&&AnikinaLoyalty.isPending())return;if(window.AnikinaLoyalty)AnikinaLoyalty.clear();cart={}; payType=''; selfPayType='Наличные'; seller=''; editNum=null; editDate=''; editTime=''; editSaleKey=''; editOriginalPayType=''; editPromotionId=''; editPromotionName=''; editPromotionDiscountPercent=0; comment=''; mixedCashReceived=0; mixedTransferAmount=0; mixedTransferMode='received'; document.getElementById('comment-input').value=''; document.getElementById('close-btn').textContent='Закрыть чек'; document.getElementById('close-btn').classList.remove('loading'); document.getElementById('self-clarify').className='self-clarify'; renderSellers(); renderPayBtns(); document.querySelectorAll('.self-sub-btn').forEach(function(b,i){b.classList.toggle('active',i===0);}); updateCart();}
+function resetForm(){if(window.CashierLoyaltyCorrections&&CashierLoyaltyCorrections.isPending())return;if(window.CashierLoyaltyCorrections)CashierLoyaltyCorrections.clearEdit();if(window.AnikinaLoyalty&&AnikinaLoyalty.isPending())return;if(window.AnikinaLoyalty)AnikinaLoyalty.clear();cart={}; payType=''; selfPayType='Наличные'; seller=sellers.includes(rememberedSeller)?rememberedSeller:''; editNum=null; editDate=''; editTime=''; editSaleKey=''; editOriginalPayType=''; editPromotionId=''; editPromotionName=''; editPromotionDiscountPercent=0; comment=''; mixedCashReceived=0; mixedTransferAmount=0; mixedTransferMode='received'; document.getElementById('comment-input').value=''; document.getElementById('close-btn').textContent='Закрыть чек'; document.getElementById('close-btn').classList.remove('loading'); document.getElementById('self-clarify').className='self-clarify'; renderSellers(); renderPayBtns(); document.querySelectorAll('.self-sub-btn').forEach(function(b,i){b.classList.toggle('active',i===0);}); updateCart();}
 
 function mixedPaymentLabel(check){const p=check&&check.paymentBreakdown; if(!p) return ''; const cash=Number(p.cashReceived||0), received=Number(p.transferReceived||0), refund=Number(p.transferRefund||0); if(refund>0) return money(cash)+' наличными − '+money(refund)+' сдача переводом'; return money(cash)+' наличными + '+money(received)+' переводом';}
 function journalChecksWithQueue(){const deleted=new Set(readOperationQueue().filter(function(x){return x.payload&&x.payload.action==='delete_check';}).map(function(x){return String(x.payload.num);})); const result=allChecks.filter(function(x){return !deleted.has(String(x.num));}).slice(); pendingQueueChecks().forEach(function(item){if(!item.draft) return; const idx=result.findIndex(function(x){return (item.draft.saleKey&&String(x.saleKey||'')===String(item.draft.saleKey))||String(x.num)===String(item.draft.num);}); const localItems={}; item.draft.itemsData.forEach(function(x){if(!localItems[x.name])localItems[x.name]={name:x.name,qty:0,sum:0}; localItems[x.name].qty+=x.qty; localItems[x.name].sum+=x.price*x.qty;}); const local={num:item.draft.num,date:item.draft.date,time:item.draft.time,point:CASHIER_POINT,seller:item.payload.seller,pay:item.payload.pay,selfPay:item.payload.selfPay||'',edited:item.draft.isEdit,saleKey:item.draft.saleKey,promotionId:item.draft.promotionId||'',promotionName:item.draft.promotionName||'',promotionDiscountPercent:item.draft.promotionDiscountPercent||0,listTotal:item.draft.listTotal||item.draft.checkSum,discountTotal:item.draft.discountTotal||0,paymentBreakdown:item.payload.paymentBreakdown||null,items:Object.values(localItems),sum:item.draft.checkSum,earn:item.draft.checkEarn,comment:item.payload.comment||'',pending:true}; if(idx>=0) result[idx]=local; else result.push(local);}); return result.sort(function(a,b){return parseDateTime(b.date,b.time)-parseDateTime(a.date,a.time);});}
@@ -483,7 +494,7 @@ function normalizeTime(v){const s=String(v||'').trim(); if(/^\d{2}:\d{2}$/.test(
 function toNum(v){return Number(String(v||'0').replace(/\s/g,'').replace(',', '.'))||0;}
 function showModal(){document.getElementById('modal-input').value=''; document.getElementById('overlay').style.display='block'; document.getElementById('modal').style.display='block'; setTimeout(()=>document.getElementById('modal-input').focus(),50);}
 function hideModal(){document.getElementById('overlay').style.display='none'; document.getElementById('modal').style.display='none';}
-function modalConfirm(){const v=document.getElementById('modal-input').value.trim(); if(!v) return; if(!sellers.includes(v)){sellers.push(v); sellers.sort((a,b)=>a.localeCompare(b,'ru')); saveSellers();} seller=v; renderSellers(); updateCart(); hideModal();}
+function modalConfirm(){const v=document.getElementById('modal-input').value.trim(); if(!v) return; if(!sellers.includes(v)){sellers.push(v); sellers.sort((a,b)=>a.localeCompare(b,'ru')); saveSellers();} seller=v;rememberSeller(v); renderSellers(); updateCart(); hideModal();}
 function showToast(text){const el=document.getElementById('toast'); el.textContent=text; el.classList.add('show'); clearTimeout(showToast.t); showToast.t=setTimeout(()=>el.classList.remove('show'),1800);}
 const CASHIER_NOTICES_API='https://orders.omoti.ru/b2c-api/cashier-notices';
 const CASHIER_NOTICE_ACK_KEY='omoti_anikina_notice_ack';
@@ -494,9 +505,13 @@ async function checkCashierNotices(){try{const result=await cashierNoticeRequest
 function pushPublicKeyBytes(base64){const padded=base64+'='.repeat((4-base64.length%4)%4);const binary=atob(padded.replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(binary,c=>c.charCodeAt(0));}
 async function enableCashierPush(){const target=document.getElementById('cashier-push-setup');if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window)){target.textContent='Фоновые уведомления в этом браузере недоступны. Сообщения появятся при открытой кассе.';return;}try{const permission=await Notification.requestPermission();if(permission!=='granted'){target.textContent='Уведомления не разрешены. Сообщения появятся при открытой кассе.';return;}const config=await cashierNoticeRequest('/config');if(!config.vapidPublicKey)throw new Error('Фоновые уведомления ещё не настроены');const registration=await navigator.serviceWorker.register('./omoti_anikina-sw.js',{scope:'./omoti_anikina.html'});let subscription=await registration.pushManager.getSubscription();if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:pushPublicKeyBytes(config.vapidPublicKey)});await cashierNoticeRequest('/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subscription:subscription.toJSON()})});target.textContent='Уведомления включены для этого устройства.';}catch(error){target.textContent='Не удалось включить фоновые уведомления: '+error.message+' Сообщения будут видны в кассе.';}}
 async function setupCashierPush(){const target=document.getElementById('cashier-push-setup');try{const config=await cashierNoticeRequest('/config');if(!config.vapidPublicKey)return;const iphone=/iPhone|iPad|iPod/.test(navigator.userAgent);const standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;if(iphone&&!standalone){target.textContent='На iPhone фоновые уведомления работают, когда касса добавлена на экран «Домой» и открыта через её иконку. Пока сообщения будут видны внутри кассы.';return;}if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window)){target.textContent='В этом браузере доступны только сообщения внутри кассы.';return;}const registration=await navigator.serviceWorker.register('./omoti_anikina-sw.js',{scope:'./omoti_anikina.html'});const existing=await registration.pushManager.getSubscription();if(existing&&Notification.permission==='granted'){await cashierNoticeRequest('/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subscription:existing.toJSON()})});target.textContent='Уведомления включены для этого устройства.';return;}target.innerHTML='<button type="button" id="enable-cashier-push">Включить уведомления о сообщениях</button>';document.getElementById('enable-cashier-push').onclick=enableCashierPush;}catch(error){/* При сбое уведомлений касса работает как прежде. */}}
-if(window.AnikinaLoyalty){
-  const updateCartBase=updateCart;
-  updateCart=function(){updateCartBase();AnikinaLoyalty.update();if(window.CashierLoyaltyCorrections)CashierLoyaltyCorrections.update();};
+// One-time module initialization. Retrying a static download never submits a receipt.
+let loyaltyPurchaseInitialized=false,loyaltyCorrectionsInitialized=false,loyaltyFallbackInitialized=false,loyaltyLoadInFlight=false,loyaltyInitFailed=false;
+const updateCartBase=updateCart;
+updateCart=function(){updateCartBase();if(!loyaltyInitFailed){if(loyaltyPurchaseInitialized)AnikinaLoyalty.update();if(loyaltyCorrectionsInitialized)CashierLoyaltyCorrections.update();}updateLoyaltyAvailability();document.getElementById('seller-context').textContent=seller?'Сотрудник: '+seller:'Выберите сотрудника перед оплатой';};
+function initializeAnikinaLoyalty(){
+if(window.AnikinaLoyalty&&!loyaltyPurchaseInitialized){
+  loyaltyPurchaseInitialized=true;
   AnikinaLoyalty.init({
     total:cartTotal,payment:function(){return payType;},editing:function(){return !!editNum;},
     busy:function(){return closeCheckInFlight;},refresh:function(){updateCart();},
@@ -536,8 +551,8 @@ if(window.AnikinaLoyalty){
     }
   });
 }
-if(!window.AnikinaLoyalty&&window.CashierLoyaltyCorrections){const ordinaryUpdateCart=updateCart;updateCart=function(){ordinaryUpdateCart();CashierLoyaltyCorrections.update();};}
-if(window.CashierLoyaltyCorrections){
+if(window.CashierLoyaltyCorrections&&(!loyaltyCorrectionsInitialized||(loyaltyFallbackInitialized&&window.AnikinaLoyalty))){
+  loyaltyCorrectionsInitialized=true;loyaltyFallbackInitialized=!window.AnikinaLoyalty;
   CashierLoyaltyCorrections.init({
     point:'anikina',refresh:function(){updateCart();},notify:showToast,
     input:function(){return {seller:seller,pay:payType,comment:document.getElementById('comment-input').value.trim(),paymentBreakdown:payType==='Смешанная'?mixedPaymentBreakdown():null,items:cartQuantityItems().map(function(item){return {name:item.name,qty:item.qty,catalogItemId:item.catalogItemId||undefined};})};},
@@ -548,6 +563,46 @@ if(window.CashierLoyaltyCorrections){
     completed:function(result,identity){const value=result.result||result, projection=result.check||value.check;allChecks=allChecks.filter(function(check){return String(check.num)!==String(identity.num)&&(!identity.saleKey||String(check.saleKey||'')!==identity.saleKey);});if(projection)allChecks.unshift(normalizeServerCheck(projection));saveCacheChecks(allChecks);dataLoaded=false;resetForm();renderJournal();loadRemoteData(true);if(document.getElementById('screen-stats').classList.contains('active'))loadStats();showToast((value.deleted?'Ошибочный чек отменён.':'Чек исправлен.')+' Бонусы подтверждены.'+(Number(result.forgivenMinor||0)>0?' У клиента оставлены уже потраченные бонусы.':''));}
   });
 }
+}
+function safeLoyaltyDownload(){
+  if(closeCheckInFlight||editNum||loyaltyInitFailed)return false;
+  try{return !localStorage.getItem('omoti_anikina_loyalty_pending_v1')&&!localStorage.getItem('omoti_anikina_loyalty_correction_pending_v1')&&!window.AnikinaLoyalty?.isPending()&&!window.CashierLoyaltyCorrections?.isPending();}catch(_){return false;}
+}
+function updateLoyaltyAvailability(){
+  const placeholder=document.getElementById('loyalty-load-state'),panel=document.getElementById('loyalty-panel');
+  const ready=loyaltyPurchaseInitialized&&window.AnikinaLoyalty&&window.CashierConnection?.loyalty&&!loyaltyInitFailed;
+  placeholder.hidden=!!ready;
+  if(ready){
+    const correcting=window.CashierLoyaltyCorrections?.isEditing()||window.CashierLoyaltyCorrections?.isPending();
+    if(!correcting)panel.hidden=false;
+    document.getElementById('loyalty-card-balance').hidden=panel.hidden||!(panel.classList.contains('is-selected')||panel.classList.contains('is-unconfirmed'));
+  }else{
+    panel.hidden=true;
+    if(loyaltyInitFailed)document.querySelectorAll('#screen-kassa button, #screen-kassa input, #screen-kassa textarea').forEach(function(element){element.disabled=true;});
+    const safe=safeLoyaltyDownload(),note=document.getElementById('loyalty-load-note');
+    document.getElementById('loyalty-load-retry').disabled=loyaltyLoadInFlight||!safe;
+    note.textContent=loyaltyLoadInFlight?'Загружаем бонусный модуль. Введённые товары и оплата сохраняются.':loyaltyInitFailed?'Бонусный модуль не удалось запустить. Не очищайте данные браузера; нужна проверка с владельцем.':!safe?'Загрузка карты недоступна во время операции или правки. Сначала завершите или сверьте её; не очищайте данные браузера.':'Бонусный модуль не загрузился. Проверьте интернет и повторите загрузку — товары останутся в чеке.';
+    if(loyaltyFallbackInitialized&&!window.CashierLoyaltyCorrections.isPending())document.getElementById('loyalty-correction-pending').hidden=true;
+  }
+}
+function loadLoyaltyScript(src){return new Promise(function(resolve,reject){const script=document.createElement('script');script.src=src;script.onload=resolve;script.onerror=function(){script.remove();reject(Error('Не удалось загрузить бонусный модуль'));};document.head.appendChild(script);});}
+async function retryAnikinaLoyalty(){
+  if(loyaltyLoadInFlight||!safeLoyaltyDownload())return;
+  const previousPurchase=window.AnikinaLoyalty,previousCorrections=window.CashierLoyaltyCorrections;
+  loyaltyLoadInFlight=true;updateLoyaltyAvailability();
+  try{
+    if(!window.CashierConnection?.loyalty)await loadLoyaltyScript('./cashier-loyalty-connection-v1.js?v=20261006');
+    if(!window.AnikinaLoyalty)await loadLoyaltyScript('./anikina-loyalty-v1.js?v=20261009-history-fix');
+    if(!window.AnikinaLoyalty||!window.CashierConnection?.loyalty)throw Error('Модуль не загрузился');
+    // A pending identity appearing during the download must not be consumed by recovery here.
+    if(!safeLoyaltyDownload()){window.AnikinaLoyalty=previousPurchase;window.CashierLoyaltyCorrections=previousCorrections;return;}
+    try{initializeAnikinaLoyalty();}catch(_){loyaltyInitFailed=true;document.getElementById('close-btn').disabled=true;}
+  }catch(_){window.AnikinaLoyalty=previousPurchase;window.CashierLoyaltyCorrections=previousCorrections;/* Keep the protective fallback if a script only partially loaded. */}
+  finally{loyaltyLoadInFlight=false;updateCart();}
+}
+try{initializeAnikinaLoyalty();}catch(_){loyaltyInitFailed=true;document.getElementById('close-btn').disabled=true;}
+window.addEventListener('pageshow',updateLoyaltyAvailability);
+document.addEventListener('visibilitychange',function(){if(!document.hidden)updateLoyaltyAvailability();});
 resetForm();
 buildDropdowns();
 recoverPendingCloseDraft();
