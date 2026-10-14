@@ -10,7 +10,7 @@ await p.evaluate(()=>switchTab('journal'));await p.waitForFunction(()=>!historyL
 await p.evaluate(()=>document.querySelector('.k-list').scrollTop=220);assert.ok(await p.evaluate(()=>document.querySelector('.k-list').scrollTop>0));await capture('journal-special-middle');
 await p.evaluate(()=>document.querySelector('.k-list').scrollTop=1e6);assert.ok(await p.evaluate(()=>{const el=document.querySelector('.k-list');return el.scrollTop>0&&Math.abs(el.scrollHeight-el.clientHeight-el.scrollTop)<2;}));await capture('journal-bottom');
 await p.evaluate(()=>C31UI.showDetail('9507'));assert.match(await p.locator('.k-rcpt').innerText(),/3 моти · 1 мункейк/i);await capture('receipt-mixed-quantity');
-await p.evaluate(()=>switchTab('stats'));await p.locator('#s-sales').waitFor({state:'visible'});await p.locator('.loyalty-summary').evaluate(el=>el.scrollIntoView());await capture('stats-unknown-bonuses');
-await p.evaluate(()=>document.querySelector('.c31-stats-scroll').scrollTop=1e6);await capture('stats-bottom');
+await p.evaluate(()=>switchTab('stats'));await p.locator('#s-sales').waitFor({state:'visible'});await p.locator('[data-sec=bonus]').evaluate(el=>el.scrollIntoView());await capture('stats-unknown-bonuses');
+await p.evaluate(()=>document.querySelector('.k-stats__scroll').scrollTop=1e6);await capture('stats-bottom');
 assert.deepEqual(t.errors,[]);assert.deepEqual(t.missing.filter(x=>!x.includes('kaspersky-labs.com')),[]);await t.ctx.close();}}
 finally{await b.close();fs.writeFileSync(path.join(out,'report.json'),JSON.stringify(report,null,2));}console.log('PASS',report.length,'supplemental geometry captures; all business requests mocked');})().catch(e=>{console.error(e.stack);process.exitCode=1;});

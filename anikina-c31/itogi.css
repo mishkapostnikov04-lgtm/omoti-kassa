@@ -1,0 +1,126 @@
+/* ==========================================================================
+   OMOTI · Касса «Аникина» · C3.2 — раздел «Итоги», вариант А «Отчёт-лента»
+   Требует tokens.css C3.2 (уже в кассе). Подключается ПОСЛЕ components.css.
+   Заменяет stats.css пакета c32-handoff-addon и правила Итогов 3.1
+   (.k-hero, .k-attention, .k-metrics, .k-bonus, .k-bar-row, .c32-stat-fold-*, .c31-stats-scroll).
+   Все правила — внутри .k-stats (экран Итогов), чтобы не задеть Кассу и Журнал.
+   ========================================================================== */
+.k-stats{
+  --k-it-card-r: 20px;      /* карточка раздела */
+  --k-it-card-px: 16px;     /* поля по горизонтали */
+  --k-it-card-py: 14px;     /* поля по вертикали (раскрыт) */
+  --k-it-card-py-cl: 12px;  /* поля по вертикали (свёрнут) → высота 56 */
+  --k-it-gap: 10px;         /* между разделами */
+  --k-it-row: 44px;         /* строка списка */
+  --k-it-bar-row: 40px;     /* строка с полосой */
+  --k-it-bar-h: 6px;
+  --k-it-bar: #3B3A36;      /* полоса */
+  --k-it-track: #EFEDE7;    /* дорожка полосы */
+  --k-it-tg: 28px;          /* круглая кнопка ⌄ / ⌃ */
+  --k-it-problem-bg: #FBEDE7;
+  --k-it-problem: #B4400C;  /* суммы и штуки проблем */
+  --k-it-problem-dot: #D9480F;
+  --k-it-now-bg: #FFF3DC;   /* метка «текущая, неполная» */
+  --k-it-now: #7A4300;
+  background: var(--k-bg);
+}
+
+/* --- Шапка: закреплена. Строка «OMOTI · Аникина» (.k-top, 3.1) + «Итоги» и период --- */
+.k-stats .k-head{background:var(--k-bg)}
+.k-stats__cover{position:absolute;left:0;right:0;top:0;height:calc(96px + var(--k-safe-t));background:var(--k-bg);z-index:3;transition:box-shadow var(--k-t-fade,200ms)}
+.k-stats.is-scrolled .k-stats__cover{box-shadow:0 1px 0 var(--k-line),0 10px 14px -12px rgba(0,0,0,.18)}
+.k-stats .k-top,.k-stats .k-head{z-index:4}
+
+/* Кнопка периода: две строки, 44 px */
+.k-period{height:44px;border:0;border-radius:14px;background:var(--k-surface);padding:0 10px 0 14px;display:flex;align-items:center;gap:8px;text-align:right;max-width:58%;flex:none}
+.k-period__txt{display:flex;flex-direction:column;line-height:1.1;min-width:0}
+.k-period__txt b{font-size:14.5px;font-weight:700}
+.k-period__txt small{font-size:12px;color:var(--k-muted-2);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.k-period svg{color:var(--k-muted-2);flex:none}
+
+/* --- Одна прокрутка: под шапкой, над доком ------------------------------------ */
+.k-stats__scroll{position:absolute;left:0;right:0;top:calc(96px + var(--k-safe-t));bottom:var(--k-current-dock,var(--k-dock-nav-only-h));overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;z-index:1}
+.k-stats__list{padding:2px var(--k-gutter) 20px;display:flex;flex-direction:column;gap:var(--k-it-gap)}
+
+/* --- Раскрывающийся раздел ---------------------------------------------------- */
+.k-sec{background:var(--k-surface);border-radius:var(--k-it-card-r);padding:var(--k-it-card-py) var(--k-it-card-px)}
+.k-sec[hidden]{display:none!important}
+.k-sec__head{position:relative;width:100%;min-height:28px;border:0;background:transparent;padding:0;font:inherit;color:inherit;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.k-sec__head::after{content:"";position:absolute;left:calc(-1 * var(--k-it-card-px));right:calc(-1 * var(--k-it-card-px));top:-10px;bottom:-10px}   /* касание на всю ширину карточки, ≥ 48 */
+.k-sec__head:focus-visible{outline:2px solid var(--k-amber-line);outline-offset:4px;border-radius:10px}
+.k-sec__title{font-size:15px;font-weight:700;white-space:nowrap;display:flex;align-items:center;gap:8px}
+.k-sec__dot{width:8px;height:8px;border-radius:50%;background:var(--k-it-problem-dot);flex:none}
+.k-sec__aside{display:flex;align-items:center;gap:8px;min-width:0}
+.k-sec__sum{font-size:13px;font-weight:600;color:var(--k-muted-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.k-sec__sum--strong{font-size:14px;font-weight:700;color:var(--k-ink-2)}
+.k-sec__meta{font-size:13px;font-weight:600;color:var(--k-muted-2);white-space:nowrap}
+.k-sec__tg{width:var(--k-it-tg);height:var(--k-it-tg);border-radius:50%;background:var(--k-field);color:var(--k-ink-2);display:flex;align-items:center;justify-content:center;flex:none}
+.k-sec__tg svg{transition:transform var(--k-t-sheet,260ms) var(--k-ease,ease)}
+.k-sec__chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.k-sec__body{margin-top:2px}
+/* Свёрнут: 56 px, видна сводка (или чипы), тело скрыто */
+.k-sec.is-closed{padding-top:var(--k-it-card-py-cl);padding-bottom:var(--k-it-card-py-cl)}
+.k-sec.is-closed .k-sec__head{min-height:32px}
+.k-sec.is-closed .k-sec__body,.k-sec.is-closed .k-sec__meta{display:none}
+.k-sec.is-closed .k-sec__tg svg{transform:rotate(180deg)}   /* одна иконка ⌃; свёрнут — ⌄ */
+.k-sec.is-open .k-sec__sum,.k-sec.is-open .k-sec__chips{display:none}
+
+/* --- Главное число и полоса показателей -------------------------------------- */
+.k-figure{font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1;margin-top:8px;white-space:nowrap}
+.k-figure__cap{font-size:13px;color:var(--k-muted-2);margin-top:6px}
+.k-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0 0;padding-top:12px;border-top:1px solid var(--k-line-soft)}
+.k-kpis--flat{border-top:0;padding-top:0;margin-top:12px}
+.k-kpi{display:flex;flex-direction:column;gap:3px;min-width:0;margin:0}
+.k-kpi dd{order:-1}   /* модуль бонусов и касса выводят подпись (dt) первой — число показываем сверху */
+.k-kpi b,.k-kpi dd{margin:0;font-size:19px;font-weight:800;letter-spacing:-.01em;white-space:nowrap}
+.k-kpi span,.k-kpi dt{font-size:12px;color:var(--k-muted-2);line-height:1.25}
+.k-kpi small{font-size:11.5px;color:var(--k-muted-2)}   /* «N мункейков · N других шт.» под «Продано моти» */
+
+/* Метка периода */
+.k-status-pill{height:22px;border-radius:999px;padding:0 9px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;background:#F0EEE9;color:var(--k-muted);white-space:nowrap}
+.k-status-pill--now{background:var(--k-it-now-bg);color:var(--k-it-now)}
+
+/* Чипы проблем (только «Требует внимания», свёрнут) */
+.k-problem{height:28px;border-radius:9px;padding:0 10px;display:inline-flex;align-items:center;gap:6px;background:var(--k-it-problem-bg);color:var(--k-it-problem);font-size:13px;font-weight:700;white-space:nowrap}
+.k-problem i{font-style:normal;color:#8A5A48;font-weight:600}
+
+/* --- Подраздел и строки ------------------------------------------------------- */
+.k-subhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:14px;padding-bottom:4px;font-size:13px;font-weight:700;color:var(--k-ink-2)}
+.k-subhead:first-child{margin-top:10px}
+.k-subhead small{font-size:12.5px;color:var(--k-muted-2);font-weight:600;white-space:nowrap}
+.k-srow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:12px;min-height:var(--k-it-row);border-top:1px solid var(--k-line-soft);font-size:14.5px}
+.k-srow__name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.k-srow__qty{color:var(--k-muted-2);font-size:13.5px;white-space:nowrap}
+.k-srow__val{font-weight:700;text-align:right;white-space:nowrap}
+.k-srow__val--problem{color:var(--k-it-problem)}
+.k-wide-btn{width:100%;height:44px;border:0;border-radius:13px;background:var(--k-field);font:inherit;font-size:13.5px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;color:var(--k-ink)}
+.k-note{margin-top:12px;border-radius:12px;background:var(--k-bg);padding:9px 11px;font-size:12.5px;line-height:1.4;color:var(--k-muted)}
+.k-note + .k-note{margin-top:6px}
+.k-note--warn{background:var(--k-amber-tint);color:#4A3000}
+.k-empty-row{font-size:13px;color:var(--k-muted-2);text-align:center;padding:14px 0 4px}
+
+/* --- Полосы: сотрудники и вкусы ---------------------------------------------- */
+.k-bars{margin-top:8px}
+.k-barrow{display:grid;grid-template-columns:var(--k-it-name,92px) minmax(0,1fr) 56px;align-items:center;gap:10px;min-height:var(--k-it-bar-row);border-top:1px solid var(--k-line-soft);font-size:14px}
+.k-barrow--rank{grid-template-columns:18px var(--k-it-name,132px) minmax(0,1fr) 30px}
+.k-barrow__rank{font-size:12px;font-weight:700;color:var(--k-faint)}
+.k-barrow__name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.k-barrow__val{text-align:right;font-weight:700;white-space:nowrap}
+.k-bar{display:block;height:var(--k-it-bar-h);border-radius:3px;background:var(--k-it-track);overflow:hidden}
+.k-bar > i{display:block;height:100%;border-radius:3px;background:var(--k-it-bar)}
+
+/* --- Лист периода (тело листа 3.1, вид 3.2) ---------------------------------- */
+.k-seg3{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;background:var(--k-field);border-radius:13px;padding:3px;margin-bottom:6px}
+.k-seg3 button{height:40px;border:0;border-radius:10px;background:transparent;font:inherit;font-size:14px;font-weight:700;color:var(--k-muted)}
+.k-seg3 [aria-pressed="true"]{background:var(--k-ink);color:#fff}
+.k-popt{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:52px;border:0;border-top:1px solid var(--k-line-soft);background:transparent;padding:0;font:inherit;text-align:left;color:inherit}
+.k-popt:first-of-type{border-top:0}
+.k-popt span{display:flex;flex-direction:column;gap:2px}
+.k-popt b{font-size:15.5px;font-weight:700}
+.k-popt small{font-size:12.5px;color:var(--k-muted-2);font-weight:500}
+.k-popt i{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none}
+.k-popt[aria-current="true"] i{background:var(--k-amber)}
+
+/* Адаптивность: 360 — уже ок; на 320 полоса показателей переносит подписи, числа не переносятся */
+@media (max-width:340px){.k-figure{font-size:34px}.k-kpi b,.k-kpi dd{font-size:17px}}
+@media (prefers-reduced-motion:reduce){.k-stats *{transition:none!important;animation:none!important}}

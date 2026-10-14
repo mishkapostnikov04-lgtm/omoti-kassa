@@ -1,6 +1,6 @@
 ---
-name: "OMOTI · Касса Аникина · C3.2 «Тише» · вариант Б"
-description: "C3.2 «Тише», вариант Б: фактическая локальная реализация; история публикации C3.1 сохранена отдельно."
+name: "OMOTI · Касса Аникина · C3.2 «Тише» Б + Итоги A «Отчёт-лента»"
+description: "C3.2 «Тише» Б сохранён; только Итоги заменены owner-approved вариантом A «Отчёт-лента», локально проверены, ещё не опубликованы."
 colors:
   bg: "#F6F5F1"
   tile: "#EBE9E3"
@@ -42,6 +42,10 @@ colors:
   dock-wait-text: "#FFE2B0"
   dock-brak: "#FF8F66"
   scrim: "rgba(18,18,18,.34)"
+  itogi-track: "#EFEDE7"
+  itogi-problem-hint: "#8A5A48"
+  itogi-warning-ink: "#4A3000"
+  itogi-scroll-shadow: "rgba(0,0,0,.18)"
 typography:
   display:
     fontFamily: "Geologica, Segoe UI, system-ui, -apple-system, sans-serif"
@@ -91,6 +95,39 @@ typography:
   money-input:
     fontSize: "20px"
     fontWeight: 700
+  itogi-section-title:
+    fontSize: "15px"
+    fontWeight: 700
+  itogi-summary:
+    fontSize: "13px"
+    fontWeight: 600
+  itogi-caption:
+    fontSize: "13px"
+  itogi-label:
+    fontSize: "12px"
+    lineHeight: 1.25
+  itogi-meta:
+    fontSize: "12.5px"
+    fontWeight: 600
+  itogi-note:
+    fontSize: "12.5px"
+    lineHeight: 1.4
+  itogi-extra:
+    fontSize: "11.5px"
+  itogi-quantity:
+    fontSize: "13.5px"
+  itogi-kpi:
+    fontSize: "19px"
+    fontWeight: 800
+    letterSpacing: "-0.01em"
+  itogi-narrow-display:
+    fontSize: "34px"
+    fontWeight: 800
+    lineHeight: 1
+    letterSpacing: "-0.03em"
+  itogi-narrow-kpi:
+    fontSize: "17px"
+    fontWeight: 800
 rounded:
   count: "9px"
   done: "12px"
@@ -101,12 +138,20 @@ rounded:
   card: "18px"
   sheet: "22px"
   modal: "28px"
+  itogi-section: "20px"
+  itogi-track: "3px"
+  itogi-focus: "10px"
+  itogi-pill: "999px"
 spacing:
   gap: "6px"
   sheet-gap: "8px"
   dock-x: "10px"
   gutter: "12px"
   dock-bottom: "16px"
+  itogi-gap: "10px"
+  itogi-card-x: "16px"
+  itogi-card-y: "14px"
+  itogi-list-bottom: "20px"
 components:
   close-button:
     backgroundColor: "{colors.amber}"
@@ -173,6 +218,29 @@ components:
     textColor: "{colors.dock-brak}"
     rounded: "{rounded.button}"
     height: "48px"
+  itogi-section:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.itogi-section}"
+    padding: "14px 16px"
+  itogi-section-closed:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.itogi-section}"
+    padding: "12px 16px"
+    height: "56px"
+  itogi-period:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.button}"
+    padding: "0 10px 0 14px"
+    height: "44px"
+  itogi-problem-chip:
+    backgroundColor: "{colors.brak-tile}"
+    textColor: "{colors.danger-text}"
+    rounded: "{rounded.count}"
+    padding: "0 10px"
+    height: "28px"
   card:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.ink}"
@@ -180,13 +248,13 @@ components:
     padding: "12px 14px"
 ---
 
-# Design System: OMOTI · Касса Аникина · C3.2 «Тише» · вариант Б
+# Design System: OMOTI · Касса Аникина · C3.2 «Тише» Б + Итоги A «Отчёт-лента»
 
 ## Overview
 
-**Creative North Star: "Тише C3.2 · вариант Б"**
+**Creative North Star: "Тише C3.2 · вариант Б; Итоги A «Отчёт-лента»"**
 
-Это запись фактической локальной реализации утверждённого владельцем C3.2 «Тише», вариант Б, только для кассы Аникиной. Одна верхняя строка объединяет точку и продавца. Нейтральные плитки без цен и обычных рамок оставляют видимыми имя и количество; тёмный док показывает строки чека с первым товаром. Служебные действия находятся в «Ещё», Журнал собирает чеки дня в спокойные белые группы, обычные карточки Итогов не имеют рамок.
+Это запись фактической локальной реализации утверждённого владельцем C3.2 «Тише», вариант Б, только для кассы Аникиной. Одна верхняя строка объединяет точку и продавца. Нейтральные плитки без цен и обычных рамок оставляют видимыми имя и количество; тёмный док показывает строки чека с первым товаром. Служебные действия находятся в «Ещё», Журнал собирает чеки дня в спокойные белые группы. Только Итоги заменены утверждённым вариантом A «Отчёт-лента»: пять последовательных белых разделов с независимым раскрытием, готовыми сводками и запоминанием на телефоне.
 
 Источник вида и движения — неизменяемый [addon C3.2](../../_local_artifacts/cashier-anikina-c32-20261014/package/omoti-kassa-c32-handoff-addon/HANDOFF.md), его prototype, tokens/components/motion и 49 PNG. Он дополняет [C3.1](../../design-system/modules/cashier-anikina/c31-approved-20261014/HANDOFF.md). Приоритет: работающие финансовые функции и C3.1 `PRESERVE.md`; prototype и design-system C3.2; PNG конкретного состояния; документы addon; C3.1 для незатронутого. Имена, ассортимент, цены, даты, суммы, доступность и тексты состояний остаются данными исходного кода/сервера. Этот документ описывает реализацию и не заменяет [единый регламент](../../OMOTI_WORK_REGULATION.md), общую ERP DS v1.0.0 или стандарты двух других касс.
 
@@ -199,9 +267,23 @@ components:
 - Стабильные DOM-плитки и отступы от измеренной высоты дока.
 - Прежние финансовые владельцы, ID, API и namespace.
 
+### Current Итоги A · 14.10.2026 · локальная документация
+
+Текущий визуальный источник только Итогов — [CODEX-PROMPT](../../_local_artifacts/cashier-anikina-itogi-c32-20261014/package/omoti-kassa-c32-itogi-addon/CODEX-PROMPT.md), [HANDOFF](../../_local_artifacts/cashier-anikina-itogi-c32-20261014/package/omoti-kassa-c32-itogi-addon/HANDOFF.md), INTERACTIONS, DATA-MAP, SCREENS, QA, prototype и sealed [itogi.css](../../_local_artifacts/cashier-anikina-itogi-c32-20261014/package/omoti-kassa-c32-itogi-addon/design-system/itogi.css). SHA точного CSS: `0c91e243b404e4bb5a955fcaf01f02903c32c097fa10fc50dccb080017086956`. Пакет заменяет C3.2 stats.css/I2-01…03/INTERACTIONS §6/CHANGES §8 и прежний foldStatsCard, а C3.1 IT-01/02/04/07 — новыми ST-01…18/SW-01…10. IT-03/05/06 сохраняют содержание. Касса, Журнал, меню точки, токены, док и движение C3.2 Б прежние. Новый документ не является глобальным стандартом. PRODUCT.md отсутствует; продуктовые обязательства не выдуманы.
+
+**Изменено локально и проверено локально; новый Итоги A ещё не развёрнут и не проверен на публичной кассе.** Последний [VISUAL_VERDICT_LOCAL_FINAL](../../_local_artifacts/cashier-anikina-itogi-c32-20261014/VISUAL_VERDICT_LOCAL_FINAL.md) даёт ship только исправлениям F1–F4 и их регрессиям: reviewer самостоятельно просмотрел все 28 actual pair PNG в local-review-final. Это bounded local verdict, не полная production-приёмка. Один frozen raw SHA пяти runtime-файлов совпадает во всех captures; sidecar содержит raw и canonical LF для девяти текущих source-файлов. HTML содержит 186 CRLF: raw capture SHA и SHA нормализованных LF различаются; они не взаимозаменяемы. Текущая публикация до этой задачи — dd7e644; новый deploy этим документом не заявляется.
+
+[DATA_MAP](../../_local_artifacts/cashier-anikina-itogi-c32-20261014/DATA_MAP.md) и [SOURCE_PRESERVATION](../../_local_artifacts/cashier-anikina-itogi-c32-20261014/SOURCE_PRESERVATION.json) фиксируют прежние финансовые владельцы: 39 защищённых файлов, 425 оставленных CSS-правил, два native inline script exact. Financial parity 14 fixtures и interaction evidence принадлежат локальным отчётам задачи; эта документация их не запускает повторно. Physical iPhone scroll — **OPEN**, нативные клавиатура/камера/Safari/PWA/permissions не получают PASS от mocks. Новых shipping raster нет; новые иконки — native inline SVG. 28 sealed PNG — эталоны, captures — evidence.
+
+### Preserved C3.2 R2 documentation snapshot
+
+Историческая запись ниже сохранена дословно; её pending-статус описывает момент прежнего документирования. Последующая публикация R2 dd7e644 подтверждена модульным реестром; новый addon Итогов заменяет только старое presentation/fold поведение.
+
 **Текущий статус C3.2 R2 (`c32-20261014-r2`): изменено локально; проверки и публикация ещё выполняются.** Это продолжение опубликованного R1 с явным уточнением владельца от 14.10.2026. Актуальные release-состояние и результаты принадлежат внешним [REPORT](../../_local_artifacts/cashier-anikina-c32-20261014/REPORT.md) и [STATE_MAP](../../_local_artifacts/cashier-anikina-c32-20261014/STATE_MAP.md); их R1 evidence не является приёмкой R2. Источники — [interface.js](interface.js), [integration.css](integration.css), [tokens.css](tokens.css), [components.css](components.css), [motion.css](motion.css), [motion.js](motion.js) и [omoti_anikina.html](../omoti_anikina.html). Семь текущих локальных SHA сохранены в sidecar; это snapshot на момент документирования, не deployed hash.
 
-### Owner exception · 14.10.2026 · C3.2 R2
+### Preserved Owner exception · 14.10.2026 · C3.2 R2
+
+**Retired только в новых Итогах A:** приведённая owner annotation остаётся историей; вместо foldStatsCard теперь пять persistent .k-sec. Остальные решения C3.2 R2 сохраняются.
 
 Владелец явно уточнил после публикации C3.2 R1: в Итогах **«Топ вкусов» и «Требует внимания» свёрнуты по умолчанию и раскрываются независимо нажатием на свой заголовок**. Это исключение только для Аникиной поверх sealed C3.2; утверждённые tokens/components/motion и исходные эталоны не перезаписываются.
 
@@ -245,7 +327,7 @@ Generic `PRODUCT.md`, отдельные Impeccable build-state/spec, hero-repro
 
 ## Colors
 
-Палитра frontmatter извлечена из утверждённого C3.2 `tokens.css`; ключи совпадают с суффиксами `--k-*`. Значения C3.1, заменённые addon, не применяются как текущие.
+Палитра frontmatter извлечена из утверждённого C3.2 `tokens.css` и точного sealed `itogi.css`; ключи совпадают с суффиксами `--k-*`. Значения C3.1, заменённые addon, не применяются как текущие.
 
 ### Primary
 
@@ -266,6 +348,7 @@ Generic `PRODUCT.md`, отдельные Impeccable build-state/spec, hero-repro
 - `ink*`, `muted*`, `faint` — иерархия текста.
 - `dock-*` — тёмный док, светлая кнопка чека/записи «себе», ожидание и disabled.
 - `scrim` — затемнение открытого листа; док получает собственное затемнение.
+- `itogi-track` — тихая дорожка полос; заполнение использует прежний `ink-2`. `itogi-problem-hint` — разделитель чипа, `itogi-warning-ink` — текст заметки ожидания; `itogi-scroll-shadow` — тень закреплённой шапки при scroll. Это точные pinned значения, не новая палитра. Проблемные число/чип используют `danger-text`/`brak-tile`, точка — `danger-2`; текущая метка периода использует `amber-tile`/`amber-text`.
 
 **The State Color Rule.** Цвет подтверждает состояние из финансового владельца; оформление не создаёт статус, доступный баланс или разрешение на повтор операции.
 
@@ -287,6 +370,8 @@ Generic `PRODUCT.md`, отдельные Impeccable build-state/spec, hero-repro
 
 Насыщенность и размеры frontmatter фиксируют реально используемые роли. В режиме «− / +» имя занимает одну строку с многоточием (12.5px/15px), обычная плитка — до двух строк. Денежные подписи не превращаются в новые финансовые данные.
 
+Итоги A используют роли `itogi-*` frontmatter: заголовок раздела, summary, метки, заметки, extra-quantity и KPI. Название периода использует check (14.5px/700), пункт периода menu (15.5px/700), штатная строка проблемы check-size с обычным весом, имя 600 и значение 700. На ширине ≤340px display и KPI переходят на narrow-роли; другие экраны сохраняют C3.2 scale.
+
 **The Numeric Roles Rule.** Количество, цена за единицу, сумма строки, сумма чека и к оплате остаются отдельными значениями с отдельной иерархией.
 
 ## Layout
@@ -299,11 +384,13 @@ Generic `PRODUCT.md`, отдельные Impeccable build-state/spec, hero-repro
 
 Плитки обновляются на месте по имени. Изменение набора вкусов откладывается, пока касание активно или после scroll прошло меньше 150мс; settle timer155мс и `scrollend` проверяют завершение. Перерисовка состояния не присваивает `scrollTop`. Закрытые листы имеют `inert`, `visibility:hidden`, `pointer-events:none`; fly/flash/fade/hint не перехватывают касания. Диагностика `?qa=scroll` временно пишет последние 200 неперсональных scroll/touch событий в `sessionStorage` и показывает «Журнал прокрутки»; без флага выключена. Удаление диагностики — после физического подтверждения отдельным коммитом. Коренная причина реального iPhone freeze остаётся OPEN.
 
+Итоги A: одна прокрутка от `96px + --k-safe-t` до измеренного `--k-current-dock` (fallback `--k-dock-nav-only-h`), поля списка `2px / --k-gutter / 20px`, gap — `itogi-gap`. Ни таблица, ни заметка не вводит nested scroll. `.is-scrolled` включается при scrollTop >2. При раскрытии сохраняется scrollTop, при native смене периода сбрасывается в 0. Шапка: cover z3, point/head z4, scroll z1; док прежний.
+
 Клавиатура сохраняет C3.1 контракт: `--k-kb-h = max(0, innerHeight − visualViewport.height − visualViewport.offsetTop)`; текстовый input/textarea и overlap >100px включают `is-kb-open`. Док скрывается, лист находится на keyboard +8px; пересчёт на visualViewport resize/scroll и focusin/out. «Готово» закрывает фокус, Enter поиска убирает клавиатуру. Нативная клавиатура не проверена.
 
 ## Elevation & Depth
 
-Обычные плитки и карточки Итогов плоские и без рамок. Выбранная плитка получает внутренний контур; карточки ожидания и внимания сохраняют контур состояния. Выручка имеет янтарную полосу слева. Белые группы Журнала разделяются тонкими линиями, тёмный док задаёт нижний уровень.
+Обычные плитки и новые разделы Итогов плоские и без рамок. Выбранная плитка получает внутренний контур; прежние карточки ожидания других поверхностей сохраняют контур состояния. Итоги A убирают янтарную полосу выручки и розовый фон/красную рамку attention; янтарные плитки бонусов заменены плоскими KPI, толстые чёрные полосы — тонкими дорожками. Белые группы Журнала разделяются тонкими линиями, тёмный док задаёт нижний уровень.
 
 Листы и тост используют утверждённые тени. Локальная интеграция: dock z-index6, sheet8, scrim5; confirm86 над scrim84; toast90 и скрывается под confirm. При открытом листе dock `::after` затемняется `scrim`; это представление, а не финансовый lock.
 
@@ -313,6 +400,7 @@ Generic `PRODUCT.md`, отдельные Impeccable build-state/spec, hero-repro
 - Toast — `0 0 0 1px var(--k-line), 0 14px 30px -10px rgba(0,0,0,.25)`.
 - Hint — `0 10px 24px -8px rgba(0,0,0,.45)`.
 - Modal — `0 -10px 40px rgba(0,0,0,.25)`.
+- Итоги scrolled header — `0 1px 0 var(--k-line),0 10px 14px -12px rgba(0,0,0,.18)`; только при scrollTop >2.
 
 ## Shapes
 
@@ -336,9 +424,21 @@ Generic `PRODUCT.md`, отдельные Impeccable build-state/spec, hero-repro
 
 ### Cards / Containers
 
-Белые карточки без обычного контура, padding из frontmatter; рамки остаются только у состояний внимания/ожидания. По явному owner exception от 14.10.2026 «Топ вкусов» и «Требует внимания» стартуют свёрнутыми, раскрываются независимо заголовком и сохраняют все native дочерние данные/действия; это presentation-only поведение C3.2 R2. Итоги имеют светлую выручку, затем условный блок внимания, бонусы, сотрудников и топ-8 вкусов. Группы внимания подписаны «Взяли без оплаты · долг» и «Брак · списано»; подписи и summary используют уже отрисованные исходные значения/строки. «Весь брак» — белое контурное раскрытие со стрелкой, не новая финансовая формула. Полная native-подпись периода, включая «неполная», помещается переносом строк вместо ellipsis; диапазон и его полнота по-прежнему определяются исходным кодом.
+Белые карточки C3.2 Б других поверхностей сохраняют прежнюю форму. В Итогах A ровно пять разделов: results «Выручка», условный attention «Требует внимания», bonus «Бонусы за период», staff «По сотрудникам», top «Топ вкусов». Defaults: results/bonus/staff раскрыты, attention/top закрыты. Закрытый раздел — 56px, attention добавляет строку проблемных чипов. Новые радиусы/отступы — frontmatter itogi-*; disclosure-круг 28px, dot 8px, строка проблем 44px, bar-row 40px, track 6px.
 
-Служебные строки журнала имеют обычную белую поверхность. Выбранная карта имеет янтарную плашку, неподтверждённая — нейтральную недоступную поверхность. Камера — белый контейнер с тёмным окном по реализованной интеграции; готовый поток в QA синтетический. Loading сохраняет место hero/attention/следующей карточки скелетами (186/250/150px в текущем CSS); empty и network recovery имеют белый icon-chip, исходный текст и исходный retry-handler. Clear-search — светлая вторичная кнопка.
+Заголовок — native button с aria-expanded/aria-controls и зоной касания всей ширины ≥48px. Закрытый раздел раскрывает тап по любой части карточки; открытый сворачивает только heading; «Весь брак» сохраняет прежний лист и не сворачивает секцию. Enter/Space работают через кнопку. Тело закрытого раздела скрыто CSS и inert. Высота меняется мгновенно; только chevron поворачивается за 260ms по прежней кривой, reduced-motion убирает переход.
+
+Один новый ключ `omoti_anikina_stats_sections_v1` сохраняет пять boolean при каждом toggle. Чтение недостающего/неboolean поля даёт default этого поля; malformed/недоступное чтение или ошибка записи возвращают defaults без сообщений. Смена периода, Касса⇄Итоги, reload и retry не сбрасывают сохранённые состояния. Прежняя R2 свёртка без storage теперь историческая.
+
+Сводки читают только существующий DOM: s-sales/s-qty, первое dd бонусов, количество native staff/top строк; один должник — прежняя ss-amount, несколько — число сотрудников; брак — прежняя строка «Итого». Нет новой денежной агрегации. Native s-sub и loyalty-stat-title сохраняются скрытыми. Брак показывает первые три native строки; полный список копируется в прежний лист до скрытия preview. Staff bar — qty/max только визуальное отношение; Top width оставляет native .fs-bar. «Нет данных» и тексты/unknown/reconciliation модуля бонусов дословно из владельцев.
+
+Период — две строки из activePeriodType/currentPeriodRange.label: диапазон без года, статус из скобок в отдельной pill; «Всё время» одна строка. Лист использует прежние btn-week/month/all, menu-week/month и .period-dropdown-item: 3 сегмента, строки ≥52px, выбор — янтарный круг с native SVG check справа. Week/month сегменты показывают соответствующее меню; пункт вызывает прежний selectWeek/selectMonth, «Всё время» сразу selectAll. loadStats/renderStatsSummary и дата/полнота остаются финансовыми владельцами. Ни «К выплате», ни тариф30/90 не добавляются.
+
+Scoped integration aliases (.k-stats и #c31-period-sheet.k-itogi-period) снимают прежний flex/padding/border-bottom native строк: grid с gap10 для bars; content-box сохраняет высоту border-row. Колонки staff 92px/остаток/56px, top 18px/132px/остаток/30px. Bonus div — прозрачный без padding/рамок, align-items:stretch и justify-content:flex-start; dd сверху, note сохраняет native paragraph margin-bottom:1em. Пункт периода full width, flex и divider с check справа. Если перед Браком есть видимый долг, margin-top подзаголовка14px; пустой k-bars margin-top0. Эти aliases восстанавливают exact box model sealed CSS и не меняют значения.
+
+Загрузка — три scoped skeleton блока56px, без прежних hero186/attention250/next150. «Нет связи» сохраняет native retry, данные/секции после повтора; «Нет данных» — native empty row. Остальная загрузка/ошибки C3.2 других экранов прежние.
+
+Служебные строки журнала имеют обычную белую поверхность. Выбранная карта имеет янтарную плашку, неподтверждённая — нейтральную недоступную поверхность. Камера — белый контейнер с тёмным окном по реализованной интеграции; готовый поток в QA синтетический. На других поверхностях Loading сохраняет прежние состояния; empty и network recovery имеют белый icon-chip, исходный текст и исходный retry-handler. Clear-search — светлая вторичная кнопка.
 
 ### Inputs / Fields
 
@@ -354,7 +454,7 @@ Locked presentation приглушает grid, seller и nav до opacity .45, �
 
 ### Catalogue / Counter
 
-Основная область товара вызывает прежний `changeQty(name,1)`. Отдельный счётчик открывает «− / +» без изменения количества. Тап вне открытого stepper только закрывает его и ничего не добавляет. Одновременно открыт один stepper; idle закрытие — 4с. Undo хранится в памяти текущей страницы, отменяет количество через прежний handler и не меняет оплату/карту/комментарий. Единственный новый UI storage-key — `omoti_anikina_count_hint_v1`; показ hint через 260мс, до трёх раз, 4с, после открытия stepper больше не показывается. 260мс — текущая задержка подсказки, не правило количества.
+Основная область товара вызывает прежний `changeQty(name,1)`. Отдельный счётчик открывает «− / +» без изменения количества. Тап вне открытого stepper только закрывает его и ничего не добавляет. Одновременно открыт один stepper; idle закрытие — 4с. Undo хранится в памяти текущей страницы, отменяет количество через прежний handler и не меняет оплату/карту/комментарий. UI storage-key подсказки каталога — `omoti_anikina_count_hint_v1` (Итоги отдельно добавляют только `omoti_anikina_stats_sections_v1`); показ hint через 260мс, до трёх раз, 4с, после открытия stepper больше не показывается. 260мс — текущая задержка подсказки, не правило количества.
 
 ### Integration / Financial Boundaries
 
@@ -370,7 +470,7 @@ Locked presentation приглушает grid, seller и nav до opacity .45, �
 | Правка/удаление | подробный чек, `c31-confirm-sheet`, прежние `delete-*` | `CashierLoyaltyCorrections`, revision/check identity, delete guards | JR-03…09, KB-04/06 |
 | QR | исходный registration dialog/channel/SVG | прежний registration QR module; показ без финансового запроса | LC-12 |
 | Журнал/поиск | `journal-list`, detail, `c31-search-input` | `journalChecksWithQueue`, local filter; remote refresh прежний | JR, SR |
-| Итоги/период | прежние `s-*`, stats/period/defects containers | `renderStatsSummary`, `loadStats`, existing period selectors | IT |
+| Итоги/период | itogi.js, .k-sec; прежние `s-*`, stats/period/defects containers | `renderStatsSummary`, `loadStats`, selectWeek/selectMonth/selectAll | ST-01…18, SW-01…10; IT-03/05/06 содержание |
 | Доступ/уведомления | исходные auth/notice/push nodes, point menu | device access, notices, existing retry/push handlers | SY-01/02/04 |
 
 `interface.js` сохраняет ссылки на прежние handlers и добавляет представление/локальные guards. Цены, скидки, восемь способов оплаты, смешанная проверка, snapshots наборов, записи и retry принадлежат HTML и финансовым модулям. Сумма чека и к оплате показываются отдельно. Поиск работает только среди уже загруженных чеков; сумма дня не рассчитывается. Unknown-покупка не запускает повтор checkout; модульный отказ/ожидание не снимается дизайнерским слоем.
@@ -380,6 +480,9 @@ R2 делает повторные UI-lock присваивания идемпо
 Единственная предусмотренная правка финансового модуля — Anikina-only async confirmation `C31Confirm(message)` вместо `window.confirm`: тот же текст и boolean, cancel без записи. Текущая synthetic regression дополнительно подтверждает принятие: вызван исходный checkout ровно один раз, после подтверждения UI освобождается; это не настоящая бонусная покупка. Соседние кассы сохраняют native-confirm. Первичные namespace продавцов, очереди, устройства, кэша и бонусных pending/correction не заменяются; PIN, токены и клиентские данные в этой документации отсутствуют. Manifest, Service Worker, vendor и QR SVG не становятся объектом дизайн-правки.
 
 ### Icons / Motion
+
+Новые Итоги используют native inline SVG 16×16, viewBox24×24, currentColor stroke2.4, rounded caps/joins: chevron heading/period, check выбранного периода, chevron «Весь брак». Новые raster для shipping не созданы. Высотной disclosure-анимации нет; только chevron transform260ms и header shadow200ms, reduced-motion снимает оба.
+
 
 `interface.js` содержит inline SVG undo/card/receipt/journal/stats/search/reload/close/check/upload/warning: viewBox 24×24, stroke currentColor, ширина штриха 2.2, обычный размер 18–20px; дополнительные статусы используют 16/24/32px по месту. Back подробного чека — SVG chevron 16px со штрихом 2.6. Готовность, очередь, offline/reconciliation и ошибка имеют разные vector-иконки тоста; универсальная галочка успеха больше не подменяет семантику всех сообщений.
 
