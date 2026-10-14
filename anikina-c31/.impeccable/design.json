@@ -1,8 +1,25 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-14T16:37:38.7054971+07:00",
-  "title": "Design System: OMOTI · Касса Аникина · C «Пульт» 3.1",
+  "generatedAt": "2026-10-14T12:29:53Z",
+  "title": "Design System: OMOTI · Касса Аникина · C3.2 «Тише» · вариант Б",
   "extensions": {
+    "metadata": {
+      "postPublicationAnnotationAt": "2026-10-14T17:12:08.9329819+07:00",
+      "publishedR2Commit": "12410cd9e11ccb7c8e87fcecfdb1c3081491bd18",
+      "pagesBuildStatus": "built",
+      "pagesBuiltAt": "2026-10-14T09:41:27Z",
+      "snapshotDistinction": "DESIGN/sidecar in Git R2 preserve the prepublication snapshot. This local post-deploy annotation is not pushed or a new runtime deploy; recorded application code SHA is unchanged.",
+      "verifiedPublication": "25 public synthetic functional groups PASS; 213 captures and all213 pairs independently visually reviewed, eight groups resolved; 38 asset SHA exact and repeat public verification exact.",
+      "nativeInlineContract": "Two native inline programs equal after LF normalization except the approved shared-dependency cache query-version in retry loader; no handler/API/formula rewrite.",
+      "evidence": {
+        "releaseReport": "../../../_local_artifacts/cashier-anikina-c31-20261014/REPORT.md",
+        "stateMap": "../../../_local_artifacts/cashier-anikina-c31-20261014/STATE_MAP.md",
+        "finalEvidence": "../../../_local_artifacts/cashier-anikina-c31-20261014/FINAL_EVIDENCE.json",
+        "inlineContract": "../../../_local_artifacts/cashier-anikina-c31-20261014/INLINE_CONTRACT.json"
+      },
+      "boundary": "Public synthetic browser acceptance does not verify physical keyboard/camera/safe-area/PWA/permissions or real financial test operations.",
+      "historyScope": "Preserved C3.1 R2 postpublication annotations below apply only to C3.1; they do not certify C3.2 deployment or visual acceptance."
+    },
     "colorMeta": {
       "amber": {
         "role": "primary",
@@ -16,10 +33,6 @@
         "role": "secondary",
         "displayName": "Брак и ошибка"
       },
-      "svc-bg": {
-        "role": "secondary",
-        "displayName": "Служебная поверхность"
-      },
       "bg": {
         "role": "neutral",
         "displayName": "Фон рабочего экрана"
@@ -31,6 +44,22 @@
       "ink": {
         "role": "neutral",
         "displayName": "Текст и док"
+      },
+      "tile": {
+        "role": "neutral",
+        "displayName": "Нейтральная плитка без рамки"
+      },
+      "pill": {
+        "role": "neutral",
+        "displayName": "Плашка продавца"
+      },
+      "field": {
+        "role": "neutral",
+        "displayName": "Поле и вторичная кнопка"
+      },
+      "brak-tile": {
+        "role": "secondary",
+        "displayName": "Выбранный брак"
       }
     },
     "typographyMeta": {
@@ -48,7 +77,7 @@
       },
       "tile": {
         "displayName": "Название товара",
-        "purpose": "До двух строк, отдельное от цены и количества."
+        "purpose": "До двух строк, без цены на плитке; отдельно от количества."
       },
       "count": {
         "displayName": "Счётчик",
@@ -57,12 +86,24 @@
       "input": {
         "displayName": "Поле",
         "purpose": "Не меньше 16px; устройство отдельно проверяет native keyboard."
+      },
+      "check": {
+        "displayName": "Чек · N моти",
+        "purpose": "Светлая кнопка открытия чека; count inline-block для bump."
+      },
+      "seller": {
+        "displayName": "Продавец",
+        "purpose": "Плашка с именем в единственной верхней строке."
+      },
+      "menu": {
+        "displayName": "Пункт листа",
+        "purpose": "Ещё и выбор сотрудника."
       }
     },
     "shadows": [
       {
         "name": "sheet",
-        "value": "0 20px 50px -20px rgba(0,0,0,.4)",
+        "value": "0 20px 50px -20px rgba(0,0,0,.45)",
         "purpose": "Белый лист над рабочим экраном."
       },
       {
@@ -83,44 +124,114 @@
     ],
     "motion": [
       {
+        "name": "ease",
+        "value": "cubic-bezier(.2,.8,.2,1)",
+        "purpose": "Approved CSS curve; WAAPI per-keyframe easing with overall linear."
+      },
+      {
         "name": "tile-press",
-        "value": "transform: scale(.98); transition: transform 120ms",
-        "purpose": "Нажатие товара."
+        "value": "110ms; scale(.965)",
+        "purpose": "Pointerdown; release on pointerup/cancel/leave."
       },
       {
-        "name": "dock-keyboard",
-        "value": "transition: transform .2s",
-        "purpose": "Скрытие дока при определённом кодом перекрытии клавиатурой."
+        "name": "button-press",
+        "value": "110ms; scale(.96)",
+        "purpose": "Dock buttons :active."
       },
       {
-        "name": "wait-spinner",
-        "value": "c31-spin 1s linear infinite",
-        "purpose": "Фактическое ожидание сохранения/бонусной операции."
+        "name": "fly",
+        "value": "420ms; rise28px; max6",
+        "purpose": "Body-tile successful +1 only; pointer-events:none."
       },
       {
-        "name": "toast-lifetime",
-        "value": "2000ms",
-        "purpose": "Текст статуса из прежнего showToast."
+        "name": "pop",
+        "value": "260ms; scale(.6) -> 1.18@55% -> 1",
+        "purpose": "Actual quantity change; restart on repeat."
+      },
+      {
+        "name": "bump",
+        "value": "240ms; scale(.6) -> 1.18@55% -> 1",
+        "purpose": "Dock count changed after first appearance."
+      },
+      {
+        "name": "tick",
+        "value": "260ms; rgba(255,162,26,.28) -> transparent",
+        "purpose": "Dock sum changed after first appearance."
+      },
+      {
+        "name": "dock-reveal",
+        "value": "height260ms; opacity200ms; 0fr <-> 1fr",
+        "purpose": "Rows follow basket state and are inert when empty."
+      },
+      {
+        "name": "sheet",
+        "value": "transform260ms; rise16px; opacity200ms",
+        "purpose": "is-open; closed visibility:hidden and pointer-events:none/inert."
+      },
+      {
+        "name": "scrim",
+        "value": "200ms",
+        "purpose": "Open-sheet backdrop."
+      },
+      {
+        "name": "toast",
+        "value": "transform260ms; rise72px; opacity200ms; lifetime2000ms",
+        "purpose": "Native text/outcome; top8px + safe-area."
+      },
+      {
+        "name": "step-in",
+        "value": "200ms; scale(.96) -> 1",
+        "purpose": "Quantity editor entrance."
+      },
+      {
+        "name": "tile-state",
+        "value": "200ms background-color/box-shadow",
+        "purpose": "Selected/unselected state."
+      },
+      {
+        "name": "confirmed-flash",
+        "value": "360ms; scale(.2) -> 2.2; ease-out",
+        "purpose": "Confirmed native save only; no queue/error/unknown success."
+      },
+      {
+        "name": "tiles-out",
+        "value": "240ms; stagger25ms; max10steps; fill:backwards",
+        "purpose": "Confirmed native save; state colors from approved motion.js."
+      },
+      {
+        "name": "missing-seller-shake",
+        "value": "300ms; x0/-5/+5/-5/+5/0; easing: ease per frame",
+        "purpose": "Missing seller payment tap; ignore repeated shake while running."
+      },
+      {
+        "name": "vibrate",
+        "value": "8ms",
+        "purpose": "Actual cashier +1 only; API availability; no undo or iPhone substitute."
       },
       {
         "name": "stepper-idle",
         "value": "4000ms",
-        "purpose": "Закрытие режима без изменения количества."
+        "purpose": "Close editor without quantity change."
       },
       {
         "name": "hint-delay",
-        "value": "600ms",
-        "purpose": "Только задержка подсказки; не правило количества."
+        "value": "260ms",
+        "purpose": "Current source delay; maximum3 hints before first stepper."
       },
       {
         "name": "hint-lifetime",
         "value": "4000ms",
-        "purpose": "До касания, максимум три показа до первого открытия stepper."
+        "purpose": "Hint transient UI only."
+      },
+      {
+        "name": "wait-spinner",
+        "value": "c31-spin 1s linear infinite",
+        "purpose": "Native saving/pending state."
       },
       {
         "name": "reduced-motion",
-        "value": "animation: none !important; transition: none !important",
-        "purpose": "prefers-reduced-motion: reduce."
+        "value": "animation:none!important;transition:none!important; no WAAPI/fly/vibrate",
+        "purpose": "Live prefers-reduced-motion changes."
       }
     ],
     "breakpoints": [
@@ -135,104 +246,86 @@
     ],
     "provenance": {
       "scope": "omoti-kassa/omoti_anikina.html and anikina-c31 only",
-      "documentationStatus": "local R2 presentation candidate after first publication; R2 not yet published or publicly accepted",
-      "approvedSource": "../../../design-system/modules/cashier-anikina/c31-approved-20261014/HANDOFF.md",
-      "archiveSHA256": "095c42fd6b34e8c90502e362be3ad30df342b689e171cbc089bb761fdd1370ba",
-      "baselineHead": "5c9eb685ac734bd832ae7c8771e6336eed948fd7",
+      "documentationStatus": "C3.2 local implementation documentation; no C3.2 deployed/served identity asserted",
+      "approvedSource": "../../../design-system/modules/cashier-anikina/c32-approved-20261014/HANDOFF.md",
+      "basePreserve": "../../../design-system/modules/cashier-anikina/c31-approved-20261014/PRESERVE.md",
+      "baselineHead": "12410cd9e11ccb7c8e87fcecfdb1c3081491bd18",
+      "sourceIdentityAt": "2026-10-14T13:12:02.325336+00:00",
       "sourceSHA256": {
-        "interface.js": "db37f5c10cac95a60cd1f1df41cdb4217fd28b3460db32cbbb3acf0a48add9dc",
-        "integration.css": "9b16ff0b5a92deb1dca5a864072d48b2a830bb1c8e03bfa0968b363a140e8e0c",
-        "tokens.css": "52d514bc2d889d488d1e76e6cbdaf73d7c21ba6ea0719681c4bfd9f28bc5775a",
-        "components.css": "6464b707a99c419353c2ccb42a5e637ee10ba147b7c427a6771c53d38750c7bb"
+        "../omoti_anikina.html": "c69550f7bd6764d0972c57c73fda8d5f19bbc413d294bbdb8ba0fda00ba3a78c",
+        "interface.js": "ab2a0b2c4a99d014b462f4f593b3327f708ee95c1001462bce063f2322b6c0cb",
+        "integration.css": "ed8d14d2dbbe3015f48002aa3dfac24fb75bc3ffa810ea39b619ef15ed65f3d9",
+        "tokens.css": "f2a4d13dc761751688a83f7412643b0bd0490a08dfb6207e54c651a07e2fda7c",
+        "components.css": "4ea61807985429301c53cf48fac0e97a31c3aed7efac01659e81eb235ad73dfd",
+        "motion.css": "71224b944a7f3a4ab347356b10b6a8c2cfb11c307242da28f9bf5ed185406b5a",
+        "motion.js": "f0ba0cacdb9a709d4e99421ff3c25fc9d04b582e1f046efe2e9f64a9b4a40817"
       },
-      "palettePolicy": "Owner-pinned tokens; no synthesized tonal ramps or new palette.",
-      "verification": "Canonical local ignored _qa/c31/regression.cjs and REGRESSION.json report 25 synthetic groups, errors0, no failure and realWrites0, including real measured notice height/vector back and async-confirm acceptance with exactly one original checkout and UI release. Earlier task-root 19-group report/runner are historical diagnostics. Financial browser testing mocks every orders.omoti.ru request and blocks Service Worker.",
+      "palettePolicy": "Owner-pinned C3.2 tokens; no synthesized tonal ramps or new palette.",
+      "verification": "Final local-publish-final/TESTS all8exit0; C31 regression25; C32 code0/prototype46/all0FAIL;14 prototype behaviors;8 native motion storyboards46frames; independent49/retained102/material-fix/motion review SHIP. Success holds confirmed presentation260ms, full-widthamber disabled/inert control, immediate next tile. Physical iPhone OPEN, no real writes.",
       "unverified": [
+        "physical iPhone scrolling: OPEN; real freeze not reproduced",
         "native iPhone/Android keyboard",
         "real camera",
         "native safe-area",
-        "Safari/PWA device behavior",
-        "device permission branches",
-        "all 71 current-state acceptance",
-        "R2 deployment",
-        "R2 published audit"
+        "Safari/PWA/device permissions",
+        "real financial test operations"
       ],
-      "notCanonized": "Main close/check/reload/toast/search-clear/period/back actions now use inline SVG; residual warning-title glyph is not a rule for future components. Local fixes are not public acceptance; physical keyboard/camera/safe-area remain open. Sheet entrance animation token remains declared but unimplemented.",
-      "publishedR1": {
-        "commit": "e6f7efbd8afdabf29885ca5fff05532e8b9e96d8",
-        "builtAt": "2026-10-14T08:36:10Z",
-        "manifest": "../../../_local_artifacts/cashier-anikina-c31-20261014/PUBLISHED_ASSETS-1791967035124.json",
-        "independentReview": "../../../_local_artifacts/cashier-anikina-c31-20261014/PUBLISHED_AUDIT_R1.md",
-        "disposition": "fix",
-        "boundary": "Review targets published R1 only; 213 metadata captures and 86 effective visual comparisons, not all 213 visually accepted.",
-        "sourceIdentity": "Served Git/LF byte SHA is distinct from Windows raw CRLF SHA; served-assets manifest owns published identity."
-      },
-      "r2Release": "Pending. Actual R2 deployment metadata and public verdict belong to the release report outside this repository.",
-      "missingInputs": "Generic PRODUCT.md, Impeccable build-state/spec, hero-repro, QUALITY BAR card and global per-region comp-diff verdict were not supplied. Existing-app owner-pinned pack, surface brief, FUNCTION_MAP and BASELINE substitute for product/visual direction; no new seed or hero.",
       "evidenceInventory": [
         {
-          "path": "../../../_local_artifacts/cashier-anikina-c31-20261014/BASELINE.json",
-          "scope": "Original Pages/main, preserved baseline bytes/function hashes/storage."
+          "path": "../../../_local_artifacts/cashier-anikina-c32-20261014/SOURCE_BASELINE.json",
+          "scope": "C3.1 current commit and preserved dirty documentation baseline."
         },
         {
-          "path": "../../../_local_artifacts/cashier-anikina-c31-20261014/FINISH_REVIEW_FINAL.md",
-          "scope": "Historical bounded local scored fixes; not published or all-current-state acceptance."
+          "path": "../../../_local_artifacts/cashier-anikina-c32-20261014/EXTENDED-local-final.json",
+          "scope": "Synthetic source/motion/outcome/geometry checks; no real writes."
         },
         {
-          "path": "../../../_local_artifacts/cashier-anikina-c31-20261014/published-r1/report.json",
-          "scope": "First published capture, 71 x 3 widths, separate served identity manifest."
+          "path": "../../../_local_artifacts/cashier-anikina-c32-20261014/WEBKIT-local-final.json",
+          "scope": "20 programmatic scroll/update loops; connected tile retained; Windows synthetic WebKit is not physical iPhone acceptance."
         },
         {
-          "path": "../../../_local_artifacts/cashier-anikina-c31-20261014/published-r1-jr02-addendum/report.json",
-          "scope": "Supersedes only JR02 state evidence; older captures preserved."
+          "path": "../../../_local_artifacts/cashier-anikina-c32-20261014/VISUAL_REVIEW_LOCAL_R1.md",
+          "scope": "49 independently viewed original pairs; disposition fix, F1-F6/E1-E3."
         },
         {
-          "path": "../../../_local_artifacts/cashier-anikina-c31-20261014/local-r2-final-batch/report.json",
-          "scope": "33 targeted captures on their sourceSHA; captured-needs-visual-review."
+          "path": "../../../_local_artifacts/cashier-anikina-c32-20261014/local-frozen/TESTS.json",
+          "scope": "Frozen final local runtime tests, all8 exit0; private APIs fixture-only."
         },
         {
-          "path": "../../../_local_artifacts/cashier-anikina-c31-20261014/local-r2-final-closure/report.json",
-          "scope": "9 targeted captures on their sourceSHA; captured-needs-visual-review."
+          "path": "../../../_local_artifacts/cashier-anikina-c32-20261014/local-freeze/motion/report.json",
+          "scope": "Eight approved storyboard sequences/46 native frames; physical timing/haptics still require device."
         },
         {
-          "path": "../../../_local_artifacts/cashier-anikina-c31-20261014/GUARD_LOOP-local.json",
-          "scope": "0 disabled mutations in 350ms; hidden-SKU stays blocked, compared with R1 58."
+          "path": "../../../_local_artifacts/cashier-anikina-c32-20261014/VISUAL_REVIEW_LOCAL_SHIP.md",
+          "scope": "Independent final bounded local SHIP, unresolved material groups0; physical iPhoneOPEN."
         },
         {
-          "path": "../../../_local_artifacts/cashier-anikina-c31-20261014/CARD_CAPTION-local-r2.json",
-          "scope": "Known synthetic due with enabled native ready caption; errors0, realWrites0."
-        },
-        {
-          "path": "../../_qa/c31/regression.cjs",
-          "scope": "Canonical maintained local ignored synthetic harness, not shipped web assets."
-        },
-        {
-          "path": "../../_qa/c31/REGRESSION.json",
-          "scope": "Canonical 25-group report, errors0, no failure, realWrites0; notice-height/vector-back and original async-confirm acceptance checked; overrides historical task-root19."
-        },
-        {
-          "path": "../../../_local_artifacts/cashier-anikina-c31-20261014/local-r2-frozen-final/report.json",
-          "scope": "Previous30 targeted captures on their single sourceSHA, errors/missingFixtures0. Superseded for notice/back changes by latest6; not current full213."
-        },
-        {
-          "path": "../../../_local_artifacts/cashier-anikina-c31-20261014/local-r2-final-notice/report.json",
-          "scope": "Latest6 targeted JR02/JR06 captures match current documented sourceSHA; captured-needs-visual-review, not independent verdict or full213."
+          "path": "../../../_local_artifacts/cashier-anikina-c32-20261014/local-publish-final/TESTS.json",
+          "scope": "Final native, code, synthetic runtime checks, all8exit0."
         }
-      ]
+      ],
+      "nativeBoundary": "Original two native inline programs except approved retry cache query; financial handlers/API/data/calculations/other cashiers remain owner-controlled.",
+      "historicalEvidence": "extensions.metadata and extensions.c31History preserve historical C3.1 evidence and local annotations."
     },
     "geometry": {
-      "cashierDock": "174px plus any extra native safe-area",
-      "navigationDock": "64px plus any extra native safe-area",
-      "servicePaidDock": "224px",
-      "serviceDebtDock": "232px",
-      "ordinarySheetBottom": "current dock + 8px",
-      "tileHeight": "74px",
+      "source": "ResizeObserver on dock border-box -> Math.round(rect.height) on app and :root; dynamic during transitions",
+      "cashierDock": "Measured; ordinary174px / simulated34px-bottom182px",
+      "navigationDock": "Measured; empty basket/journal/stats64px / simulated34px-bottom72px",
+      "servicePaidDock": "Measured;224px / simulated34px-bottom232px",
+      "serviceDebtDock": "Measured;216px / simulated34px-bottom224px; also brak",
+      "dockBottom": "max(16px, safe-area-bottom - 10px)",
+      "gridBottom": "current measured dock +32px",
+      "fadeHeight": "24px",
+      "ordinarySheetBottom": "current measured dock +8px",
+      "sellerSheetBottom": "64px -16px + dock-pad-bottom +8px",
+      "tileHeight": "70px",
       "columns": 3,
-      "counterVisible": "32 x 28px",
-      "counterHit": "50 x 44px",
-      "stepperButton": "40-44 x 44px",
+      "counterVisible": "32 x28px",
+      "counterHit": "50 x44px",
+      "stepperButton": "40-44 x44px",
       "navigationVisible": "40px",
-      "navigationHit": "51px"
+      "navigationHit": "48px (CSS +/-4px)",
+      "topline": "8px +safe-area-top;44px high; grid base60px"
     },
     "keyboard": {
       "source": "visualViewport resize/scroll and focusin/focusout",
@@ -257,15 +350,132 @@
       "readyCaption": "Restore native ready caption only after owner enables close with known due, no pending/lock and no correction. Do not change limits/unknown/disabled/identity."
     },
     "presentationFixes": {
-      "journal": "Metadata and badges inline, wrapping by width. Ordinary list uses contextual real date/plural and keeps full native date in title. Filtered results have found-count and loaded scope at opposite ends, no unfiltered day count; clear hidden on empty input and uses SVG close.",
-      "toast": "Native message semantics choose inline check/upload/reload/warning. Journal top96+safe-area below header; while toast visible, k-list top96+measuredheight+8. ResizeObserver measures getBoundingClientRect height, fallback window resize; default48 only fallback. Hidden toast restores normal list. Other screens top40+safe-area; original copy/lifetime.",
-      "locks": "Grid/context/navigation opacity .45; recovery CTA remains readable. Hide dock under camera/QR/delete and detected keyboard.",
-      "period": "Wrap complete native period qualifier including incomplete; keep native range/freshness semantics, vector chevron/check controls.",
-      "attention": "Labels and summaries use existing native rendered values; white outlined full-defect disclosure with chevron.",
-      "stateLayouts": "Loading hierarchy, white icon-chip reload/empty recovery and light clear-search action; native handlers/text retained.",
-      "comment": "Focus and scroll textarea toward visible bottom above pinned total; native physical keyboard is not verified.",
-      "deletion": "Existing guarded checkbox/reason/text confirmation; round native checkbox uses danger surface with vector tick and small valid SVG, not whole green field.",
-      "back": "Receipt back is inline chevron SVG16px/stroke2.6, original journal navigation retained."
+      "buttons": "C3.2 sale amber; self light; brak dark outlined; original disabled/wait semantics.",
+      "journal": "Two lines, white day groups, no flavors or struck amount in list, native quantityLabel, quiet service/card/change/promo marks; queue/recon status preserved.",
+      "receipt": "Header Чек №, native date/seller, payment/sum, composition, native loyalty/comment/edit/delete; actions guarded by original owner.",
+      "stats": "Ordinary borders removed; amber revenue stripe; attention/wait borders preserved.",
+      "toast": "Top8px +safe-area; approved motion and original native copy/lifetime.",
+      "sheet": "is-open plus inert/aria-hidden; CSS visibility/pointer-events; cart Done44px and undo in header.",
+      "seller": "52px rows,32px avatars, selected amber avatar; source names/handlers preserved."
+    },
+    "c31History": {
+      "provenance": {
+        "scope": "omoti-kassa/omoti_anikina.html and anikina-c31 only",
+        "documentationStatus": "R2 implementation snapshot preserved from prepublication; current local metadata annotates verified publication without a new runtime deploy",
+        "approvedSource": "../../../design-system/modules/cashier-anikina/c31-approved-20261014/HANDOFF.md",
+        "archiveSHA256": "095c42fd6b34e8c90502e362be3ad30df342b689e171cbc089bb761fdd1370ba",
+        "baselineHead": "5c9eb685ac734bd832ae7c8771e6336eed948fd7",
+        "sourceSHA256": {
+          "interface.js": "db37f5c10cac95a60cd1f1df41cdb4217fd28b3460db32cbbb3acf0a48add9dc",
+          "integration.css": "9b16ff0b5a92deb1dca5a864072d48b2a830bb1c8e03bfa0968b363a140e8e0c",
+          "tokens.css": "52d514bc2d889d488d1e76e6cbdaf73d7c21ba6ea0719681c4bfd9f28bc5775a",
+          "components.css": "6464b707a99c419353c2ccb42a5e637ee10ba147b7c427a6771c53d38750c7bb"
+        },
+        "palettePolicy": "Owner-pinned tokens; no synthesized tonal ramps or new palette.",
+        "verification": "Canonical local ignored _qa/c31/regression.cjs and REGRESSION.json report 25 synthetic groups, errors0, no failure and realWrites0, including real measured notice height/vector back and async-confirm acceptance with exactly one original checkout and UI release. Earlier task-root 19-group report/runner are historical diagnostics. Financial browser testing mocks every orders.omoti.ru request and blocks Service Worker.",
+        "unverified": [
+          "native iPhone/Android keyboard",
+          "real camera",
+          "native safe-area",
+          "Safari/PWA device behavior",
+          "device permission branches",
+          "real financial test operations"
+        ],
+        "notCanonized": "Main close/check/reload/toast/search-clear/period/back actions now use inline SVG; residual warning-title glyph is not a rule for future components. R2 public acceptance is separately annotated in extensions.metadata; physical keyboard/camera/safe-area and real financial tests remain open. Sheet entrance animation token remains declared but unimplemented.",
+        "publishedR1": {
+          "commit": "e6f7efbd8afdabf29885ca5fff05532e8b9e96d8",
+          "builtAt": "2026-10-14T08:36:10Z",
+          "manifest": "../../../_local_artifacts/cashier-anikina-c31-20261014/PUBLISHED_ASSETS-1791967035124.json",
+          "independentReview": "../../../_local_artifacts/cashier-anikina-c31-20261014/PUBLISHED_AUDIT_R1.md",
+          "disposition": "fix",
+          "boundary": "Review targets published R1 only; 213 metadata captures and 86 effective visual comparisons, not all 213 visually accepted.",
+          "sourceIdentity": "Served Git/LF byte SHA is distinct from Windows raw CRLF SHA; served-assets manifest owns published identity."
+        },
+        "r2Release": "Published12410cd9e11ccb7c8e87fcecfdb1c3081491bd18, built2026-10-14T09:41:27Z. Actual deployment metadata/public verdict belong to the release report outside this repository; this local documentation annotation is not a third deploy.",
+        "missingInputs": "Generic PRODUCT.md, Impeccable build-state/spec, hero-repro, QUALITY BAR card and global per-region comp-diff verdict were not supplied. Existing-app owner-pinned pack, surface brief, FUNCTION_MAP and BASELINE substitute for product/visual direction; no new seed or hero.",
+        "evidenceInventory": [
+          {
+            "path": "../../../_local_artifacts/cashier-anikina-c31-20261014/BASELINE.json",
+            "scope": "Original Pages/main, preserved baseline bytes/function hashes/storage."
+          },
+          {
+            "path": "../../../_local_artifacts/cashier-anikina-c31-20261014/FINISH_REVIEW_FINAL.md",
+            "scope": "Historical bounded local scored fixes; not published or all-current-state acceptance."
+          },
+          {
+            "path": "../../../_local_artifacts/cashier-anikina-c31-20261014/published-r1/report.json",
+            "scope": "First published capture, 71 x 3 widths, separate served identity manifest."
+          },
+          {
+            "path": "../../../_local_artifacts/cashier-anikina-c31-20261014/published-r1-jr02-addendum/report.json",
+            "scope": "Supersedes only JR02 state evidence; older captures preserved."
+          },
+          {
+            "path": "../../../_local_artifacts/cashier-anikina-c31-20261014/local-r2-final-batch/report.json",
+            "scope": "33 targeted captures on their sourceSHA; captured-needs-visual-review."
+          },
+          {
+            "path": "../../../_local_artifacts/cashier-anikina-c31-20261014/local-r2-final-closure/report.json",
+            "scope": "9 targeted captures on their sourceSHA; captured-needs-visual-review."
+          },
+          {
+            "path": "../../../_local_artifacts/cashier-anikina-c31-20261014/GUARD_LOOP-local.json",
+            "scope": "0 disabled mutations in 350ms; hidden-SKU stays blocked, compared with R1 58."
+          },
+          {
+            "path": "../../../_local_artifacts/cashier-anikina-c31-20261014/CARD_CAPTION-local-r2.json",
+            "scope": "Known synthetic due with enabled native ready caption; errors0, realWrites0."
+          },
+          {
+            "path": "../../_qa/c31/regression.cjs",
+            "scope": "Canonical maintained local ignored synthetic harness, not shipped web assets."
+          },
+          {
+            "path": "../../_qa/c31/REGRESSION.json",
+            "scope": "Canonical 25-group report, errors0, no failure, realWrites0; notice-height/vector-back and original async-confirm acceptance checked; overrides historical task-root19."
+          },
+          {
+            "path": "../../../_local_artifacts/cashier-anikina-c31-20261014/local-r2-frozen-final/report.json",
+            "scope": "Previous30 targeted captures on their single sourceSHA, errors/missingFixtures0. Superseded for notice/back changes by latest6; not current full213."
+          },
+          {
+            "path": "../../../_local_artifacts/cashier-anikina-c31-20261014/local-r2-final-notice/report.json",
+            "scope": "Latest6 targeted JR02/JR06 captures match current documented sourceSHA; captured-needs-visual-review, not independent verdict or full213."
+          }
+        ]
+      },
+      "geometry": {
+        "cashierDock": "174px plus any extra native safe-area",
+        "navigationDock": "64px plus any extra native safe-area",
+        "servicePaidDock": "224px",
+        "serviceDebtDock": "232px",
+        "ordinarySheetBottom": "current dock + 8px",
+        "tileHeight": "74px",
+        "columns": 3,
+        "counterVisible": "32 x 28px",
+        "counterHit": "50 x 44px",
+        "stepperButton": "40-44 x 44px",
+        "navigationVisible": "40px",
+        "navigationHit": "51px"
+      },
+      "presentationFixes": {
+        "journal": "Metadata and badges inline, wrapping by width. Ordinary list uses contextual real date/plural and keeps full native date in title. Filtered results have found-count and loaded scope at opposite ends, no unfiltered day count; clear hidden on empty input and uses SVG close.",
+        "toast": "Native message semantics choose inline check/upload/reload/warning. Journal top96+safe-area below header; while toast visible, k-list top96+measuredheight+8. ResizeObserver measures getBoundingClientRect height, fallback window resize; default48 only fallback. Hidden toast restores normal list. Other screens top40+safe-area; original copy/lifetime.",
+        "locks": "Grid/context/navigation opacity .45; recovery CTA remains readable. Hide dock under camera/QR/delete and detected keyboard.",
+        "period": "Wrap complete native period qualifier including incomplete; keep native range/freshness semantics, vector chevron/check controls.",
+        "attention": "Labels and summaries use existing native rendered values; white outlined full-defect disclosure with chevron.",
+        "stateLayouts": "Loading hierarchy, white icon-chip reload/empty recovery and light clear-search action; native handlers/text retained.",
+        "comment": "Focus and scroll textarea toward visible bottom above pinned total; native physical keyboard is not verified.",
+        "deletion": "Existing guarded checkbox/reason/text confirmation; round native checkbox uses danger surface with vector tick and small valid SVG, not whole green field.",
+        "back": "Receipt back is inline chevron SVG16px/stroke2.6, original journal navigation retained."
+      }
+    },
+    "scroll": {
+      "stableTargets": "Update tiles by name in place; state render never assigns scrollTop.",
+      "assortmentChange": "Defer while touching or within150ms after scroll; settle timer155ms/scrollend.",
+      "root": "html/body height100%, overflow:hidden, overscroll-behavior:none.",
+      "diagnostics": "?qa=scroll only: last200 non-personal touch/scroll/target-identity events to sessionStorage; default off; remove after physical confirmation in separate commit.",
+      "manualStatus": "Physical iPhone scrolling OPEN. Windows synthetic WebKit cannot reproduce or certify native inertial freeze."
     }
   },
   "components": [
@@ -313,7 +523,7 @@
       "kind": "nav",
       "description": "Прежние вкладки с inline SVG и aria-current.",
       "html": "<nav class=\"ds-nav\"><button aria-current=\"page\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M6 3h12v18l-3-2-3 2-3-2-3 2z\"/><path d=\"M9 8h6M9 12h6\"/></svg>Касса</button><button>Журнал</button><button>Итоги</button></nav>",
-      "css": ".ds-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;background:var(--k-ink,#121212);padding:5px 10px 16px;border-top:1px solid var(--k-dock-line,#2A2A28)}.ds-nav button{height:40px;position:relative;border:0;border-radius:13px;background:transparent;color:var(--k-dock-muted,#8E8C86);font-family:var(--k-font,'Geologica','Segoe UI',system-ui,sans-serif);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:7px}.ds-nav button:after{content:'';position:absolute;left:0;right:0;top:-5px;bottom:-6px}.ds-nav button[aria-current=page]{background:var(--k-dock-btn,#262624);color:#fff}.ds-nav [aria-current=page] svg{color:var(--k-amber,#FFA21A)}.ds-nav button:hover:not([aria-current=page]){background:transparent;color:var(--k-dock-muted,#8E8C86)}.ds-nav button:focus-visible{outline:2px solid var(--k-amber-line,#F59300);outline-offset:3px}"
+      "css": ".ds-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;background:var(--k-ink,#121212);padding:5px 10px 16px;border-top:1px solid var(--k-dock-line,#2A2A28)}.ds-nav button{height:40px;position:relative;border:0;border-radius:13px;background:transparent;color:var(--k-dock-muted,#8E8C86);font-family:var(--k-font,'Geologica','Segoe UI',system-ui,sans-serif);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:7px}.ds-nav button:after{content:'';position:absolute;left:0;right:0;top:-4px;bottom:-4px}.ds-nav button[aria-current=page]{background:var(--k-dock-btn,#262624);color:#fff}.ds-nav [aria-current=page] svg{color:var(--k-amber,#FFA21A)}.ds-nav button:hover:not([aria-current=page]){background:transparent;color:var(--k-dock-muted,#8E8C86)}.ds-nav button:focus-visible{outline:2px solid var(--k-amber-line,#F59300);outline-offset:3px}"
     },
     {
       "name": "Метка очереди",
@@ -326,9 +536,9 @@
       "name": "Выбранный товар и счётчик",
       "kind": "custom",
       "refersTo": "tile-selected",
-      "description": "Плитка +1 и отдельный счётчик; snippet только показывает форму, не выполняет финансовый handler.",
-      "html": "<div class=\"ds-tile\"><button class=\"ds-hit\" aria-label=\"Товар, в чеке 3 шт.\"></button><span class=\"ds-name\">Название вкуса</span><span class=\"ds-foot\"><span class=\"ds-price\">120</span><button class=\"ds-count\" aria-label=\"Изменить количество: 3\">3</button></span></div>",
-      "css": ".ds-tile{box-sizing:border-box;position:relative;height:74px;width:118px;border:0;border-radius:16px;background:var(--k-amber-tile,#FFF7E8);box-shadow:inset 0 0 0 2px var(--k-amber-line,#F59300);padding:9px 10px 6px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;font-family:var(--k-font,'Geologica','Segoe UI',system-ui,sans-serif);color:var(--k-ink,#121212);touch-action:manipulation}.ds-hit{position:absolute;inset:0;border:0;background:transparent;border-radius:inherit;padding:0}.ds-name{position:relative;pointer-events:none;font-size:13.5px;font-weight:600;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.ds-foot{position:relative;display:flex;justify-content:space-between;align-items:flex-end;height:28px;pointer-events:none}.ds-price{font-size:12px;font-weight:500;line-height:1;color:var(--k-muted-2,#77756F);padding-bottom:3px}.ds-count{position:relative;width:32px;height:28px;padding:0;border:0;border-radius:9px;background:var(--k-amber,#FFA21A);color:var(--k-ink,#121212);font-size:19px;font-weight:800;pointer-events:auto}.ds-count:after{content:'';position:absolute;top:-10px;right:-10px;bottom:-6px;left:-8px}.ds-tile:active{transform:scale(.98);transition:transform 120ms}.ds-hit:hover{background:transparent}.ds-hit:focus-visible,.ds-count:focus-visible{outline:2px solid var(--k-amber-line,#F59300);outline-offset:3px}@media(prefers-reduced-motion:reduce){.ds-tile:active{transition:none}}"
+      "description": "C3.2 нейтральная плитка без цены; +1 body-hit и отдельный счётчик. Snippet показывает форму без финансового handler.",
+      "html": "<div class=\"ds-tile\"><button class=\"ds-hit\" aria-label=\"Товар, в чеке 3 шт.\"></button><span class=\"ds-name\">Название вкуса</span><button class=\"ds-count\" aria-label=\"Изменить количество: 3\">3</button></div>",
+      "css": ".ds-tile{box-sizing:border-box;position:relative;height:70px;width:118px;border:0;border-radius:14px;background:var(--k-amber-tile,#FFF3DC);box-shadow:inset 0 0 0 2px var(--k-amber-line,#F59300);padding:7px 10px 8px;overflow:hidden;font-family:var(--k-font,'Geologica','Segoe UI',system-ui,sans-serif);color:var(--k-ink,#121212);touch-action:manipulation}.ds-hit{position:absolute;inset:0;border:0;background:transparent;border-radius:inherit;padding:0}.ds-name{position:relative;pointer-events:none;font-size:14px;font-weight:600;line-height:1.08;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.ds-count{position:absolute;right:5px;bottom:5px;width:32px;height:28px;padding:0;border:0;border-radius:9px;background:var(--k-amber,#FFA21A);color:var(--k-ink,#121212);font-size:19px;font-weight:800}.ds-count:after{content:'';position:absolute;top:-11px;right:-5px;bottom:-5px;left:-13px}.ds-tile:active{transform:scale(.965);transition:transform 110ms}.ds-hit:hover{background:transparent}.ds-hit:focus-visible,.ds-count:focus-visible{outline:2px solid var(--k-amber-line,#F59300);outline-offset:3px}@media(prefers-reduced-motion:reduce){.ds-tile:active{transition:none;transform:none}}"
     },
     {
       "name": "Ошибка состояния",
@@ -341,20 +551,21 @@
       "name": "Белая карточка",
       "kind": "card",
       "refersTo": "card",
-      "description": "Основная поверхность итогов и подробного чека.",
+      "description": "C3.2 белая карточка без обычного контура; рамка оставлена состояниям внимания/ожидания.",
       "html": "<section class=\"ds-card\"><span class=\"ds-card-title\">По сотрудникам</span><span>Данные выбранного периода</span></section>",
-      "css": ".ds-card{background:#fff;border-radius:18px;box-shadow:inset 0 0 0 1px var(--k-line,#E5E3DD);padding:12px 14px;display:flex;flex-direction:column;gap:6px;font-family:var(--k-font,'Geologica','Segoe UI',system-ui,sans-serif);color:var(--k-ink,#121212);font-size:14px}.ds-card-title{font-size:12px;font-weight:800;letter-spacing:.06em;color:var(--k-muted-2,#77756F);text-transform:uppercase}"
+      "css": ".ds-card{background:#fff;border-radius:18px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;font-family:var(--k-font,'Geologica','Segoe UI',system-ui,sans-serif);color:var(--k-ink,#121212);font-size:14px}.ds-card-title{font-size:12px;font-weight:800;letter-spacing:.06em;color:var(--k-muted-2,#77756F);text-transform:uppercase}"
     }
   ],
   "narrative": {
-    "northStar": "Пульт C3.1",
-    "overview": "Это запись фактической локальной реализации утверждённого владельцем мобильного пульта Аникиной. Светлый рабочий экран содержит компактные товары, белые листы и карточки; тёмный док собирает чек, оплату и единственную навигацию. Янтарь показывает выбор и главное действие, красный — ошибку, брак или опасное действие. Плотность помогает ежедневной работе кассира с телефона.\n\nДокумент описывает сборку, а не вводит новый стандарт OMOTI. Утверждённый пакет [C3.1](../../design-system/modules/cashier-anikina/c31-approved-20261014/HANDOFF.md) остаётся выше этой записи. Порядок приоритета: финансовые функции и `PRESERVE.md`; дословные статусы из кода; поведение из `INTERACTIONS.md`; оригинальные PNG и HTML конкретного состояния; значения из токенов пакета. Реальные имена, ассортимент, цены, даты и суммы берутся из кода/сервера. Общая ERP DS v1.0.0 и две соседние кассы этим документом не изменяются.",
+    "northStar": "Тише C3.2 · вариант Б",
+    "overview": "Это запись фактической локальной реализации утверждённого владельцем C3.2 «Тише», вариант Б, только для кассы Аникиной. Одна верхняя строка объединяет точку и продавца. Нейтральные плитки без цен и обычных рамок оставляют видимыми имя и количество; тёмный док показывает строки чека с первым товаром. Служебные действия находятся в «Ещё», Журнал собирает чеки дня в спокойные белые группы, обычные карточки Итогов не имеют рамок.\n\nИсточник вида и движения — неизменяемый [addon C3.2](../../_local_artifacts/cashier-anikina-c32-20261014/package/omoti-kassa-c32-handoff-addon/HANDOFF.md), его prototype, tokens/components/motion и 49 PNG. Он дополняет [C3.1](../../design-system/modules/cashier-anikina/c31-approved-20261014/HANDOFF.md). Приоритет: работающие финансовые функции и C3.1 `PRESERVE.md`; prototype и design-system C3.2; PNG конкретного состояния; документы addon; C3.1 для незатронутого. Имена, ассортимент, цены, даты, суммы, доступность и тексты состояний остаются данными исходного кода/сервера. Этот документ описывает реализацию и не заменяет [единый регламент](../../OMOTI_WORK_REGULATION.md), общую ERP DS v1.0.0 или стандарты двух других касс.",
     "keyCharacteristics": [
-      "Светлая рабочая поверхность и тёмный док.",
-      "Geologica и табличные цифры.",
-      "Три колонки товаров, отдельная область счётчика.",
-      "Прежние DOM IDs и финансовые handlers в новых контейнерах.",
-      "Статус, выбор и блокировка выражают фактическое состояние."
+      "Одна верхняя строка; продавец в плашке с аватаром.",
+      "Geologica, табличные цифры и три колонки нейтральных плиток без цен.",
+      "Пустой док содержит только Касса / Журнал / Итоги.",
+      "Девять утверждённых эффектов C3.2, без ожидания на пути касаний.",
+      "Стабильные DOM-плитки и отступы от измеренной высоты дока.",
+      "Прежние финансовые владельцы, ID, API и namespace."
     ],
     "rules": [
       {
@@ -369,18 +580,18 @@
       }
     ],
     "dos": [
-      "Do брать визуальные значения и состояния из утверждённого C3.1, а финансовые тексты и доступность — из кода владельца.",
+      "Do брать визуальные значения и состояния из утверждённого C3.2 и сохранённых частей C3.1, а финансовые тексты и доступность — из кода владельца.",
       "Do сохранять прежние ID, namespace, API и identity операций при переносе в листы и док.",
       "Do показывать отдельно количество, цену, сумму чека и к оплате; неизвестные бонусы показывать «—».",
       "Do различать локальную реализацию, проверку с фикстурами, deploy и проверку опубликованной кассы.",
       "Do сравнивать оригинальные PNG при одинаковом viewport и сохранять реальные мобильные проверки как отдельный этап."
     ],
     "donts": [
-      "Don't распространять C3.1 на Советскую, Новогоднюю или общую ERP без отдельной задачи.",
+      "Don't распространять C3.2 на Советскую, Новогоднюю или общую ERP без отдельной задачи.",
       "Don't подменять статусы/лимиты/цены фиктивными значениями ради совпадения с макетом.",
       "Don't повторять unknown-бонусную покупку или очищать pending/recovery state через дизайн-слой.",
       "Don't считать browser mocks доказательством реальных денег, нативной клавиатуры, камеры или safe-area.",
-      "Don't считать этот DESIGN.md, диагностический R2 или числовой pixel diff приёмкой всех 71 состояний."
+      "Don't считать этот DESIGN.md, исторический C3.1 R2 или числовой pixel diff приёмкой 49 C3.2 состояний и физической iPhone-прокрутки."
     ]
   }
 }

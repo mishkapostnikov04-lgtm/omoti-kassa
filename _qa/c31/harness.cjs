@@ -1,5 +1,5 @@
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http');
-const root=path.resolve(__dirname,'../..'),pack=path.resolve(__dirname,'../../design-system/modules/cashier-anikina/c31-approved-20261014');
+const root=path.resolve(__dirname,'../..'),pack=path.resolve(__dirname,'../../../design-system/modules/cashier-anikina/c31-approved-20261014');
 const {chromium}=require(process.env.OMOTI_PLAYWRIGHT_MODULE||path.resolve(path.dirname(process.execPath),'../node_modules/playwright'));
 const catalog=['Арбуз - Дыня','Бабл Гам','Банан- Нутелла','Вишня-Тонка','Дубайский шоколад','Киви-Алоэ','Клубника','Кокос-Маракуйя','Кокосовый пломбир','Кофе-Карамель','Криспи','Малина-Ваниль','Матча-Манго','Мохито','Мята шоколад','Печенье с топлёным молоком','Сливочный лимон','Смородина','Сникерс','Твикс','Трюфель','Шоколад','Мункейки'];
 const assortment=catalog.map((name,i)=>({name,catalogItemId:'qa_'+i,itemType:name==='Мункейки'?'mooncake':'mochi',legacy:false,isPremium:['Дубайский шоколад','Криспи'].includes(name),prices:{normal:name==='Мункейки'?600:['Дубайский шоколад','Криспи','Мята шоколад'].includes(name)?200:180,self:name==='Мункейки'?360:['Дубайский шоколад','Криспи'].includes(name)?110:100,yandex:name==='Мункейки'?750:250}}));

@@ -1,0 +1,44 @@
+/* ==========================================================================
+   OMOTI · Касса · ред. 3.2 — движение (CSS-часть). Значения — tokens.css «Движение 3.2».
+   Одноразовые эффекты (2, 3, 4, 7, 8, 9) — motion.js через Web Animations API.
+   Эффекты включены, только когда на .k-app стоит класс .k-fx (ставит motion.js).
+   Правило: ни один эффект не задерживает и не блокирует следующее касание.
+   ========================================================================== */
+
+/* 1. Нажатие: плитка проседает (класс ставит motion.js по pointerdown на .k-tile__hit) */
+.k-fx .k-tile{transition:background-color var(--k-t-tile-bg),box-shadow var(--k-t-tile-bg),transform var(--k-t-press)}
+.k-fx .k-tile.is-pressed{transform:scale(var(--k-press-tile))}
+/* 1. Нажатие: кнопки дока */
+.k-fx :is(.k-pay,.k-close,.k-chosen,.k-ib,.k-nav button){transition:transform var(--k-t-press)}
+.k-fx :is(.k-pay,.k-close,.k-ib,.k-nav button):active{transform:scale(var(--k-press-btn))}
+
+/* 5. Строки дока выезжают с первым вкусом и уходят, когда чек пуст */
+.k-fx .k-dock__rows{transition:grid-template-rows var(--k-t-reveal) var(--k-ease),opacity var(--k-t-fade)}
+
+/* 6. Листы и затемнение. Лист закрыт = .k-sheet без .is-open (не hidden), чтобы был виден уход */
+.k-scrim{opacity:0;visibility:hidden;pointer-events:none}
+.k-scrim.is-open{opacity:1;visibility:visible;pointer-events:auto}
+.k-sheet{opacity:0;visibility:hidden;pointer-events:none;transform:translateY(var(--k-sheet-rise))}
+.k-sheet.is-open{opacity:1;visibility:visible;pointer-events:auto;transform:none}
+.k-fx .k-scrim{transition:opacity var(--k-t-fade),visibility 0s linear var(--k-t-fade)}
+.k-fx .k-scrim.is-open{transition:opacity var(--k-t-fade),visibility 0s}
+.k-fx .k-sheet{transition:transform var(--k-t-sheet) var(--k-ease),opacity var(--k-t-fade),visibility 0s linear var(--k-t-sheet)}
+.k-fx .k-sheet.is-open{transition:transform var(--k-t-sheet) var(--k-ease),opacity var(--k-t-fade),visibility 0s}
+
+/* 6. Тост сверху */
+.k-toast{opacity:0;visibility:hidden;pointer-events:none;transform:translateY(calc(-1 * var(--k-toast-rise)))}
+.k-toast.show{opacity:1;visibility:visible;transform:none}
+.k-fx .k-toast{transition:transform var(--k-t-toast) var(--k-ease),opacity var(--k-t-fade),visibility 0s linear var(--k-t-toast)}
+.k-fx .k-toast.show{transition:transform var(--k-t-toast) var(--k-ease),opacity var(--k-t-fade),visibility 0s}
+
+/* 6. «− / +» появляется на плитке */
+.k-fx .k-tile--edit{animation:k-step-in var(--k-t-step-in) var(--k-ease)}
+@keyframes k-step-in{from{transform:scale(.96)}to{transform:none}}
+
+/* «+1» над плиткой (элемент создаёт motion.js) */
+.k-fly{position:absolute;z-index:9;font-size:15px;font-weight:800;color:var(--k-amber-text);pointer-events:none;white-space:nowrap}
+
+/* Системное «Уменьшение движения»: всё мгновенно, motion.js тоже ничего не запускает */
+@media (prefers-reduced-motion:reduce){
+  .k-app *,.k-app *::before,.k-app *::after{animation:none!important;transition:none!important}
+}
