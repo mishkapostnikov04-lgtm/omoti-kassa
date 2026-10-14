@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-14T16:59:55.391Z",
+  "generatedAt": "2026-10-14T17:20:49.660Z",
   "title": "Design System: OMOTI · Касса Аникина · C3.2 «Тише» Б + Итоги A «Отчёт-лента»",
   "extensions": {
     "metadata": {
@@ -281,15 +281,15 @@
     ],
     "provenance": {
       "scope": "omoti-kassa/omoti_anikina.html and anikina-c31 only",
-      "documentationStatus": "Owner-approved Itogi A local documented frozen source; bounded visual SHIP F1-F4. Not deployed/public accepted.",
+      "documentationStatus": "Itogi A R2 local candidate with scoped geometry fixes; R1 published fullreview FIX. R2 not published/accepted.",
       "approvedSource": "../../../_local_artifacts/cashier-anikina-itogi-c32-20261014/package/omoti-kassa-c32-itogi-addon/HANDOFF.md",
       "basePreserve": "../../../design-system/modules/cashier-anikina/c31-approved-20261014/PRESERVE.md",
-      "baselineHead": "dd7e644f11f093371cc64784872d3fbd180485a0",
-      "sourceIdentityAt": "2026-10-14T16:59:55.391Z",
+      "baselineHead": "507a737d6053b0c3b505f99803772b18ae09579d",
+      "sourceIdentityAt": "2026-10-14T17:20:49.660Z",
       "sourceSHA256": {
-        "../omoti_anikina.html": "7198c0d151b4eef4ffe46fab16d643e41942972c1d784d6f2bd30117bfc3dae2",
+        "../omoti_anikina.html": "58018385429a7cbb195fafbfd816adef9808d8a03d6c85b8b9cfac33b0a7bfb8",
         "interface.js": "6d78f48d09da74236b7d013ca2743ea6a985ee1aa8b1a39dc4da4aae5456eb28",
-        "integration.css": "62c8c35ab8c1be75b33b594dd2481583ac5013a7f5e7516aa243a1d3babc5c0f",
+        "integration.css": "1a5625a4dfe26d7c973e6af2d9dfd2b14b4c2251fa293413f1fedf068009e6a5",
         "itogi.css": "0c91e243b404e4bb5a955fcaf01f02903c32c097fa10fc50dccb080017086956",
         "itogi.js": "7f7d730d09738f21e878d4671a0ac10923b482375c1cad66060ddd71d670555e",
         "tokens.css": "f2a4d13dc761751688a83f7412643b0bd0490a08dfb6207e54c651a07e2fda7c",
@@ -298,7 +298,7 @@
         "motion.js": "f0ba0cacdb9a709d4e99421ff3c25fc9d04b582e1f046efe2e9f64a9b4a40817"
       },
       "palettePolicy": "Exact owner-pinned C32 tokens and sealed Itogi CSS; no new palette or synthesized ramps.",
-      "verification": "28 local-review-final actual pair PNG independently viewed by reviewer; SHIP restricted to F1-F4/regressions. All28 frozen5rawSHA exact; SOURCE_PRESERVATION39protected/425retainedrules/2native exact; documentary references only, no rerun by documenter.",
+      "verification": "R2 local28 actualpair captures complete, noerrors/missing, frozen5sourceSHA exact. No independent R2visual verdict claimed; R1full public28 review FIX F1/F2. Fresh39protected/425retainedCSS/2native exact. Documenter readonlychecks, noQA/runtime changes.",
       "unverified": [
         "physical iPhone scrolling: OPEN; real freeze not reproduced",
         "native iPhone/Android keyboard",
@@ -331,14 +331,26 @@
         {
           "path": "../../../_local_artifacts/cashier-anikina-itogi-c32-20261014/local-fix-final-FINANCIAL-PARITY.json",
           "scope": "14 identicalfixtures versus dd7; native summaries/bonus/period, no production transactions"
+        },
+        {
+          "path": "../../../_local_artifacts/cashier-anikina-itogi-c32-20261014/PUBLISHED_VISUAL_REVIEW.md",
+          "scope": "Full28publicR1 independentreview FIX F1/F2, sourceidentityR1"
+        },
+        {
+          "path": "../../../_local_artifacts/cashier-anikina-itogi-c32-20261014/PUBLIC_R1.json",
+          "scope": "R1commit507a73723resources/46HTTPexact"
+        },
+        {
+          "path": "../../../_local_artifacts/cashier-anikina-itogi-c32-20261014/local-r2-final/report.json",
+          "scope": "R2local28frozenpair captures; capture doesnotclaimvisualacceptance"
         }
       ],
       "nativeBoundary": "Exactly2 baseline native inline programs; financial/render/data/period/loyalty owners and39protected files unchanged.",
-      "historicalEvidence": "metadata/c31History/c32R1History preserved unchanged; c32R2History preserves preceding documentation provenance/narrative; statsFolds owner annotation remains unchanged, superseded only for Stats.",
+      "historicalEvidence": "metadata/c31History/c32R1History preserved unchanged; c32R2History preserves preceding documentation provenance/narrative; statsFolds owner annotation remains unchanged, superseded only for Stats. ItogiR1History preserves preceding Itogi source/provenance/aliases and records R1actualpublication/fullreviewFIX.",
       "rawSourceSHA256": {
-        "../omoti_anikina.html": "a9f8bea070770af053777db869578bfb049c63e36627a030bb00c76b05560b8e",
+        "../omoti_anikina.html": "3b26e5400fe70f7cd1ff7b88667a0eab7052537f6bd9caa26f27864135d55c0d",
         "interface.js": "6d78f48d09da74236b7d013ca2743ea6a985ee1aa8b1a39dc4da4aae5456eb28",
-        "integration.css": "62c8c35ab8c1be75b33b594dd2481583ac5013a7f5e7516aa243a1d3babc5c0f",
+        "integration.css": "1a5625a4dfe26d7c973e6af2d9dfd2b14b4c2251fa293413f1fedf068009e6a5",
         "itogi.css": "0c91e243b404e4bb5a955fcaf01f02903c32c097fa10fc50dccb080017086956",
         "itogi.js": "7f7d730d09738f21e878d4671a0ac10923b482375c1cad66060ddd71d670555e",
         "tokens.css": "f2a4d13dc761751688a83f7412643b0bd0490a08dfb6207e54c651a07e2fda7c",
@@ -394,7 +406,7 @@
       "buttons": "C3.2 sale amber; self light; brak dark outlined; original disabled/wait semantics.",
       "journal": "Two lines, white day groups, no flavors or struck amount in list, native quantityLabel, quiet service/card/change/promo marks; queue/recon status preserved.",
       "receipt": "Header Чек №, native date/seller, payment/sum, composition, native loyalty/comment/edit/delete; actions guarded by original owner.",
-      "stats": "Owner-pinned Itogi A report tape; five persistent sections, plainwhite background, no revenue stripe/pink attention/amber bonus tiles. SealedCSS plus scoped nativeDOM boxmodel aliases; exact native data/period/storage boundaries.",
+      "stats": "Owner-pinned Itogi A report tape; five persistent sections, plainwhite background, no revenue stripe/pink attention/amber bonus tiles. SealedCSS plus scoped nativeDOM boxmodel aliases; exact native data/period/storage boundaries. R2 restores approvedperiod2pxrowrhythm and debtintrinsicamountcolumn via threescoped aliases only.",
       "toast": "Top8px +safe-area; approved motion and original native copy/lifetime.",
       "sheet": "is-open plus inert/aria-hidden; CSS visibility/pointer-events; cart Done44px and undo in header.",
       "seller": "52px rows,32px avatars, selected amber avatar; source names/handlers preserved."
@@ -619,6 +631,13 @@
         "storage": "Five booleans; missing/invalid fields default; malformed/unavailable read or write errors default silently; period/retry/reload/tab preserve sections",
         "native": "Exact prior inline programs, original renderStatsSummary/data/API/selectWeek/selectMonth/selectAll/loadStats and loyalty module/copy",
         "status": "Local implementation and local F1-F4 ship only; not deployed/public accepted; physical iPhone OPEN"
+      },
+      "itogiR2Geometry20261015": {
+        "scope": "ItogiA strict sourcegeometry only",
+        "reason": "R1FULLpublicreviewFIX F1/F2",
+        "approvedValue": "2pxgap from pinnedprototype; min-width0 intrinsic column from pinnedCSS model",
+        "nativeOwnerBoundary": "All existingdata/period/bonus/nativehandlers unchanged",
+        "status": "Localcandidate, R2notpublished"
       }
     },
     "c32R2History": {
@@ -753,12 +772,154 @@
         "bonus div transparent padding0 border0 radius0 gap3px stretch flex-start; dd19px, dt12px/1.25; flat3columns gap8",
         "native bonus note12.5px/1.4/margin-bottom1em; expected text preserved",
         "period option fullwidth flex divider, no nativeborder/radius/padding",
-        "debt-before-defect subhead margin14px; empty k-bars margin0"
+        "debt-before-defect subhead margin14px; empty k-bars margin0",
+        "#c31-period-sheet.k-itogi-period .k-sheet__body gap2px; .period-dropdown-menu display:flex flex-direction:column gap2px; preservewrapperwhilematchingdirectapprovedprototype rowrhythm",
+        ".k-stats .k-srow .ss-amount min-width0; remove native80px minimum only inStats so intrinsic-moneywidth doesnotshift quantity"
       ],
       "data": "DOM-only summaries; staffbar qty/max visual; native top .fs-bar width unchanged; debtmulti count, not new money sum",
       "raster": "No new shipping raster.28sealed referencePNG and capturedpairs evidence only; native inlineSVG new icons",
       "context": "No PRODUCT.md exists; no product context invented",
-      "detector": "Existing DETECTOR.json advisory findings are source-known documentation gaps; document pinned Itogi values only. No runtime CSS/token/QA changes or new detector pass."
+      "detector": "Existing DETECTOR.json advisory findings are source-known documentation gaps; document pinned Itogi values only. No runtime CSS/token/QA changes or new detector pass.",
+      "r2Geometry": {
+        "build": "c32-itogi-20261014-r2",
+        "changedRuntime": [
+          "omoti_anikina.html meta/query",
+          "integration.css three scopedaliases"
+        ],
+        "source": "Approvedprototype .k-sheet flex-column gap2 with directsegment/options; native .ss-amount min-width80 conflicts with approved grid auto column",
+        "F1": "Bodygap10 and missingmenu rowgap2 caused8/6/4/2px cumulative offsets; scopedbothgap2",
+        "F2": "min-width80 causeddebtquantity27pxleft; scopedmin-width0",
+        "status": "Localcandidate; notdeployed/noR2visualPASS",
+        "native": "39protectedfiles/425retainedrules/2nativescript exact; data/API/period/bonus nochange"
+      }
+    },
+    "itogiR1History": {
+      "preservedAt": "2026-10-14T17:20:49.660Z",
+      "scope": "Full Itogi A R1 source/documentation snapshot before local R2 geometry fixes; owner annotations remain intact.",
+      "provenance": {
+        "scope": "omoti-kassa/omoti_anikina.html and anikina-c31 only",
+        "documentationStatus": "Owner-approved Itogi A local documented frozen source; bounded visual SHIP F1-F4. Not deployed/public accepted.",
+        "approvedSource": "../../../_local_artifacts/cashier-anikina-itogi-c32-20261014/package/omoti-kassa-c32-itogi-addon/HANDOFF.md",
+        "basePreserve": "../../../design-system/modules/cashier-anikina/c31-approved-20261014/PRESERVE.md",
+        "baselineHead": "dd7e644f11f093371cc64784872d3fbd180485a0",
+        "sourceIdentityAt": "2026-10-14T16:59:55.391Z",
+        "sourceSHA256": {
+          "../omoti_anikina.html": "7198c0d151b4eef4ffe46fab16d643e41942972c1d784d6f2bd30117bfc3dae2",
+          "interface.js": "6d78f48d09da74236b7d013ca2743ea6a985ee1aa8b1a39dc4da4aae5456eb28",
+          "integration.css": "62c8c35ab8c1be75b33b594dd2481583ac5013a7f5e7516aa243a1d3babc5c0f",
+          "itogi.css": "0c91e243b404e4bb5a955fcaf01f02903c32c097fa10fc50dccb080017086956",
+          "itogi.js": "7f7d730d09738f21e878d4671a0ac10923b482375c1cad66060ddd71d670555e",
+          "tokens.css": "f2a4d13dc761751688a83f7412643b0bd0490a08dfb6207e54c651a07e2fda7c",
+          "components.css": "4ea61807985429301c53cf48fac0e97a31c3aed7efac01659e81eb235ad73dfd",
+          "motion.css": "71224b944a7f3a4ab347356b10b6a8c2cfb11c307242da28f9bf5ed185406b5a",
+          "motion.js": "f0ba0cacdb9a709d4e99421ff3c25fc9d04b582e1f046efe2e9f64a9b4a40817"
+        },
+        "palettePolicy": "Exact owner-pinned C32 tokens and sealed Itogi CSS; no new palette or synthesized ramps.",
+        "verification": "28 local-review-final actual pair PNG independently viewed by reviewer; SHIP restricted to F1-F4/regressions. All28 frozen5rawSHA exact; SOURCE_PRESERVATION39protected/425retainedrules/2native exact; documentary references only, no rerun by documenter.",
+        "unverified": [
+          "physical iPhone scrolling: OPEN; real freeze not reproduced",
+          "native iPhone/Android keyboard",
+          "real camera",
+          "native safe-area",
+          "Safari/PWA/device permissions",
+          "real financial test operations"
+        ],
+        "evidenceInventory": [
+          {
+            "path": "../../../_local_artifacts/cashier-anikina-itogi-c32-20261014/VISUAL_VERDICT_LOCAL_FINAL.md",
+            "scope": "Local bounded ship F1-F4; public/physical not checked"
+          },
+          {
+            "path": "../../../_local_artifacts/cashier-anikina-itogi-c32-20261014/local-review-final/report.json",
+            "scope": "28 actualpairs, same frozen5rawSHA, noerrors/missing; captures need reviewer verdict"
+          },
+          {
+            "path": "../../../_local_artifacts/cashier-anikina-itogi-c32-20261014/DATA_MAP.md",
+            "scope": "Existing IDs, native data owners and one new UI storage namespace"
+          },
+          {
+            "path": "../../../_local_artifacts/cashier-anikina-itogi-c32-20261014/SOURCE_PRESERVATION.json",
+            "scope": "39 files/425retainedCSS/2native scripts exact; no realwrites"
+          },
+          {
+            "path": "../../../_local_artifacts/cashier-anikina-itogi-c32-20261014/local-fix-final-INTERACTION.json",
+            "scope": "Synthetic sections/storage/period/retry/geometry checks; not physicalphone"
+          },
+          {
+            "path": "../../../_local_artifacts/cashier-anikina-itogi-c32-20261014/local-fix-final-FINANCIAL-PARITY.json",
+            "scope": "14 identicalfixtures versus dd7; native summaries/bonus/period, no production transactions"
+          }
+        ],
+        "nativeBoundary": "Exactly2 baseline native inline programs; financial/render/data/period/loyalty owners and39protected files unchanged.",
+        "historicalEvidence": "metadata/c31History/c32R1History preserved unchanged; c32R2History preserves preceding documentation provenance/narrative; statsFolds owner annotation remains unchanged, superseded only for Stats.",
+        "rawSourceSHA256": {
+          "../omoti_anikina.html": "a9f8bea070770af053777db869578bfb049c63e36627a030bb00c76b05560b8e",
+          "interface.js": "6d78f48d09da74236b7d013ca2743ea6a985ee1aa8b1a39dc4da4aae5456eb28",
+          "integration.css": "62c8c35ab8c1be75b33b594dd2481583ac5013a7f5e7516aa243a1d3babc5c0f",
+          "itogi.css": "0c91e243b404e4bb5a955fcaf01f02903c32c097fa10fc50dccb080017086956",
+          "itogi.js": "7f7d730d09738f21e878d4671a0ac10923b482375c1cad66060ddd71d670555e",
+          "tokens.css": "f2a4d13dc761751688a83f7412643b0bd0490a08dfb6207e54c651a07e2fda7c",
+          "components.css": "4ea61807985429301c53cf48fac0e97a31c3aed7efac01659e81eb235ad73dfd",
+          "motion.css": "71224b944a7f3a4ab347356b10b6a8c2cfb11c307242da28f9bf5ed185406b5a",
+          "motion.js": "f0ba0cacdb9a709d4e99421ff3c25fc9d04b582e1f046efe2e9f64a9b4a40817"
+        },
+        "sourceHashPolicy": "sourceSHA256 = UTF-8 after CRLF -> LF only; rawSourceSHA256 = exact local bytes used by frozen capture evidence. HTML has186CRLF; all other8 source files0CRLF. Neither is asserted as deployed SHA."
+      },
+      "itogi": {
+        "source": "itogi.css exact sealed + itogi.js + integration.css scoped aliases",
+        "customProperties": {
+          "--k-it-card-r": "20px",
+          "--k-it-card-px": "16px",
+          "--k-it-card-py": "14px",
+          "--k-it-card-py-cl": "12px",
+          "--k-it-gap": "10px",
+          "--k-it-row": "44px",
+          "--k-it-bar-row": "40px",
+          "--k-it-bar-h": "6px",
+          "--k-it-bar": "#3B3A36",
+          "--k-it-track": "#EFEDE7",
+          "--k-it-tg": "28px",
+          "--k-it-problem-bg": "#FBEDE7",
+          "--k-it-problem": "#B4400C",
+          "--k-it-problem-dot": "#D9480F",
+          "--k-it-now-bg": "#FFF3DC",
+          "--k-it-now": "#7A4300"
+        },
+        "geometry": {
+          "closedHeight": "56px except attention chip row",
+          "headerTop": "40px + safe-t",
+          "scrollTop": "96px + safe-t",
+          "scrollBottom": "var(--k-current-dock,var(--k-dock-nav-only-h))",
+          "listPadding": "2px var(--k-gutter)20px",
+          "staffColumns": "92px minmax(0,1fr)56px",
+          "topColumns": "18px132px minmax(0,1fr)30px",
+          "barGap": "10px",
+          "rowBoxSizing": "content-box",
+          "collapsedBody": "display:none + inert",
+          "hit": "heading fullwidth pseudo element >=48px"
+        },
+        "aliases": [
+          "native rows grid,padding0,border-bottom0; font inherited; name600/value700/qty13.5",
+          "native top track uses6px/radius3px; native width preserved; name132px",
+          "bonus div transparent padding0 border0 radius0 gap3px stretch flex-start; dd19px, dt12px/1.25; flat3columns gap8",
+          "native bonus note12.5px/1.4/margin-bottom1em; expected text preserved",
+          "period option fullwidth flex divider, no nativeborder/radius/padding",
+          "debt-before-defect subhead margin14px; empty k-bars margin0"
+        ],
+        "data": "DOM-only summaries; staffbar qty/max visual; native top .fs-bar width unchanged; debtmulti count, not new money sum",
+        "raster": "No new shipping raster.28sealed referencePNG and capturedpairs evidence only; native inlineSVG new icons",
+        "context": "No PRODUCT.md exists; no product context invented",
+        "detector": "Existing DETECTOR.json advisory findings are source-known documentation gaps; document pinned Itogi values only. No runtime CSS/token/QA changes or new detector pass."
+      },
+      "presentationStats": "Owner-pinned Itogi A report tape; five persistent sections, plainwhite background, no revenue stripe/pink attention/amber bonus tiles. SealedCSS plus scoped nativeDOM boxmodel aliases; exact native data/period/storage boundaries.",
+      "published": {
+        "commit": "507a737d6053b0c3b505f99803772b18ae09579d",
+        "build": "c32-itogi-20261014-r1",
+        "pagesBuiltAt": "2026-10-14T17:02:43Z",
+        "publicQA": "11PASS;14financefixtures;23resources/46HTTPexact",
+        "visualVerdict": "FULL28 publicpairs dispositionfix F1periodgaps/F2debtquantitycolumn",
+        "review": "../../../_local_artifacts/cashier-anikina-itogi-c32-20261014/PUBLISHED_VISUAL_REVIEW.md"
+      }
     }
   },
   "components": [

@@ -337,3 +337,6 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none;margin:0;padding:
 .k-stats .loyalty-summary-values>div{justify-content:flex-start}
 .k-stats #debt-section[style*="block"]+#brak-section .k-subhead{margin-top:14px}
 .k-stats .k-bars:has(>.k-empty-row){margin-top:0}
+#c31-period-sheet.k-itogi-period .k-sheet__body{gap:2px}
+#c31-period-sheet.k-itogi-period .period-dropdown-menu{display:flex;flex-direction:column;gap:2px}
+.k-stats .k-srow .ss-amount{min-width:0}

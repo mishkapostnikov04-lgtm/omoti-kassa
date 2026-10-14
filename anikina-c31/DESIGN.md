@@ -1,6 +1,6 @@
 ---
 name: "OMOTI · Касса Аникина · C3.2 «Тише» Б + Итоги A «Отчёт-лента»"
-description: "C3.2 «Тише» Б сохранён; только Итоги заменены owner-approved вариантом A «Отчёт-лента», локально проверены, ещё не опубликованы."
+description: "C3.2 «Тише» Б сохранён; Итоги A R1 опубликованы, public review fix; геометрия R2 исправлена локально, ещё не опубликована."
 colors:
   bg: "#F6F5F1"
   tile: "#EBE9E3"
@@ -152,6 +152,7 @@ spacing:
   itogi-card-x: "16px"
   itogi-card-y: "14px"
   itogi-list-bottom: "20px"
+  itogi-period-gap: "2px"
 components:
   close-button:
     backgroundColor: "{colors.amber}"
@@ -267,7 +268,19 @@ components:
 - Стабильные DOM-плитки и отступы от измеренной высоты дока.
 - Прежние финансовые владельцы, ID, API и namespace.
 
-### Current Итоги A · 14.10.2026 · локальная документация
+### Current Итоги A R2 · 15.10.2026 · локальная документация
+
+**Изменено локально; R2 ещё не опубликован.** Новый build `c32-itogi-20261014-r2` и query integration.css?v=R2 относятся к текущему кандидату. itogi.css, itogi.js и interface.js сохраняют R1 содержимое/query. Fresh raw/canonical-LF identity девяти исходников находится в sidecar; изменились только HTML metadata/query и integration.css, прежние семь runtime SHA exact. HTML содержит186CRLF, raw и canonical LF остаются разными. [local-r2-final/report.json](../../_local_artifacts/cashier-anikina-itogi-c32-20261014/local-r2-final/report.json) содержит все28 actual pairs с единой frozen identity; это captures, отдельный visual verdict R2 не подменяется документацией.
+
+Опубликованный Итоги A R1 — commit `507a737d6053b0c3b505f99803772b18ae09579d`, Pages built `2026-10-14T17:02:43Z` /15.10.2026 00:02:43+07. [PUBLIC_R1](../../_local_artifacts/cashier-anikina-itogi-c32-20261014/PUBLIC_R1.json) фиксирует23ресурса/46ordinary+fresh exact SHA; published-r1/EVIDENCE —11public QA PASS, финансовое сравнение14 fixtures. Полный независимый [PUBLISHED_VISUAL_REVIEW](../../_local_artifacts/cashier-anikina-itogi-c32-20261014/PUBLISHED_VISUAL_REVIEW.md) просмотрел все28 publicpairs и дал **fix**, F1/F2; локальный прежний ship F1–F4 не является public acceptance. R1 snapshot сохранён ниже и в extensions.itogiR1History.
+
+R2 устраняет два строгих геометрических расхождения scoped aliases: F1 — native sheet body gap10 перед wrapper и отсутствие межстрочных gap2 давали накопленные смещения8/6/4/2px; approvedprototype помещает сегменты/пункты напрямую в flex-column sheet с gap2. Adapter сохраняет wrapper/ownernodes, поэтому `#c31-period-sheet.k-itogi-period .k-sheet__body{gap:2px}` и `.period-dropdown-menu{display:flex;flex-direction:column;gap:2px}` восстанавливают тот же ритм. F2 — native `.ss-amount{min-width:80px}` расширяло auto-column и уводило debt quantity на27px влево; `.k-stats .k-srow .ss-amount{min-width:0}` возвращает intrinsic-width auto-column approvedCSS. Суммы/количество/тексты/сортировка/handlers прежние. `spacing.itogi-period-gap` — точное значение approvedprototype, не новая шкала или новый вариант.
+
+[Свежий SOURCE_PRESERVATION](../../_local_artifacts/cashier-anikina-itogi-c32-20261014/SOURCE_PRESERVATION.json) снова PASS:39protected files/425retained CSS rules/2native programs exact. sealed itogi.css SHA0c91e243b404e4bb5a955fcaf01f02903c32c097fa10fc50dccb080017086956 прежний. Финансовые/data/API/nativeperiod/bonus владельцы не изменились; R2 presentation-only. Другие кассы/Касса/Журнал/меню/C3.2 motion/tokens прежние. Physical iPhone scroll и реальные Safari/PWA/клавиатура/камера/permissions по-прежнему **OPEN**.
+
+### Preserved Итоги A R1 · 14.10.2026 · локальный snapshot
+
+Историческая запись до публикации R1 сохранена. Её «ещё не опубликован» и dd7 относятся к моменту документирования; текущий R1 public status и R2 candidate указаны выше.
 
 Текущий визуальный источник только Итогов — [CODEX-PROMPT](../../_local_artifacts/cashier-anikina-itogi-c32-20261014/package/omoti-kassa-c32-itogi-addon/CODEX-PROMPT.md), [HANDOFF](../../_local_artifacts/cashier-anikina-itogi-c32-20261014/package/omoti-kassa-c32-itogi-addon/HANDOFF.md), INTERACTIONS, DATA-MAP, SCREENS, QA, prototype и sealed [itogi.css](../../_local_artifacts/cashier-anikina-itogi-c32-20261014/package/omoti-kassa-c32-itogi-addon/design-system/itogi.css). SHA точного CSS: `0c91e243b404e4bb5a955fcaf01f02903c32c097fa10fc50dccb080017086956`. Пакет заменяет C3.2 stats.css/I2-01…03/INTERACTIONS §6/CHANGES §8 и прежний foldStatsCard, а C3.1 IT-01/02/04/07 — новыми ST-01…18/SW-01…10. IT-03/05/06 сохраняют содержание. Касса, Журнал, меню точки, токены, док и движение C3.2 Б прежние. Новый документ не является глобальным стандартом. PRODUCT.md отсутствует; продуктовые обязательства не выдуманы.
 
@@ -434,7 +447,7 @@ Generic `PRODUCT.md`, отдельные Impeccable build-state/spec, hero-repro
 
 Период — две строки из activePeriodType/currentPeriodRange.label: диапазон без года, статус из скобок в отдельной pill; «Всё время» одна строка. Лист использует прежние btn-week/month/all, menu-week/month и .period-dropdown-item: 3 сегмента, строки ≥52px, выбор — янтарный круг с native SVG check справа. Week/month сегменты показывают соответствующее меню; пункт вызывает прежний selectWeek/selectMonth, «Всё время» сразу selectAll. loadStats/renderStatsSummary и дата/полнота остаются финансовыми владельцами. Ни «К выплате», ни тариф30/90 не добавляются.
 
-Scoped integration aliases (.k-stats и #c31-period-sheet.k-itogi-period) снимают прежний flex/padding/border-bottom native строк: grid с gap10 для bars; content-box сохраняет высоту border-row. Колонки staff 92px/остаток/56px, top 18px/132px/остаток/30px. Bonus div — прозрачный без padding/рамок, align-items:stretch и justify-content:flex-start; dd сверху, note сохраняет native paragraph margin-bottom:1em. Пункт периода full width, flex и divider с check справа. Если перед Браком есть видимый долг, margin-top подзаголовка14px; пустой k-bars margin-top0. Эти aliases восстанавливают exact box model sealed CSS и не меняют значения.
+Scoped integration aliases (.k-stats и #c31-period-sheet.k-itogi-period) снимают прежний flex/padding/border-bottom native строк: grid с gap10 для bars; content-box сохраняет высоту border-row. Колонки staff 92px/остаток/56px, top 18px/132px/остаток/30px. Bonus div — прозрачный без padding/рамок, align-items:stretch и justify-content:flex-start; dd сверху, note сохраняет native paragraph margin-bottom:1em. Пункт периода full width, flex и divider с check справа. Если перед Браком есть видимый долг, margin-top подзаголовка14px; пустой k-bars margin-top0. Эти aliases восстанавливают exact box model sealed CSS и не меняют значения. R2 добавляет только period-body gap и menu flex-column gap из `spacing.itogi-period-gap`; ss-amount min-width0 убирает native80px ограничение в grid.auto-column. Ни одно правило за пределами scoped Итогов/листа периода не меняется.
 
 Загрузка — три scoped skeleton блока56px, без прежних hero186/attention250/next150. «Нет связи» сохраняет native retry, данные/секции после повтора; «Нет данных» — native empty row. Остальная загрузка/ошибки C3.2 других экранов прежние.
 
