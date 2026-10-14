@@ -13,5 +13,6 @@
 - `prototype-behavior.cjs`:14 behavior checks утверждённого прототипа без private network.
 - `supplemental.cjs`: service/queue/mixed/mooncake/wrap/shortbonus/endjournal/unknownbonus/staff/top при360/430. Скролл именно `.k-list`, с проверкой достижения конца.
 - `webkit-scroll.cjs`: Windows WebKit before/after touch ownership +20 programmatic scroll/update cycles. Не поддерживает mobile mouse.wheel/CDP; не заявляет физический iPhone PASS. `PLAYWRIGHT_BROWSERS_PATH` должен указывать task-local `browsers`.
+- `folded-stats.cjs`: явное уточнение владельца14.10 — «Требует внимания» и «Топ вкусов» свёрнуты по умолчанию, независимое раскрытие, клавиатура, refresh/период/возврат/reload, прежние суммы и полный брак. 12 captures на360/390/430. Для оригинальных expanded I2/retained IT PNG тесты сначала раскрывают оба блока; это новый owner exception, original PNG неизменённы.
 
 Все output PNG/JSON и release checks сохраняются в task evidence вне deploy-repo. При source SHA изменении capture FAIL: такой run не принимать, переснимать изменённое на одной версии. Исторические неудачи сохранять отдельно. Финансовые реальные операции, enroll/register устройства на production, изменения БД и удаления ради QA запрещены.

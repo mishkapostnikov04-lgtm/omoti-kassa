@@ -369,6 +369,12 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none;margin:0;padding:
 .c31-active .registration-qr-content>p{font-size:15px;text-align:center;line-height:1.4}
 .c31-active .period-dropdown-item.selected:after{content:none}
 .c31-active .loyalty.is-unconfirmed #loyalty-card-balance{display:flex;justify-content:space-between;gap:12px;font-size:14px;margin-top:6px}
+.c31-active .c32-stat-fold-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:44px;padding:0;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.c31-active .c32-stat-fold-toggle>.k-card__title{margin:0}
+.c31-active .c32-stat-fold-arrow{display:flex;flex:none;color:var(--k-muted)}
+.c31-active .k-attention .c32-stat-fold-arrow{color:var(--k-danger)}
+.c31-active .c32-stat-fold-toggle[aria-expanded=true] .c32-stat-fold-arrow{transform:rotate(180deg)}
+.c31-active .c32-stat-fold-body[hidden]{display:none}
 .c31-active .loyalty.is-unconfirmed #loyalty-card-balance strong{font-size:14px;max-width:180px;text-align:right}
 .c31-active .toast.k-toast{transform:translateY(calc(-1 * var(--k-toast-rise)))}.c31-active .toast.k-toast.show{transform:none}
 .c31-active .c31-success-row{grid-template-columns:1fr}.c31-active .k-close--done[disabled]{background:var(--k-amber);color:var(--k-ink);font-size:var(--k-fs-close);font-weight:var(--k-fw-close);box-shadow:none;opacity:1}

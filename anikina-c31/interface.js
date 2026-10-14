@@ -185,6 +185,16 @@
  const attention=node('section','k-card k-attention',`<b class="k-card__title">Требует внимания</b>`);attention.append($('debt-section'),$('brak-section'));hero.after(attention);
  const defectsButton=node('button','k-btn k-btn--light');defectsButton.id='c31-all-defects';$('brak-section').append(defectsButton);defectsButton.onclick=()=>openSheet('defects');
  document.querySelector('.loyalty-summary').classList.add('k-card');['staff-stat-list','flavor-stat-list'].forEach(id=>{const card=node('section','k-card',`<b class="k-card__title">${id==='staff-stat-list'?'По сотрудникам':'Топ вкусов'}</b>`);$(id).before(card);card.append($(id));});
+ // Owner request 14.10.2026: these two summary blocks start collapsed.
+ // Keep the original lists and renderers; the choice lives only in this view.
+ function foldStatsCard(card,key){
+  const heading=card.querySelector('.k-card__title'),body=node('div','c32-stat-fold-body'),toggle=node('button','c32-stat-fold-toggle');
+  body.id='c32-'+key+'-body';body.hidden=true;toggle.type='button';toggle.id='c32-'+key+'-toggle';toggle.setAttribute('aria-controls',body.id);toggle.setAttribute('aria-expanded','false');
+  heading.before(toggle);toggle.append(heading,node('span','c32-stat-fold-arrow','<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>'));
+  [...card.children].filter(el=>el!==toggle).forEach(el=>body.append(el));card.append(body);
+  toggle.onclick=()=>{body.hidden=!body.hidden;toggle.setAttribute('aria-expanded',String(!body.hidden));};
+ }
+ foldStatsCard(attention,'attention');foldStatsCard($('flavor-stat-list').parentElement,'top-flavors');
  renderStatsSummary=function(json,range){lastStats=json;originals.renderStatsSummary(json,range);attention.hidden=!($('debt-section').style.display==='block'||$('brak-section').style.display==='block');const rows=[...$('brak-stat-list').children];defectsBody.replaceChildren(...rows.map(r=>r.cloneNode(true)));rows.forEach((r,i)=>r.hidden=i===0||i>3);const count=(json.defects||json.defectFlavors||[]).length;defectsButton.textContent='Весь брак · '+count+' вкусов';syncPeriod();};
  function syncPeriod(){const title=activePeriodType==='week'?'Неделя':activePeriodType==='month'?'Месяц':'Всё время';$('c31-period').querySelector('b').innerHTML=escHtml(title)+' <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';$('c31-period').querySelector('small').textContent=(currentPeriodRange?.label||'').replace(/\.\d{4}/g,'').replace(' (текущая)',' · текущая');document.querySelectorAll('.period-dropdown-item').forEach(el=>{if(el.dataset.c31Period)return;el.dataset.c31Period='true';const text=el.textContent,at=text.indexOf(' (');if(at>=0)el.innerHTML='<span>'+escHtml(text.slice(0,at))+'<small>'+escHtml(text.slice(at+2).replace(/\)$/,''))+'</small></span>';el.append(node('i','c31-period-check',icon('check',16)));});}
  // Presentation only: keep module text and availability authoritative.

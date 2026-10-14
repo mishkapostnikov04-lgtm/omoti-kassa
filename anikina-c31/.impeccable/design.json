@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-14T12:29:53Z",
+  "generatedAt": "2026-10-14T14:07:05Z",
   "title": "Design System: OMOTI · Касса Аникина · C3.2 «Тише» · вариант Б",
   "extensions": {
     "metadata": {
@@ -246,22 +246,22 @@
     ],
     "provenance": {
       "scope": "omoti-kassa/omoti_anikina.html and anikina-c31 only",
-      "documentationStatus": "C3.2 local implementation documentation; no C3.2 deployed/served identity asserted",
+      "documentationStatus": "C3.2 R2 c32-20261014-r2 local implementation of explicit owner exception14.10.2026; testing/publication in progress; no R2 PASS or served identity asserted",
       "approvedSource": "../../../design-system/modules/cashier-anikina/c32-approved-20261014/HANDOFF.md",
       "basePreserve": "../../../design-system/modules/cashier-anikina/c31-approved-20261014/PRESERVE.md",
       "baselineHead": "12410cd9e11ccb7c8e87fcecfdb1c3081491bd18",
-      "sourceIdentityAt": "2026-10-14T13:12:02.325336+00:00",
+      "sourceIdentityAt": "2026-10-14T14:07:05Z",
       "sourceSHA256": {
-        "../omoti_anikina.html": "c69550f7bd6764d0972c57c73fda8d5f19bbc413d294bbdb8ba0fda00ba3a78c",
-        "interface.js": "ab2a0b2c4a99d014b462f4f593b3327f708ee95c1001462bce063f2322b6c0cb",
-        "integration.css": "ed8d14d2dbbe3015f48002aa3dfac24fb75bc3ffa810ea39b619ef15ed65f3d9",
+        "../omoti_anikina.html": "49e2fa372e15c93e5a4c8248ab4456283516523177d4a685dcf35f875495f7f0",
+        "interface.js": "3e0ff4ccf76c799505a721d7dc105aa30b54d861d64deb64a1146b9c15365ef8",
+        "integration.css": "8f0d3b0bdf3c1c5a3b09fac185ff5f8f9bce5788532bc8aba97c05419b1afff2",
         "tokens.css": "f2a4d13dc761751688a83f7412643b0bd0490a08dfb6207e54c651a07e2fda7c",
         "components.css": "4ea61807985429301c53cf48fac0e97a31c3aed7efac01659e81eb235ad73dfd",
         "motion.css": "71224b944a7f3a4ab347356b10b6a8c2cfb11c307242da28f9bf5ed185406b5a",
         "motion.js": "f0ba0cacdb9a709d4e99421ff3c25fc9d04b582e1f046efe2e9f64a9b4a40817"
       },
       "palettePolicy": "Owner-pinned C3.2 tokens; no synthesized tonal ramps or new palette.",
-      "verification": "Final local-publish-final/TESTS all8exit0; C31 regression25; C32 code0/prototype46/all0FAIL;14 prototype behaviors;8 native motion storyboards46frames; independent49/retained102/material-fix/motion review SHIP. Success holds confirmed presentation260ms, full-widthamber disabled/inert control, immediate next tile. Physical iPhone OPEN, no real writes.",
+      "verification": "R2 owner exception implemented locally; functional/visual checks and publication still in progress. R1 evidence preserved in extensions.c32R1History and external REPORT/STATE_MAP; no R2 PASS asserted. Physical iPhone scrolling OPEN.",
       "unverified": [
         "physical iPhone scrolling: OPEN; real freeze not reproduced",
         "native iPhone/Android keyboard",
@@ -272,40 +272,26 @@
       ],
       "evidenceInventory": [
         {
-          "path": "../../../_local_artifacts/cashier-anikina-c32-20261014/SOURCE_BASELINE.json",
-          "scope": "C3.1 current commit and preserved dirty documentation baseline."
+          "path": "../../../_local_artifacts/cashier-anikina-c32-20261014/REPORT.md",
+          "scope": "External current release record; at documentation time published R1 evidence, R2 not yet certified."
         },
         {
-          "path": "../../../_local_artifacts/cashier-anikina-c32-20261014/EXTENDED-local-final.json",
-          "scope": "Synthetic source/motion/outcome/geometry checks; no real writes."
+          "path": "../../../_local_artifacts/cashier-anikina-c32-20261014/STATE_MAP.md",
+          "scope": "External state map; R1 evidence is historical for the R2 folds."
         },
         {
-          "path": "../../../_local_artifacts/cashier-anikina-c32-20261014/WEBKIT-local-final.json",
-          "scope": "20 programmatic scroll/update loops; connected tile retained; Windows synthetic WebKit is not physical iPhone acceptance."
+          "path": "../../../_local_artifacts/cashier-anikina-c32-20261014/local-fold-r2/folded-stats/report.json",
+          "scope": "Expected future local R2 fold report; absent at documentation time; no PASS asserted.",
+          "status": "expected"
         },
         {
-          "path": "../../../_local_artifacts/cashier-anikina-c32-20261014/VISUAL_REVIEW_LOCAL_R1.md",
-          "scope": "49 independently viewed original pairs; disposition fix, F1-F6/E1-E3."
-        },
-        {
-          "path": "../../../_local_artifacts/cashier-anikina-c32-20261014/local-frozen/TESTS.json",
-          "scope": "Frozen final local runtime tests, all8 exit0; private APIs fixture-only."
-        },
-        {
-          "path": "../../../_local_artifacts/cashier-anikina-c32-20261014/local-freeze/motion/report.json",
-          "scope": "Eight approved storyboard sequences/46 native frames; physical timing/haptics still require device."
-        },
-        {
-          "path": "../../../_local_artifacts/cashier-anikina-c32-20261014/VISUAL_REVIEW_LOCAL_SHIP.md",
-          "scope": "Independent final bounded local SHIP, unresolved material groups0; physical iPhoneOPEN."
-        },
-        {
-          "path": "../../../_local_artifacts/cashier-anikina-c32-20261014/local-publish-final/TESTS.json",
-          "scope": "Final native, code, synthetic runtime checks, all8exit0."
+          "path": "../../../_local_artifacts/cashier-anikina-c32-20261014/published-fold-r2/folded-stats/report.json",
+          "scope": "Expected future published R2 fold report; absent at documentation time; no PASS asserted.",
+          "status": "expected"
         }
       ],
       "nativeBoundary": "Original two native inline programs except approved retry cache query; financial handlers/API/data/calculations/other cashiers remain owner-controlled.",
-      "historicalEvidence": "extensions.metadata and extensions.c31History preserve historical C3.1 evidence and local annotations."
+      "historicalEvidence": "extensions.metadata/extensions.c31History preserve C3.1 annotations; extensions.c32R1History preserves prior C3.2 provenance and evidence inventory."
     },
     "geometry": {
       "source": "ResizeObserver on dock border-box -> Math.round(rect.height) on app and :root; dynamic during transitions",
@@ -353,7 +339,7 @@
       "buttons": "C3.2 sale amber; self light; brak dark outlined; original disabled/wait semantics.",
       "journal": "Two lines, white day groups, no flavors or struck amount in list, native quantityLabel, quiet service/card/change/promo marks; queue/recon status preserved.",
       "receipt": "Header Чек №, native date/seller, payment/sum, composition, native loyalty/comment/edit/delete; actions guarded by original owner.",
-      "stats": "Ordinary borders removed; amber revenue stripe; attention/wait borders preserved.",
+      "stats": "Ordinary borders removed; amber revenue stripe; attention/wait borders preserved. Owner exception14.10.2026: Top flavors/Needs attention collapsed by default, independent heading toggles, all native children preserved; R2 checks/publication pending.",
       "toast": "Top8px +safe-area; approved motion and original native copy/lifetime.",
       "sheet": "is-open plus inert/aria-hidden; CSS visibility/pointer-events; cart Done44px and undo in header.",
       "seller": "52px rows,32px avatars, selected amber avatar; source names/handlers preserved."
@@ -476,6 +462,90 @@
       "root": "html/body height100%, overflow:hidden, overscroll-behavior:none.",
       "diagnostics": "?qa=scroll only: last200 non-personal touch/scroll/target-identity events to sessionStorage; default off; remove after physical confirmation in separate commit.",
       "manualStatus": "Physical iPhone scrolling OPEN. Windows synthetic WebKit cannot reproduce or certify native inertial freeze."
+    },
+    "c32R1History": {
+      "provenance": {
+        "scope": "omoti-kassa/omoti_anikina.html and anikina-c31 only",
+        "documentationStatus": "C3.2 local implementation documentation; no C3.2 deployed/served identity asserted",
+        "approvedSource": "../../../design-system/modules/cashier-anikina/c32-approved-20261014/HANDOFF.md",
+        "basePreserve": "../../../design-system/modules/cashier-anikina/c31-approved-20261014/PRESERVE.md",
+        "baselineHead": "12410cd9e11ccb7c8e87fcecfdb1c3081491bd18",
+        "sourceIdentityAt": "2026-10-14T13:12:02.325336+00:00",
+        "sourceSHA256": {
+          "../omoti_anikina.html": "c69550f7bd6764d0972c57c73fda8d5f19bbc413d294bbdb8ba0fda00ba3a78c",
+          "interface.js": "ab2a0b2c4a99d014b462f4f593b3327f708ee95c1001462bce063f2322b6c0cb",
+          "integration.css": "ed8d14d2dbbe3015f48002aa3dfac24fb75bc3ffa810ea39b619ef15ed65f3d9",
+          "tokens.css": "f2a4d13dc761751688a83f7412643b0bd0490a08dfb6207e54c651a07e2fda7c",
+          "components.css": "4ea61807985429301c53cf48fac0e97a31c3aed7efac01659e81eb235ad73dfd",
+          "motion.css": "71224b944a7f3a4ab347356b10b6a8c2cfb11c307242da28f9bf5ed185406b5a",
+          "motion.js": "f0ba0cacdb9a709d4e99421ff3c25fc9d04b582e1f046efe2e9f64a9b4a40817"
+        },
+        "palettePolicy": "Owner-pinned C3.2 tokens; no synthesized tonal ramps or new palette.",
+        "verification": "Final local-publish-final/TESTS all8exit0; C31 regression25; C32 code0/prototype46/all0FAIL;14 prototype behaviors;8 native motion storyboards46frames; independent49/retained102/material-fix/motion review SHIP. Success holds confirmed presentation260ms, full-widthamber disabled/inert control, immediate next tile. Physical iPhone OPEN, no real writes.",
+        "unverified": [
+          "physical iPhone scrolling: OPEN; real freeze not reproduced",
+          "native iPhone/Android keyboard",
+          "real camera",
+          "native safe-area",
+          "Safari/PWA/device permissions",
+          "real financial test operations"
+        ],
+        "evidenceInventory": [
+          {
+            "path": "../../../_local_artifacts/cashier-anikina-c32-20261014/SOURCE_BASELINE.json",
+            "scope": "C3.1 current commit and preserved dirty documentation baseline."
+          },
+          {
+            "path": "../../../_local_artifacts/cashier-anikina-c32-20261014/EXTENDED-local-final.json",
+            "scope": "Synthetic source/motion/outcome/geometry checks; no real writes."
+          },
+          {
+            "path": "../../../_local_artifacts/cashier-anikina-c32-20261014/WEBKIT-local-final.json",
+            "scope": "20 programmatic scroll/update loops; connected tile retained; Windows synthetic WebKit is not physical iPhone acceptance."
+          },
+          {
+            "path": "../../../_local_artifacts/cashier-anikina-c32-20261014/VISUAL_REVIEW_LOCAL_R1.md",
+            "scope": "49 independently viewed original pairs; disposition fix, F1-F6/E1-E3."
+          },
+          {
+            "path": "../../../_local_artifacts/cashier-anikina-c32-20261014/local-frozen/TESTS.json",
+            "scope": "Frozen final local runtime tests, all8 exit0; private APIs fixture-only."
+          },
+          {
+            "path": "../../../_local_artifacts/cashier-anikina-c32-20261014/local-freeze/motion/report.json",
+            "scope": "Eight approved storyboard sequences/46 native frames; physical timing/haptics still require device."
+          },
+          {
+            "path": "../../../_local_artifacts/cashier-anikina-c32-20261014/VISUAL_REVIEW_LOCAL_SHIP.md",
+            "scope": "Independent final bounded local SHIP, unresolved material groups0; physical iPhoneOPEN."
+          },
+          {
+            "path": "../../../_local_artifacts/cashier-anikina-c32-20261014/local-publish-final/TESTS.json",
+            "scope": "Final native, code, synthetic runtime checks, all8exit0."
+          }
+        ],
+        "nativeBoundary": "Original two native inline programs except approved retry cache query; financial handlers/API/data/calculations/other cashiers remain owner-controlled.",
+        "historicalEvidence": "extensions.metadata and extensions.c31History preserve historical C3.1 evidence and local annotations."
+      },
+      "preservedAt": "2026-10-14T14:07:05Z",
+      "scope": "Prepublication C3.2 local implementation provenance preserved as R1 history; R1 published release evidence is owned by external REPORT/STATE_MAP."
+    },
+    "ownerExceptions": {
+      "statsFolds20261014": {
+        "authorizedBy": "Explicit owner follow-up after C3.2 R1 publication",
+        "scope": "Anikina Stats only",
+        "build": "c32-20261014-r2",
+        "blocks": [
+          "Топ вкусов",
+          "Требует внимания"
+        ],
+        "default": "Both collapsed",
+        "interaction": "Independent heading buttons; each toggles only its own body and aria-expanded; both may be expanded together.",
+        "implementation": "foldStatsCard; existing native child nodes retained; hidden body; aria-controls; min-height44px; approved title/chevron, expanded arrow180deg.",
+        "dataBoundary": "Native data/renderers/actions/conditional attention visibility unchanged; current-view state only; no new LS/API/calculation.",
+        "packBoundary": "Explicit exception to sealed C3.2 presentation; no sealed pack, tokens, motion, reference edits.",
+        "verification": "Local implementation only; checks/publication in progress; future local-fold-r2 and published-fold-r2 reports do not imply PASS."
+      }
     }
   },
   "components": [
