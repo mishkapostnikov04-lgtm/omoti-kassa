@@ -1,6 +1,6 @@
 ---
 name: "OMOTI · Касса Аникина · C «Пульт» 3.1"
-description: "Документация локальной реализации утверждённого C3.1; только касса Аникиной."
+description: "Документация локального кандидата C3.1 R2 после первого выпуска; только касса Аникиной."
 colors:
   bg: "#F3F2EE"
   surface: "#FFFFFF"
@@ -174,9 +174,27 @@ components:
 - Прежние DOM IDs и финансовые handlers в новых контейнерах.
 - Статус, выбор и блокировка выражают фактическое состояние.
 
-Срез документации: 14.10.2026, до deploy. Исходная Pages/main ревизия — `5c9eb685ac734bd832ae7c8771e6336eed948fd7`; сверка и сохранённые исходники записаны в [BASELINE.json](../../_local_artifacts/cashier-anikina-c31-20261014/BASELINE.json). Основание записи — [interface.js](interface.js), [integration.css](integration.css), [tokens.css](tokens.css), [components.css](components.css), [карта функций](../../_local_artifacts/cashier-anikina-c31-20261014/FUNCTION_MAP.md) и [контракт поверхности](../../_local_artifacts/cashier-anikina-c31-20261014/SURFACE_BRIEF.md). Идентичность прочитанного кода сохранена в sidecar.
+Срез документации: локальный кандидат R2 от 14.10.2026 после первого выпуска C3.1. Исходная Pages/main ревизия — `5c9eb685ac734bd832ae7c8771e6336eed948fd7`; сверка и сохранённые исходники записаны в [BASELINE.json](../../_local_artifacts/cashier-anikina-c31-20261014/BASELINE.json). Основание записи — [interface.js](interface.js), [integration.css](integration.css), [tokens.css](tokens.css), [components.css](components.css), [карта функций](../../_local_artifacts/cashier-anikina-c31-20261014/FUNCTION_MAP.md) и [контракт поверхности](../../_local_artifacts/cashier-anikina-c31-20261014/SURFACE_BRIEF.md). Идентичность прочитанного локального кода сохранена в sidecar. API/backend и владельцы финансовых расчётов этим presentation-пакетом не заменяются.
 
-Локальная реализация не означает приёмку 71 состояния или публикацию. [R1](../../_local_artifacts/cashier-anikina-c31-20261014/FINISH_REVIEW_R1.md) и [R2](../../_local_artifacts/cashier-anikina-c31-20261014/FINISH_REVIEW_R2.md) — диагностические reviews; R2 требует новой съёмки после исправлений. [REGRESSION.json](../../_local_artifacts/cashier-anikina-c31-20261014/REGRESSION.json) фиксирует 19 синтетических групп и `realWrites: 0`; это не проверка реальных покупок. Все финансовые browser-прогоны используют полные mocks `orders.omoti.ru`, Service Worker блокируется. Нативная клавиатура iPhone/Android, реальная камера, safe-area и поведение Safari/PWA на устройстве не проверены. Deploy и проверка опубликованной C3.1 на момент этой записи не выполнены.
+Первый опубликованный выпуск — commit `e6f7efbd8afdabf29885ca5fff05532e8b9e96d8`, build 14.10.2026 08:36:10 UTC. [PUBLISHED_AUDIT_R1.md](../../_local_artifacts/cashier-anikina-c31-20261014/PUBLISHED_AUDIT_R1.md) относится именно к нему и имеет `disposition: fix`: сверены оригинальные 71 base-состояния и 15 дополнительных сравнений, а не все 213 кадров глазами. Зафиксированы 213 captures, отсутствие runtime errors/missing fixtures/horizontal overflow и 38 совпадающих ответов по [served-assets manifest](../../_local_artifacts/cashier-anikina-c31-20261014/PUBLISHED_ASSETS-1791967035124.json). Этот аудит не принимает более новый локальный R2. Windows raw SHA и SHA опубликованных Git/LF-байтов различаются у CRLF-файлов; served-версия доказывается отдельным manifest, а не локальным hash.
+
+Локальные исправления R2 из следующих разделов завершены в коде, но R2 на момент этой записи ещё не опубликован. Метаданные его будущей публикации и независимый public R2 verdict должны быть записаны в release report в папке доказательств вне репозитория. Ни документирование, ни `captured-needs-visual-review`, ни scalar diffRatio не означают приёмку всех 71 состояний. Нативная клавиатура iPhone/Android, реальная камера, safe-area, Safari/PWA и ветви permissions на устройствах не проверены. Все финансовые browser-прогоны используют синтетические mocks всех запросов `orders.omoti.ru`, Service Worker блокируется; реальных чеков, бонусных операций и регистрации устройств ради проверки не было.
+
+### Evidence inventory
+
+| Источник | Что доказывает / ограничение |
+|---|---|
+| [FINISH_REVIEW_R1/R2](../../_local_artifacts/cashier-anikina-c31-20261014/FINISH_REVIEW_R2.md) и [FINISH_REVIEW_FINAL](../../_local_artifacts/cashier-anikina-c31-20261014/FINISH_REVIEW_FINAL.md) | История локальных bounded scoring и исправлений; final `ship` относится к проверенным fixes до published-аудита, не ко всей текущей поверхности. |
+| [published-r1/report.json](../../_local_artifacts/cashier-anikina-c31-20261014/published-r1/report.json), [JR-02 addendum](../../_local_artifacts/cashier-anikina-c31-20261014/published-r1-jr02-addendum/report.json) | Первый public capture; addendum заменяет только недостаточное состояние JR-02, старые captures сохранены. |
+| [PUBLISHED_AUDIT_R1](../../_local_artifacts/cashier-anikina-c31-20261014/PUBLISHED_AUDIT_R1.md) | Независимый визуальный аудит первого public commit; список последующих presentation fixes. |
+| [local-r2-final-batch](../../_local_artifacts/cashier-anikina-c31-20261014/local-r2-final-batch/report.json), [local-r2-final-closure](../../_local_artifacts/cashier-anikina-c31-20261014/local-r2-final-closure/report.json) | 33 и 9 targeted captures на своих sourceSHA, errors/missingFixtures 0; статус capture требует visual review. Нельзя объединять их в полный run одного SHA. |
+| [local-r2-frozen-final](../../_local_artifacts/cashier-anikina-c31-20261014/local-r2-frozen-final/report.json) | Предыдущие 30 targeted captures на одной sourceSHA-матрице; errors/missingFixtures 0. После последнего notice/back исправления это история, не полный run текущего SHA. |
+| [local-r2-final-notice](../../_local_artifacts/cashier-anikina-c31-20261014/local-r2-final-notice/report.json) | 6 targeted JR-02/JR-06 captures на sourceSHA актуального кода. Статус `captured-needs-visual-review`, не независимый verdict и не полный 213-run. |
+| [canonical regression.cjs](../_qa/c31/regression.cjs) / [REGRESSION.json](../_qa/c31/REGRESSION.json) | 25 синтетических групп, errors 0, failure отсутствует, `realWrites: 0`; включены измеренная высота notice/back SVG и успешное async-confirm acceptance с одним checkout и снятием UI-lock. `_qa/c31` — локальный ignored harness, не web/deploy-файлы. Ранний task-root отчёт 19 групп и его runner — историческая диагностика, не текущая suite. |
+| [GUARD_LOOP-local](../../_local_artifacts/cashier-anikina-c31-20261014/GUARD_LOOP-local.json) / [published-r1](../../_local_artifacts/cashier-anikina-c31-20261014/GUARD_LOOP-published-r1.json) | На одном hidden-SKU guard: 0 повторных disabled-mutations в локальном коде вместо 58 за 350мс в первом public выпуске; кнопка остаётся заблокирована. |
+| [CARD_CAPTION-local-r2](../../_local_artifacts/cashier-anikina-c31-20261014/CARD_CAPTION-local-r2.json) | Синтетическая known-due карта: enabled close, «Закрыть чек», errors 0, realWrites 0; реальную бонусную покупку не проверяет. |
+
+Generic `PRODUCT.md`, отдельные Impeccable build-state/spec, hero-repro, QUALITY BAR card и общий per-region comp-diff verdict не переданы. Для этого существующего приложения approved owner pack, surface brief, FUNCTION_MAP и BASELINE заменяют общую продуктовую/визуальную постановку; новый seed, hero или визуальный концепт не создаётся. Отсутствие нарисованной системной клавиатуры в headless capture допустимо, но физический keyboard/visualViewport не получает PASS.
 
 ## Colors
 
@@ -258,21 +276,25 @@ components:
 
 ### Chips
 
-Метки очереди, акции, карты, правки и сверки содержат слова. Чипы выбора периода/поиска — отдельные 44px элементы. Неизвестная сумма бонусов отображается «—»; метка не означает завершение операции.
+Метки очереди, акции, карты, правки и сверки содержат слова. В журнале они идут inline вместе с продавцом и оплатой и переносятся только при нехватке ширины. Обычный список подписывает реальную дату контекстом «Сегодня»/«Вчера» и согласует слово «чек» с количеством; исходная полная дата сохраняется в title, группа не вводит сумму дня. Поиск показывает found-count и «из 100 последних» на разных концах строки, затем плоские отфильтрованные чеки, без даты/неотфильтрованного day-count. Пустой query показывает помощь, кнопка clear скрыта через `:placeholder-shown`; clear использует SVG close. Чипы выбора периода/поиска — отдельные 44px элементы. Неизвестная сумма бонусов отображается «—»; метка не означает завершение операции.
 
 ### Cards / Containers
 
-Белые карточки с внутренним контуром и padding из frontmatter. Итоги имеют светлую выручку, затем условный блок внимания, бонусы, сотрудников и топ-8 вкусов. Служебные строки журнала имеют тёплую поверхность. Выбранная карта имеет янтарную плашку, неподтверждённая — нейтральную недоступную поверхность. Камера — белый контейнер с тёмным окном по реализованной интеграции; готовый поток в QA синтетический.
+Белые карточки с внутренним контуром и padding из frontmatter. Итоги имеют светлую выручку, затем условный блок внимания, бонусы, сотрудников и топ-8 вкусов. Группы внимания подписаны «Взяли без оплаты · долг» и «Брак · списано»; подписи и summary используют уже отрисованные исходные значения/строки. «Весь брак» — белое контурное раскрытие со стрелкой, не новая финансовая формула. Полная native-подпись периода, включая «неполная», помещается переносом строк вместо ellipsis; диапазон и его полнота по-прежнему определяются исходным кодом.
+
+Служебные строки журнала имеют тёплую поверхность. Выбранная карта имеет янтарную плашку, неподтверждённая — нейтральную недоступную поверхность. Камера — белый контейнер с тёмным окном по реализованной интеграции; готовый поток в QA синтетический. Loading сохраняет место hero/attention/следующей карточки скелетами (186/250/150px в текущем CSS); empty и network recovery имеют белый icon-chip, исходный текст и исходный retry-handler. Clear-search — светлая вторичная кнопка.
 
 ### Inputs / Fields
 
 Прежние input/textarea с прежними ID переносятся целиком. Основное поле — светлое, фокус — белая поверхность и внутренний тёмный контур 2px; ошибка — красный контур. Поиск использует общий контур контейнера без второго контура input. Размеры, inputmode и guards сохраняются; оформление не корректирует введённую сумму автоматически.
 
-Обычный раскрытый чек разделяет название/цену за единицу, исходные quantity-controls и сумму строки. Компактный акционный лист показывает количество отдельной inline-подписью и скрывает quantity-controls только в этом представлении. Подробный чек собирает состав в отдельный контейнер со строками минимум 32px и отдельным итогом; кнопка редактирования сохраняет высоту 52px без flex-сжатия. Это описание текущего кода после корректировок, а не независимый visual PASS.
+Обычный раскрытый чек разделяет название/цену за единицу, исходные quantity-controls и сумму строки. Компактный акционный лист показывает количество отдельной inline-подписью и скрывает quantity-controls только в этом представлении. Подробный чек собирает состав в отдельный контейнер со строками минимум 32px и отдельным итогом; кнопка редактирования сохраняет высоту 52px без flex-сжатия. Открытие комментария переводит фокус и прокручивает textarea к нижнему видимому краю, сохраняя отдельный pinned total; headless focus/content не доказывает нативное перекрытие клавиатурой. Ввод УДАЛИТЬ сохраняет тёмный внутренний контур и маленький valid-check справа; checkbox имеет округлую опасную выбранную поверхность с vector-check. Deletion guard, checkbox и required reason определяются исходными handlers. Это описание текущего кода после корректировок, а не независимый visual PASS.
 
 ### Navigation
 
 Одна нижняя навигация Касса / Журнал / Итоги. Используются прежние `.tab-btn` и `switchTab`, активность — `aria-current="page"`; переключатель режима — `aria-pressed`. При финансовой блокировке переход запрещён. Листы имеют `role="dialog"`, `aria-modal`, Escape, возврат фокуса и локальную Tab-петлю. Свайп заголовка вниз закрывает лист после смещения больше 60px.
+
+Locked presentation приглушает grid, employee/mode и nav до opacity .45, сохраняя читаемую recovery CTA без повторного приглушения. Док скрыт под открытой камерой, QR регистрации и deletion layer, а также при определённой кодом клавиатуре. Финансовые guards продолжают действовать независимо от визуальной opacity.
 
 ### Catalogue / Counter
 
@@ -297,11 +319,15 @@ components:
 
 `interface.js` сохраняет ссылки на прежние handlers и добавляет представление/локальные guards. Цены, скидки, восемь способов оплаты, смешанная проверка, snapshots наборов, записи и retry принадлежат HTML и финансовым модулям. Сумма чека и к оплате показываются отдельно. Поиск работает только среди уже загруженных чеков; сумма дня не рассчитывается. Unknown-покупка не запускает повтор checkout; модульный отказ/ожидание не снимается дизайнерским слоем.
 
-Единственная предусмотренная правка финансового модуля — Anikina-only async confirmation `C31Confirm(message)` вместо `window.confirm`: тот же текст и boolean, cancel без записи. Соседние кассы сохраняют native-confirm. Первичные namespace продавцов, очереди, устройства, кэша и бонусных pending/correction не заменяются; PIN, токены и клиентские данные в этой документации отсутствуют. Manifest, Service Worker, vendor и QR SVG не становятся объектом дизайн-правки.
+R2 делает повторные UI-lock присваивания идемпотентными: disabled ставится только при реальном изменении. Это прекращает MutationObserver-loop, не меняя финансовый отказ. Отказ auth блокирует закрытие уже существующего basket и новые товарные controls; после снятия auth вызывается исходный updateCart для восстановления guards. Когда модуль уже разрешил закрытие, due известен, ожидания/lock нет и это не correction, presentation возвращает готовую подпись «Закрыть чек»/«Сохранить изменения». Unknown, лимиты, disabled и purchase identity не переопределяются ради подписи.
+
+Единственная предусмотренная правка финансового модуля — Anikina-only async confirmation `C31Confirm(message)` вместо `window.confirm`: тот же текст и boolean, cancel без записи. Текущая synthetic regression дополнительно подтверждает принятие: вызван исходный checkout ровно один раз, после подтверждения UI освобождается; это не настоящая бонусная покупка. Соседние кассы сохраняют native-confirm. Первичные namespace продавцов, очереди, устройства, кэша и бонусных pending/correction не заменяются; PIN, токены и клиентские данные в этой документации отсутствуют. Manifest, Service Worker, vendor и QR SVG не становятся объектом дизайн-правки.
 
 ### Icons / Motion
 
-`interface.js` содержит inline SVG undo/card/receipt/journal/stats/search: viewBox 24×24, stroke currentColor, ширина штриха 2.2, обычный размер 18–20px; пустые/ошибочные состояния используют 32px. QR остаётся настоящим исходным SVG. Никаких новых raster-материалов эта документация не создаёт.
+`interface.js` содержит inline SVG undo/card/receipt/journal/stats/search/reload/close/check/upload/warning: viewBox 24×24, stroke currentColor, ширина штриха 2.2, обычный размер 18–20px; дополнительные статусы используют 16/24/32px по месту. Back подробного чека — SVG chevron 16px со штрихом 2.6. Готовность, очередь, offline/reconciliation и ошибка имеют разные vector-иконки тоста; универсальная галочка успеха больше не подменяет семантику всех сообщений.
+
+На Журнале тост стоит ниже header/actions (top 96px + safe-area), на остальных экранах — top 40px + safe-area. Пока Журнал активен и `.toast.show` виден, список сдвигается на `top: calc(96px + var(--c31-journal-notice-h,48px) + 8px)`. Высота `--c31-journal-notice-h` берётся из `toast.getBoundingClientRect().height`, отслеживается `ResizeObserver` с fallback на window resize; многострочный notice резервирует собственную реальную высоту. После исчезновения тоста CSS возвращает обычное положение списка. Исходный текст и lifetime сохраняются. QR остаётся настоящим исходным SVG. Никаких новых raster-материалов эта документация не создаёт.
 
 Фактически есть tile press scale(.98)/120мс, dock transform/200мс, spinner 1с, toast 2с, stepper/hint 4с. `prefers-reduced-motion` отключает animation и transition. Токен времени листа 200мс объявлен, но самостоятельное появление sheet-анимацией в прочитанном коде не реализовано и не записано как доказанное поведение.
 
@@ -323,4 +349,4 @@ components:
 - Don't считать browser mocks доказательством реальных денег, нативной клавиатуры, камеры или safe-area.
 - Don't считать этот DESIGN.md, диагностический R2 или числовой pixel diff приёмкой всех 71 состояний.
 
-Not canonized: оставшиеся текстовые glyph-иконки (✕, ✓, !, ‹/▾) в текущем адаптере фиксируются как долг реализации inline SVG, а не как правило новых компонентов. Утверждённые заголовки карточек и служебная лента сохраняют приоритет владельца. Расхождения R1/R2 не объявлены устранёнными без новой immutable съёмки; документирование их не исправляет и не узаконивает.
+Not canonized: R2 заменил основные close/check/reload/toast/search-clear/period/back glyph-иконки на inline SVG; остаточный текстовый знак warning-title не становится новым правилом компонентов. Утверждённые заголовки карточек и служебная лента сохраняют приоритет владельца. Документ описывает исправления локального кандидата после `PUBLISHED_AUDIT_R1`, но не объявляет их public acceptance без нового immutable public run и независимого verdict. Расхождения не узакониваются записью в документации; физическая клавиатура, камера и safe-area остаются открытыми проверками.
