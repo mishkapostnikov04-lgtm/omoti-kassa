@@ -209,7 +209,7 @@
       const payload=input(kind,check); if(kind==='delete') payload.reason=String(reason || '').trim();
       const quote=await hooks.request('quote',payload);
       if(!quoteValid(quote)) throw Error('Сервер не подтвердил расчёт. Чек не изменён.');
-      if(kind==='edit' && !window.confirm('Сохранить исправление '+window.CashierReceiptDetails.receiptLabel(check)+'?\nК оплате: '+money(Math.round(check.sum*100))+' → '+money(quote.dueMinor)+'\nБонусами: '+money(quote.redeemMinor)+' · начисление: '+money(quote.earnMinor)+(quote.forgivenMinor>0?'\nУ клиента останется '+money(quote.forgivenMinor)+' уже потраченных бонусов.':'')+'\nСостав, остатки и отчёты обновятся после подтверждения бонусов.')) return {state:'cancelled'};
+      if(kind==='edit' && !(await (hooks.point==='anikina' && typeof window.C31Confirm==='function' ? window.C31Confirm : window.confirm)('Сохранить исправление '+window.CashierReceiptDetails.receiptLabel(check)+'?\nК оплате: '+money(Math.round(check.sum*100))+' → '+money(quote.dueMinor)+'\nБонусами: '+money(quote.redeemMinor)+' · начисление: '+money(quote.earnMinor)+(quote.forgivenMinor>0?'\nУ клиента останется '+money(quote.forgivenMinor)+' уже потраченных бонусов.':'')+'\nСостав, остатки и отчёты обновятся после подтверждения бонусов.'))) return {state:'cancelled'};
       const changeKey=crypto.randomUUID();
       const identity={saleKey:payload.saleKey,num:payload.num,changeKey,kind,correction:true};
       remember(identity); invalidate();

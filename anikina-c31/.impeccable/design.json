@@ -1,0 +1,190 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-14T15:31:08.4459533+07:00",
+  "title": "Design System: OMOTI · Касса Аникина · C «Пульт» 3.1",
+  "extensions": {
+    "colorMeta": {
+      "amber": { "role": "primary", "displayName": "Янтарь выбора и действия" },
+      "danger": { "role": "secondary", "displayName": "Опасное действие" },
+      "danger-2": { "role": "secondary", "displayName": "Брак и ошибка" },
+      "svc-bg": { "role": "secondary", "displayName": "Служебная поверхность" },
+      "bg": { "role": "neutral", "displayName": "Фон рабочего экрана" },
+      "surface": { "role": "neutral", "displayName": "Белый контейнер" },
+      "ink": { "role": "neutral", "displayName": "Текст и док" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Выручка", "purpose": "Большая сумма светлой карточки итогов." },
+      "headline": { "displayName": "Заголовок раздела", "purpose": "Журнал и Итоги." },
+      "title": { "displayName": "Заголовок листа", "purpose": "Рабочий лист над доком." },
+      "tile": { "displayName": "Название товара", "purpose": "До двух строк, отдельное от цены и количества." },
+      "count": { "displayName": "Счётчик", "purpose": "Отдельная область открытия − / + без изменения количества." },
+      "input": { "displayName": "Поле", "purpose": "Не меньше 16px; устройство отдельно проверяет native keyboard." }
+    },
+    "shadows": [
+      { "name": "sheet", "value": "0 20px 50px -20px rgba(0,0,0,.4)", "purpose": "Белый лист над рабочим экраном." },
+      { "name": "toast", "value": "0 0 0 1px var(--k-line), 0 14px 30px -10px rgba(0,0,0,.25)", "purpose": "Верхний статусный тост." },
+      { "name": "hint", "value": "0 10px 24px -8px rgba(0,0,0,.45)", "purpose": "Временная подсказка отдельного счётчика." },
+      { "name": "modal", "value": "0 -10px 40px rgba(0,0,0,.25)", "purpose": "Нижний модальный контейнер." }
+    ],
+    "motion": [
+      { "name": "tile-press", "value": "transform: scale(.98); transition: transform 120ms", "purpose": "Нажатие товара." },
+      { "name": "dock-keyboard", "value": "transition: transform .2s", "purpose": "Скрытие дока при определённом кодом перекрытии клавиатурой." },
+      { "name": "wait-spinner", "value": "c31-spin 1s linear infinite", "purpose": "Фактическое ожидание сохранения/бонусной операции." },
+      { "name": "toast-lifetime", "value": "2000ms", "purpose": "Текст статуса из прежнего showToast." },
+      { "name": "stepper-idle", "value": "4000ms", "purpose": "Закрытие режима без изменения количества." },
+      { "name": "hint-delay", "value": "600ms", "purpose": "Только задержка подсказки; не правило количества." },
+      { "name": "hint-lifetime", "value": "4000ms", "purpose": "До касания, максимум три показа до первого открытия stepper." },
+      { "name": "reduced-motion", "value": "animation: none !important; transition: none !important", "purpose": "prefers-reduced-motion: reduce." }
+    ],
+    "breakpoints": [
+      { "name": "narrow-fallback", "value": "359px" },
+      { "name": "content-max", "value": "480px" }
+    ],
+    "provenance": {
+      "scope": "omoti-kassa/omoti_anikina.html and anikina-c31 only",
+      "documentationStatus": "local implementation snapshot before deploy; not 71-state acceptance",
+      "approvedSource": "../../../design-system/modules/cashier-anikina/c31-approved-20261014/HANDOFF.md",
+      "archiveSHA256": "095c42fd6b34e8c90502e362be3ad30df342b689e171cbc089bb761fdd1370ba",
+      "baselineHead": "5c9eb685ac734bd832ae7c8771e6336eed948fd7",
+      "sourceSHA256": {
+        "interface.js": "6c8cc561d2c8d8444ad43cab778954ad669efd7f561b56904378d924fb00073c",
+        "integration.css": "e7dcb2e24e6becae2b28b0215aebb581bb2e5e96484e58b528cf1bec5ff9a6fd",
+        "tokens.css": "52d514bc2d889d488d1e76e6cbdaf73d7c21ba6ea0719681c4bfd9f28bc5775a",
+        "components.css": "6464b707a99c419353c2ccb42a5e637ee10ba147b7c427a6771c53d38750c7bb"
+      },
+      "palettePolicy": "Owner-pinned tokens; no synthesized tonal ramps or new palette.",
+      "verification": "REGRESSION.json reports 19 synthetic groups and zero real writes. All financial browser testing mocks orders.omoti.ru completely and blocks Service Worker.",
+      "unverified": ["native iPhone/Android keyboard", "real camera", "native safe-area", "Safari/PWA device behavior", "all 71 state acceptance", "deployment", "published audit"],
+      "notCanonized": "Glyph icons and unresolved diagnostic R1/R2 drift are not new design rules; sheet animation token is declared but not implemented as a sheet entrance in inspected source."
+    },
+    "geometry": {
+      "cashierDock": "174px plus any extra native safe-area",
+      "navigationDock": "64px plus any extra native safe-area",
+      "servicePaidDock": "224px",
+      "serviceDebtDock": "232px",
+      "ordinarySheetBottom": "current dock + 8px",
+      "tileHeight": "74px",
+      "columns": 3,
+      "counterVisible": "32 x 28px",
+      "counterHit": "50 x 44px",
+      "stepperButton": "40-44 x 44px",
+      "navigationVisible": "40px",
+      "navigationHit": "51px"
+    },
+    "keyboard": {
+      "source": "visualViewport resize/scroll and focusin/focusout",
+      "heightFormula": "max(0, innerHeight - visualViewport.height - visualViewport.offsetTop)",
+      "openCondition": "active input excluding checkbox or textarea, and overlap > 100px",
+      "sheetBottom": "--k-kb-h + 8px",
+      "manualStatus": "Not verified on real iPhone/Android; desktop focus is not native keyboard evidence."
+    },
+    "financialBoundary": {
+      "owners": ["original omoti_anikina.html handlers", "AnikinaLoyalty", "CashierLoyaltyCorrections", "CashierReceiptDetails", "cashier-loyalty-connection-v1.js", "cashier-registration-qr-v1.js"],
+      "confirmation": "Anikina-only C31Confirm(message) Promise returns the original boolean with original module message.",
+      "storage": "Original sellers, remembered seller, checks cache, queue, pending close, device, notice and loyalty pending/correction namespaces preserved. UI hint adds only omoti_anikina_count_hint_v1.",
+      "locks": "Original data-loyalty-locked/data-correction-locked, closeCheckInFlight, init failure and auth state; no checkout replay for unknown state.",
+      "search": "Already loaded journalChecksWithQueue only; no new server request or daily total."
+    }
+  },
+  "components": [
+    {
+      "name": "Закрыть чек",
+      "kind": "button",
+      "refersTo": "close-button",
+      "description": "Основное действие в ряду оплаты; disabled принадлежит финансовому владельцу.",
+      "html": "<button class=\"ds-close\">Закрыть чек</button>",
+      "css": ".ds-close{height:48px;width:100%;border:0;border-radius:var(--k-r-btn,14px);background:var(--k-amber,#FFA21A);color:var(--k-ink,#121212);font-family:var(--k-font,'Geologica','Segoe UI',system-ui,sans-serif);font-size:16px;font-weight:800}.ds-close:hover:not(:disabled){background:var(--k-amber,#FFA21A)}.ds-close:focus-visible{outline:2px solid var(--k-amber-line,#F59300);outline-offset:3px}.ds-close:disabled{background:var(--k-dock-off-bg,#33322F);color:var(--k-dock-muted,#8E8C86);font-size:15px}"
+    },
+    {
+      "name": "Тёмная кнопка листа",
+      "kind": "button",
+      "refersTo": "button-dark",
+      "description": "Действие рабочего листа.",
+      "html": "<button class=\"ds-dark\">Редактировать</button>",
+      "css": ".ds-dark{height:52px;width:100%;border:0;border-radius:15px;background:var(--k-ink,#121212);color:#fff;font-family:var(--k-font,'Geologica','Segoe UI',system-ui,sans-serif);font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px}.ds-dark:hover{background:var(--k-ink,#121212)}.ds-dark:focus-visible{outline:2px solid var(--k-amber-line,#F59300);outline-offset:3px}"
+    },
+    {
+      "name": "Светлая кнопка листа",
+      "kind": "button",
+      "refersTo": "button-light",
+      "description": "Вторичное действие.",
+      "html": "<button class=\"ds-light\">Повторить</button>",
+      "css": ".ds-light{height:48px;width:100%;border:0;border-radius:15px;background:var(--k-field,#F3F2EE);color:var(--k-ink,#121212);font-family:var(--k-font,'Geologica','Segoe UI',system-ui,sans-serif);font-size:14px;font-weight:600}.ds-light:hover{background:var(--k-field,#F3F2EE)}.ds-light:focus-visible{outline:2px solid var(--k-amber-line,#F59300);outline-offset:3px}"
+    },
+    {
+      "name": "Опасное действие",
+      "kind": "button",
+      "description": "Контурное удаление в отдельной опасной зоне подробного чека.",
+      "html": "<button class=\"ds-danger\">Удалить чек…</button>",
+      "css": ".ds-danger{height:44px;border:0;border-radius:15px;background:#fff;color:var(--k-danger,#C2410C);box-shadow:inset 0 0 0 1.5px #E7A88A;padding:0 14px;font-family:var(--k-font,'Geologica','Segoe UI',system-ui,sans-serif);font-size:13.5px;font-weight:800}.ds-danger:hover{background:#fff}.ds-danger:focus-visible{outline:2px solid var(--k-amber-line,#F59300);outline-offset:3px}"
+    },
+    {
+      "name": "Поле ввода",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Исходное поле с устойчивым размером шрифта.",
+      "html": "<input class=\"ds-field\" aria-label=\"Комментарий\" placeholder=\"Комментарий\">",
+      "css": ".ds-field{box-sizing:border-box;height:52px;width:100%;min-width:0;border:0;border-radius:var(--k-r-btn,14px);background:var(--k-field,#F3F2EE);color:var(--k-ink,#121212);padding:0 14px;font-family:var(--k-font,'Geologica','Segoe UI',system-ui,sans-serif);font-size:16px}.ds-field:hover{background:var(--k-field,#F3F2EE)}.ds-field:focus,.ds-field:focus-visible{outline:0;background:#fff;box-shadow:inset 0 0 0 2px var(--k-ink,#121212)}"
+    },
+    {
+      "name": "Навигация дока",
+      "kind": "nav",
+      "description": "Прежние вкладки с inline SVG и aria-current.",
+      "html": "<nav class=\"ds-nav\"><button aria-current=\"page\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M6 3h12v18l-3-2-3 2-3-2-3 2z\"/><path d=\"M9 8h6M9 12h6\"/></svg>Касса</button><button>Журнал</button><button>Итоги</button></nav>",
+      "css": ".ds-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;background:var(--k-ink,#121212);padding:5px 10px 16px;border-top:1px solid var(--k-dock-line,#2A2A28)}.ds-nav button{height:40px;position:relative;border:0;border-radius:13px;background:transparent;color:var(--k-dock-muted,#8E8C86);font-family:var(--k-font,'Geologica','Segoe UI',system-ui,sans-serif);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:7px}.ds-nav button:after{content:'';position:absolute;left:0;right:0;top:-5px;bottom:-6px}.ds-nav button[aria-current=page]{background:var(--k-dock-btn,#262624);color:#fff}.ds-nav [aria-current=page] svg{color:var(--k-amber,#FFA21A)}.ds-nav button:hover:not([aria-current=page]){background:transparent;color:var(--k-dock-muted,#8E8C86)}.ds-nav button:focus-visible{outline:2px solid var(--k-amber-line,#F59300);outline-offset:3px}"
+    },
+    {
+      "name": "Метка очереди",
+      "kind": "chip",
+      "description": "Словесная метка фактической pending операции.",
+      "html": "<span class=\"ds-badge\">ожидает отправки</span>",
+      "css": ".ds-badge{height:20px;border-radius:6px;padding:0 6px;font-family:var(--k-font,'Geologica','Segoe UI',system-ui,sans-serif);font-size:11.5px;font-weight:700;display:inline-flex;align-items:center;background:var(--k-ink,#121212);color:var(--k-amber,#FFA21A)}"
+    },
+    {
+      "name": "Выбранный товар и счётчик",
+      "kind": "custom",
+      "refersTo": "tile-selected",
+      "description": "Плитка +1 и отдельный счётчик; snippet только показывает форму, не выполняет финансовый handler.",
+      "html": "<div class=\"ds-tile\"><button class=\"ds-hit\" aria-label=\"Товар, в чеке 3 шт.\"></button><span class=\"ds-name\">Название вкуса</span><span class=\"ds-foot\"><span class=\"ds-price\">120</span><button class=\"ds-count\" aria-label=\"Изменить количество: 3\">3</button></span></div>",
+      "css": ".ds-tile{box-sizing:border-box;position:relative;height:74px;width:118px;border:0;border-radius:16px;background:var(--k-amber-tile,#FFF7E8);box-shadow:inset 0 0 0 2px var(--k-amber-line,#F59300);padding:9px 10px 6px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;font-family:var(--k-font,'Geologica','Segoe UI',system-ui,sans-serif);color:var(--k-ink,#121212);touch-action:manipulation}.ds-hit{position:absolute;inset:0;border:0;background:transparent;border-radius:inherit;padding:0}.ds-name{position:relative;pointer-events:none;font-size:13.5px;font-weight:600;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.ds-foot{position:relative;display:flex;justify-content:space-between;align-items:flex-end;height:28px;pointer-events:none}.ds-price{font-size:12px;font-weight:500;line-height:1;color:var(--k-muted-2,#77756F);padding-bottom:3px}.ds-count{position:relative;width:32px;height:28px;padding:0;border:0;border-radius:9px;background:var(--k-amber,#FFA21A);color:var(--k-ink,#121212);font-size:19px;font-weight:800;pointer-events:auto}.ds-count:after{content:'';position:absolute;top:-10px;right:-10px;bottom:-6px;left:-8px}.ds-tile:active{transform:scale(.98);transition:transform 120ms}.ds-hit:hover{background:transparent}.ds-hit:focus-visible,.ds-count:focus-visible{outline:2px solid var(--k-amber-line,#F59300);outline-offset:3px}@media(prefers-reduced-motion:reduce){.ds-tile:active{transition:none}}"
+    },
+    {
+      "name": "Ошибка состояния",
+      "kind": "custom",
+      "description": "Красная статусная поверхность; текст всегда из владельца состояния.",
+      "html": "<div class=\"ds-status\" role=\"status\">Не удалось обновить данные.</div>",
+      "css": ".ds-status{border-radius:13px;padding:11px 12px;font-family:var(--k-font,'Geologica','Segoe UI',system-ui,sans-serif);font-size:13.5px;line-height:1.42;background:var(--k-danger-tint,#FFF1EA);color:#8A2C05;box-shadow:inset 0 0 0 1.5px #F2B79F}"
+    },
+    {
+      "name": "Белая карточка",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Основная поверхность итогов и подробного чека.",
+      "html": "<section class=\"ds-card\"><span class=\"ds-card-title\">По сотрудникам</span><span>Данные выбранного периода</span></section>",
+      "css": ".ds-card{background:#fff;border-radius:18px;box-shadow:inset 0 0 0 1px var(--k-line,#E5E3DD);padding:12px 14px;display:flex;flex-direction:column;gap:6px;font-family:var(--k-font,'Geologica','Segoe UI',system-ui,sans-serif);color:var(--k-ink,#121212);font-size:14px}.ds-card-title{font-size:12px;font-weight:800;letter-spacing:.06em;color:var(--k-muted-2,#77756F);text-transform:uppercase}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Пульт C3.1",
+    "overview": "Это запись фактической локальной реализации утверждённого владельцем мобильного пульта Аникиной. Светлый рабочий экран содержит компактные товары, белые листы и карточки; тёмный док собирает чек, оплату и единственную навигацию. Янтарь показывает выбор и главное действие, красный — ошибку, брак или опасное действие. Плотность помогает ежедневной работе кассира с телефона.\n\nДокумент описывает сборку, а не вводит новый стандарт OMOTI. Утверждённый пакет [C3.1](../../design-system/modules/cashier-anikina/c31-approved-20261014/HANDOFF.md) остаётся выше этой записи. Порядок приоритета: финансовые функции и `PRESERVE.md`; дословные статусы из кода; поведение из `INTERACTIONS.md`; оригинальные PNG и HTML конкретного состояния; значения из токенов пакета. Реальные имена, ассортимент, цены, даты и суммы берутся из кода/сервера. Общая ERP DS v1.0.0 и две соседние кассы этим документом не изменяются.",
+    "keyCharacteristics": ["Светлая рабочая поверхность и тёмный док.", "Geologica и табличные цифры.", "Три колонки товаров, отдельная область счётчика.", "Прежние DOM IDs и финансовые handlers в новых контейнерах.", "Статус, выбор и блокировка выражают фактическое состояние."],
+    "rules": [
+      { "name": "The State Color Rule", "body": "Цвет подтверждает состояние из финансового владельца; оформление не создаёт статус, доступный баланс или разрешение на повтор операции.", "section": "colors" },
+      { "name": "The Numeric Roles Rule", "body": "Количество, цена за единицу, сумма строки, сумма чека и к оплате остаются отдельными значениями с отдельной иерархией.", "section": "typography" }
+    ],
+    "dos": [
+      "Do брать визуальные значения и состояния из утверждённого C3.1, а финансовые тексты и доступность — из кода владельца.",
+      "Do сохранять прежние ID, namespace, API и identity операций при переносе в листы и док.",
+      "Do показывать отдельно количество, цену, сумму чека и к оплате; неизвестные бонусы показывать «—».",
+      "Do различать локальную реализацию, проверку с фикстурами, deploy и проверку опубликованной кассы.",
+      "Do сравнивать оригинальные PNG при одинаковом viewport и сохранять реальные мобильные проверки как отдельный этап."
+    ],
+    "donts": [
+      "Don't распространять C3.1 на Советскую, Новогоднюю или общую ERP без отдельной задачи.",
+      "Don't подменять статусы/лимиты/цены фиктивными значениями ради совпадения с макетом.",
+      "Don't повторять unknown-бонусную покупку или очищать pending/recovery state через дизайн-слой.",
+      "Don't считать browser mocks доказательством реальных денег, нативной клавиатуры, камеры или safe-area.",
+      "Don't считать этот DESIGN.md, диагностический R2 или числовой pixel diff приёмкой всех 71 состояний."
+    ]
+  }
+}

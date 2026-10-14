@@ -1,0 +1,221 @@
+/* ==========================================================================
+   OMOTI · Касса «Аникина» · C «Пульт» ред. 3.1 — компоненты
+   Требует tokens.css. Префикс k- — чтобы не пересекаться с классами кассы.
+   Названия классов — рекомендация; обязательны значения и поведение.
+   ========================================================================== */
+
+.k-app{font-family:var(--k-font);color:var(--k-ink);background:var(--k-bg);font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;position:relative;min-height:100dvh}
+.k-app :where(button,input,textarea){font-family:inherit;color:inherit}
+.k-app :where(button){cursor:pointer;-webkit-tap-highlight-color:transparent}
+.k-app.is-service{background:var(--k-svc-bg)}
+.k-tape{position:absolute;left:0;right:0;top:0;height:6px;background:repeating-linear-gradient(-45deg,var(--k-amber) 0 9px,var(--k-ink) 9px 18px)}
+
+/* --- Верхняя строка: точка + метки ---------------------------------------- */
+.k-top{position:absolute;left:16px;right:16px;top:calc(var(--k-top-line) + env(safe-area-inset-top));height:26px;display:flex;align-items:center;gap:8px}
+.k-point{border:0;background:transparent;padding:0;height:26px;font-size:13px;font-weight:600;color:var(--k-muted);display:flex;align-items:center;gap:5px}
+.k-point b{color:var(--k-ink);font-weight:700}
+.k-pill{height:24px;border:0;border-radius:999px;padding:0 9px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:5px}
+.k-pill--queue{background:var(--k-ink);color:var(--k-amber)}
+.k-pill--promo{background:var(--k-amber);color:var(--k-ink)}
+
+/* --- Контекст: продавец + режим ------------------------------------------- */
+.k-ctx{position:absolute;left:var(--k-gutter);right:var(--k-gutter);top:calc(var(--k-ctx-top) + env(safe-area-inset-top));display:flex;gap:8px;height:var(--k-ctx-h)}
+.k-staff{flex:1;min-width:0;height:48px;border:0;border-radius:16px;background:var(--k-surface);box-shadow:inset 0 0 0 1px var(--k-line);display:flex;align-items:center;gap:10px;padding:0 10px 0 6px;text-align:left}
+.k-staff--need{background:var(--k-amber-tint);box-shadow:inset 0 0 0 2px var(--k-amber-line)}
+.k-avatar{width:36px;height:36px;border-radius:11px;background:var(--k-ink);color:var(--k-amber);font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;flex:none}
+.k-staff--need .k-avatar{background:var(--k-amber);color:var(--k-ink)}
+.k-staff small{display:block;font-size:11px;color:var(--k-muted-2);font-weight:500;line-height:1.15}
+.k-staff b{display:block;font-size:15px;font-weight:700;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.k-mode{display:grid;grid-template-columns:1fr 1fr;width:var(--k-mode-w);background:var(--k-chip);border-radius:16px;padding:3px;gap:3px;box-sizing:border-box;flex:none}
+.k-mode button{border:0;border-radius:13px;background:transparent;font-size:13.5px;font-weight:600;color:var(--k-muted);padding:0}
+.k-mode [aria-pressed="true"]{background:var(--k-ink);color:#fff}
+.is-service .k-mode{background:var(--k-svc-chip)}
+.is-service .k-mode [aria-pressed="true"]{background:var(--k-amber);color:var(--k-ink);font-weight:700}
+
+/* --- Сетка вкусов: всегда 3 колонки --------------------------------------- */
+.k-grid{position:absolute;left:var(--k-gutter);right:var(--k-gutter);top:calc(var(--k-grid-top) + env(safe-area-inset-top));bottom:0;overflow-y:auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--k-gap);align-content:start;padding-bottom:calc(var(--k-dock-h) + 12px)}
+.k-fade{position:absolute;left:0;right:0;bottom:var(--k-dock-h);height:var(--k-fade-h);background:linear-gradient(rgba(243,242,238,0),var(--k-bg));pointer-events:none;z-index:2}
+
+/* Плитка: контейнер div; внутри две отдельные кнопки — вся плитка (+1) и счётчик («− / +») */
+.k-tile__hit{position:absolute;inset:0;border:0;background:transparent;border-radius:inherit;padding:0;z-index:0}
+.k-tile__name,.k-tile__foot{position:relative;pointer-events:none}
+.k-tile .k-count{pointer-events:auto;z-index:1}
+.k-tile{position:relative;height:var(--k-tile-h);border:0;border-radius:var(--k-tile-r);background:var(--k-surface);box-shadow:inset 0 0 0 1px var(--k-line);padding:9px 10px 6px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box;overflow:hidden;touch-action:manipulation;user-select:none}
+.k-tile__name{font-size:var(--k-fs-tile);font-weight:var(--k-fw-tile);line-height:var(--k-lh-tile);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.k-tile__foot{display:flex;justify-content:space-between;align-items:flex-end;height:28px}
+.k-tile__price{font-size:var(--k-fs-price);color:var(--k-muted-2);font-weight:500;line-height:1;padding-bottom:3px}
+.k-tile--prem .k-tile__price{color:var(--k-amber-text-2);font-weight:700}
+.k-tile--on{background:var(--k-amber-tile);box-shadow:inset 0 0 0 2px var(--k-amber-line)}
+.k-tile:active{transform:scale(.98);transition:transform var(--k-t-fast)}
+.k-tile[disabled],.k-tile--off{opacity:.45}
+.is-service .k-tile{box-shadow:inset 0 0 0 1px var(--k-svc-line)}
+.is-service .k-tile__price{color:var(--k-svc-price)}
+.is-brak .k-tile--on{background:var(--k-danger-tint);box-shadow:inset 0 0 0 2px var(--k-danger-2)}
+.is-brak .k-count{background:var(--k-danger-2);color:#fff}
+
+/* Счётчик: видимый блок 32×28, зона касания 50×44 до края плитки */
+.k-count{position:relative;min-width:var(--k-count-w);height:var(--k-count-h);border:0;border-radius:var(--k-count-r);background:var(--k-amber);color:var(--k-ink);font-size:var(--k-fs-count);font-weight:var(--k-fw-count);display:flex;align-items:center;justify-content:center;padding:0 7px;box-sizing:border-box}
+.k-count::after{content:"";position:absolute;top:-10px;right:-10px;bottom:-6px;left:-8px} /* 50×44 */
+
+/* Режим «− / +» на плитке */
+.k-tile--edit{background:var(--k-surface);box-shadow:inset 0 0 0 2px var(--k-ink);padding:5px 4px 5px}
+.k-tile--edit .k-tile__name{-webkit-line-clamp:1;font-size:12.5px;line-height:15px;padding:0 6px}
+.k-step{display:grid;grid-template-columns:minmax(40px,44px) minmax(20px,1fr) minmax(40px,44px);align-items:center;height:var(--k-step-btn)}
+.k-step button{height:var(--k-step-btn);border:0;border-radius:11px;font-size:20px;font-weight:700}
+.k-step__minus{background:var(--k-ink);color:#fff}
+.k-step__plus{background:var(--k-amber);color:var(--k-ink)}
+.k-step b{text-align:center;font-size:20px;font-weight:800}
+
+/* Подсказка при первом использовании */
+.k-hint{position:absolute;z-index:6;background:var(--k-ink);color:#fff;border-radius:12px;padding:9px 12px;font-size:13px;font-weight:600;line-height:1.3;box-shadow:0 10px 24px -8px rgba(0,0,0,.45);white-space:nowrap;pointer-events:none}
+.k-hint em{font-style:normal;color:var(--k-amber)}
+.k-hint::after{content:"";position:absolute;bottom:-5px;left:var(--k-hint-arrow,50%);width:12px;height:12px;background:var(--k-ink);transform:translateX(-6px) rotate(45deg)}
+
+/* --- Нижняя панель (док) 174 px ------------------------------------------- */
+.k-dock{position:fixed;left:0;right:0;bottom:0;background:var(--k-dock);border-radius:var(--k-dock-r) var(--k-dock-r) 0 0;padding:var(--k-dock-pad-top) var(--k-dock-pad-x) max(var(--k-dock-pad-bottom),env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:var(--k-dock-gap);color:#fff;z-index:3;box-sizing:border-box}
+.is-service .k-dock{box-shadow:0 0 0 2px var(--k-amber)}
+.k-dock__label{position:absolute;top:-13px;left:18px;height:24px;border-radius:8px;background:var(--k-amber);color:var(--k-ink);font-size:11px;font-weight:800;letter-spacing:.07em;padding:0 9px;display:flex;align-items:center;gap:6px}
+.is-brak .k-dock__label{background:var(--k-danger-2);color:#fff}
+.k-dock__r1{display:flex;align-items:center;gap:var(--k-gap);height:var(--k-dock-row1)}
+.k-dock__r2{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--k-gap);height:var(--k-dock-row2)}
+.k-dock__r2--go{grid-template-columns:auto 1fr}
+.k-dock__r2--one{grid-template-columns:1fr}
+.k-dock__r2--svc{grid-template-columns:repeat(3,minmax(0,1fr))}
+.k-ib{height:44px;min-width:44px;border:0;border-radius:var(--k-r-ib);background:var(--k-dock-btn);color:var(--k-dock-text);display:flex;align-items:center;justify-content:center;gap:6px;padding:0 12px;font-size:var(--k-fs-btn);font-weight:var(--k-fw-btn);box-sizing:border-box;white-space:nowrap}
+.k-ib[disabled]{color:var(--k-dock-off)}
+.k-ib--open{background:var(--k-dock-text);color:var(--k-ink)}     /* чек раскрыт */
+.k-ib--card{background:var(--k-amber);color:var(--k-ink)}         /* карта выбрана: «•5671» */
+.k-sum{margin-left:auto;padding-right:4px;white-space:nowrap;display:flex;flex-direction:column;align-items:flex-end;line-height:1}
+.k-sum small{font-size:11px;color:#A3A19B;margin-bottom:3px}      /* «к оплате» / «сумма чека» — только с картой */
+.k-sum b{font-size:var(--k-fs-sum);font-weight:var(--k-fw-sum);letter-spacing:-.02em}
+.k-sum--off b{color:var(--k-dock-off)}
+.k-pay{border:0;border-radius:var(--k-r-btn);background:var(--k-dock-btn);color:var(--k-dock-text);font-size:var(--k-fs-btn);font-weight:600;padding:0}
+.k-pay[disabled]{color:var(--k-dock-off)}
+.k-pay--brak{color:var(--k-dock-brak)}
+.k-chosen{border:0;border-radius:var(--k-r-btn);background:transparent;box-shadow:inset 0 0 0 1.5px var(--k-amber);color:var(--k-amber);font-size:var(--k-fs-btn);font-weight:600;padding:0 13px;display:flex;align-items:center;gap:7px;white-space:nowrap}
+.k-chosen--brak{box-shadow:inset 0 0 0 1.5px var(--k-dock-brak);color:var(--k-dock-brak)}
+.k-close{border:0;border-radius:var(--k-r-btn);background:var(--k-amber);color:var(--k-ink);font-size:var(--k-fs-close);font-weight:var(--k-fw-close);display:flex;align-items:center;justify-content:center;gap:8px}
+.k-close[disabled]{background:var(--k-dock-off-bg);color:var(--k-dock-muted);font-size:15px;font-weight:700}
+.k-close--wait{background:var(--k-dock-wait-bg);color:var(--k-dock-wait-text);font-size:15px}
+.k-close--brak{background:var(--k-danger-2);color:#fff}
+.k-dock__sub{display:grid;grid-template-columns:auto 1fr 1fr;gap:var(--k-gap);align-items:center;height:44px}  /* служебная строка: +50 px */
+.k-dock__sub span{font-size:12.5px;color:#C9C7C0;padding:0 4px}
+.k-dock__note{border-radius:12px;background:var(--k-dock-btn);padding:9px 11px;font-size:12.5px;line-height:1.35;color:#E8E7E2} /* служебная заметка: +58 px */
+.k-dock__note b{color:var(--k-amber)}
+.k-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--k-gap);height:var(--k-dock-nav);border-top:1px solid var(--k-dock-line);padding-top:var(--k-dock-nav-pad)}
+.k-nav button{position:relative;border:0;border-radius:13px;background:transparent;color:var(--k-dock-muted);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:7px}
+.k-nav button::after{content:"";position:absolute;left:0;right:0;top:-5px;bottom:-6px}   /* касание 51 px */
+.k-nav [aria-current="page"]{background:var(--k-dock-btn);color:#fff}
+.k-nav [aria-current="page"] svg{color:var(--k-amber)}
+.k-dock--nav-only{padding-top:8px}
+.k-dock--nav-only .k-nav{border-top:0;padding-top:0}   /* итого 64 px */
+/* Клавиатура открыта (фокус в поле листа): док скрыт, лист у клавиатуры */
+.k-app.is-kb-open .k-dock{transform:translateY(100%);visibility:hidden}
+
+/* --- Листы, модальные окна ------------------------------------------------ */
+.k-scrim{position:absolute;inset:0;background:var(--k-scrim);z-index:4}
+.k-sheet{position:absolute;left:8px;right:8px;bottom:calc(var(--k-dock-h) + var(--k-sheet-gap));background:var(--k-surface);border-radius:var(--k-r-sheet);box-shadow:var(--k-shadow-sheet);z-index:5;display:flex;flex-direction:column;gap:12px;padding:10px 14px 14px;box-sizing:border-box;max-height:calc(100% - var(--k-dock-h) - 48px)}
+.is-kb-open .k-sheet{bottom:calc(var(--k-kb-h, 0px) + 8px)}   /* --k-kb-h из visualViewport */
+.k-sheet__head{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:44px}
+.k-sheet__head b{font-size:var(--k-fs-sheet-h);font-weight:700}
+.k-sheet__head small{display:block;font-size:12.5px;color:var(--k-muted-2);font-weight:500;margin-top:3px}
+.k-sheet__body{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
+.k-x{width:44px;height:44px;border:0;border-radius:13px;background:var(--k-field);display:flex;align-items:center;justify-content:center;flex:none}
+.k-modal{position:absolute;left:8px;right:8px;bottom:8px;background:var(--k-surface);border-radius:var(--k-r-modal);z-index:6;padding:18px 16px 16px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box;box-shadow:0 -10px 40px rgba(0,0,0,.25)}
+.k-modal h3{margin:0;font-size:21px;font-weight:800}
+
+/* Строка раскрытого чека */
+.k-line{display:grid;grid-template-columns:1fr auto 54px;gap:8px;align-items:center;min-height:52px;padding:4px 0;border-top:1px solid var(--k-line-soft)}
+.k-line__name b{font-size:14px;font-weight:600;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.k-line__name small{display:block;font-size:11.5px;color:var(--k-muted-2)}
+.k-line__sum{text-align:right;font-size:14.5px;font-weight:700}
+.k-qty{display:flex;align-items:center;background:var(--k-field);border-radius:12px;padding:2px}
+.k-qty button{width:40px;height:40px;border:0;border-radius:10px;background:#fff;font-size:19px;font-weight:600;box-shadow:0 1px 1px rgba(0,0,0,.06)}
+.k-qty span{width:28px;text-align:center;font-size:15.5px;font-weight:700}
+.k-total{display:flex;justify-content:space-between;align-items:baseline;border-top:1.5px solid var(--k-ink);padding-top:10px}
+.k-total span{font-size:14px;font-weight:600}
+.k-total b{font-size:24px;font-weight:800;letter-spacing:-.02em}
+
+/* --- Поля и кнопки в листах ----------------------------------------------- */
+.k-label{font-size:12.5px;color:#4A4945;font-weight:500}
+.k-field{height:52px;border:0;border-radius:var(--k-r-btn);background:var(--k-field);padding:0 14px;font-size:16px;box-sizing:border-box;width:100%;min-width:0}   /* 16px — iOS не масштабирует */
+.k-field:focus{outline:0;background:#fff;box-shadow:inset 0 0 0 2px var(--k-ink)}
+.k-field--money{font-size:20px;font-weight:700;text-align:right}
+.k-textarea{min-height:64px;border:0;border-radius:var(--k-r-btn);background:var(--k-field);padding:10px 12px;font-size:16px;line-height:1.35;width:100%;box-sizing:border-box;resize:none}
+.k-seg{display:grid;grid-template-columns:1fr 1fr;background:var(--k-field);border-radius:var(--k-r-btn);padding:3px;gap:3px}
+.k-seg button{height:44px;border:0;border-radius:11px;background:transparent;font-size:14px;font-weight:700;color:var(--k-muted)}
+.k-seg [aria-pressed="true"]{background:var(--k-ink);color:#fff}
+.k-btn{height:52px;border:0;border-radius:15px;background:var(--k-ink);color:#fff;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;width:100%}
+.k-btn--light{background:var(--k-field);color:var(--k-ink);font-size:14px;font-weight:600;height:48px}
+.k-btn--amber{background:var(--k-amber);color:var(--k-ink);font-weight:800}
+.k-btn--danger{background:var(--k-danger);color:#fff;font-weight:800}
+.k-btn--danger-outline{height:44px;width:auto;background:#fff;box-shadow:inset 0 0 0 1.5px #E7A88A;color:var(--k-danger);font-size:13.5px;padding:0 14px}
+.k-done{height:44px;border:0;border-radius:12px;background:var(--k-ink);color:#fff;font-size:14px;font-weight:700;padding:0 14px;flex:none}
+.k-link{height:44px;border:0;border-radius:12px;background:var(--k-field);font-size:13px;font-weight:600;padding:0 12px}
+.k-eq{border-radius:var(--k-r-btn);padding:10px 14px;display:flex;flex-direction:column;gap:3px;font-size:13.5px;line-height:1.35}
+.k-eq--ok{background:var(--k-amber-tint);box-shadow:inset 0 0 0 1.5px var(--k-amber-line)}
+.k-eq--ok b{color:var(--k-amber-text)}
+.k-eq--bad{background:var(--k-danger-tint-2);color:#8A2C05;box-shadow:inset 0 0 0 1.5px var(--k-danger-2)}
+
+/* Статусы (карта, проведение, ошибки) */
+.k-status{border-radius:13px;padding:11px 12px;font-size:13.5px;line-height:1.42}
+.k-status--info{background:var(--k-field);color:var(--k-ink-2)}
+.k-status--warn{background:var(--k-amber-tint);color:#4A3000;box-shadow:inset 0 0 0 1.5px #F2CE8E}
+.k-status--err{background:var(--k-danger-tint);color:#8A2C05;box-shadow:inset 0 0 0 1.5px #F2B79F}
+.k-card-lock{box-shadow:inset 0 0 0 2px var(--k-amber-line)}       /* карточка ожидания */
+.k-card-bad{box-shadow:inset 0 0 0 2px #E7A88A}                    /* конфликт, сверка с владельцем */
+
+/* Тост: сверху, белый, 2 с */
+.k-toast{position:absolute;left:var(--k-gutter);right:var(--k-gutter);top:calc(40px + env(safe-area-inset-top));min-height:48px;border-radius:16px;background:#fff;display:flex;align-items:center;gap:10px;padding:8px 12px;box-sizing:border-box;z-index:7;box-shadow:var(--k-shadow-toast);font-size:14px}
+.k-toast i{width:28px;height:28px;border-radius:9px;background:var(--k-amber);display:flex;align-items:center;justify-content:center;flex:none}
+
+/* --- Журнал --------------------------------------------------------------- */
+.k-head{position:absolute;left:16px;right:12px;top:calc(40px + env(safe-area-inset-top));height:48px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.k-head h2{margin:0;font-size:var(--k-fs-h1);font-weight:800;letter-spacing:-.02em}
+.k-head small{display:block;font-size:12px;color:var(--k-muted-2)}
+.k-chip{height:44px;border:0;border-radius:13px;background:#fff;box-shadow:inset 0 0 0 1px var(--k-line);font-size:13.5px;font-weight:600;padding:0 13px;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.k-chip--icon{width:44px;padding:0;justify-content:center}
+.k-list{position:absolute;left:var(--k-gutter);right:var(--k-gutter);top:calc(96px + env(safe-area-inset-top));bottom:var(--k-dock-nav-only-h);overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+.k-day{display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;color:var(--k-muted);padding:8px 4px 2px}
+.k-row{background:#fff;border-radius:16px;box-shadow:inset 0 0 0 1px var(--k-line);padding:9px 12px 10px;display:flex;flex-direction:column;gap:3px;border:0;text-align:left;width:100%}
+.k-row--pending{box-shadow:inset 0 0 0 1.5px var(--k-ink)}
+.k-row--service{background:#FBF6EA}
+.k-row__a{display:flex;align-items:baseline;gap:8px}
+.k-row__a b{font-size:15px;font-weight:700}
+.k-row__a time{font-size:13px;color:var(--k-muted-2)}
+.k-row__sum{margin-left:auto;font-size:17px;font-weight:700;white-space:nowrap}
+.k-row__sum s{color:#A3A19B;font-size:13px;font-weight:500;margin-right:6px}
+.k-row__m{font-size:13px;color:var(--k-ink-2);display:flex;gap:6px;align-items:center;white-space:nowrap;overflow:hidden}
+.k-row__i{font-size:12.5px;color:var(--k-muted-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.k-badge{height:20px;border-radius:6px;padding:0 6px;font-size:11.5px;font-weight:700;display:inline-flex;align-items:center;background:#F0EEE9;color:var(--k-ink-2);flex:none}
+.k-badge--card,.k-badge--promo{background:var(--k-amber);color:var(--k-ink)}
+.k-badge--queue{background:var(--k-ink);color:var(--k-amber)}            /* «ожидает отправки» */
+.k-badge--edited{background:var(--k-amber-tint);color:var(--k-amber-text);box-shadow:inset 0 0 0 1px var(--k-amber-soft-line)}  /* «изменён» */
+.k-badge--recon{background:var(--k-danger-tint-2);color:var(--k-danger-text)}  /* «Ожидает сверки» */
+.k-search{display:flex;gap:8px;align-items:center;height:48px}
+.k-search__field{flex:1;min-width:0;height:48px;border-radius:15px;background:#fff;box-shadow:inset 0 0 0 2px var(--k-ink);display:flex;align-items:center;gap:8px;padding:0 2px 0 12px}
+.k-search__field input{border:0;outline:0;background:transparent;font-size:16px;flex:1;min-width:0}
+.k-search mark,.k-row mark{background:#FFD58A;color:inherit;border-radius:4px;padding:0 2px}
+.k-danger-zone{margin-top:6px;border-top:1px dashed #D3D1CA;padding-top:10px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.k-danger-zone span{font-size:12px;color:var(--k-muted-2);line-height:1.35}
+.k-editbar{position:absolute;left:var(--k-gutter);right:var(--k-gutter);top:calc(6px + env(safe-area-inset-top));height:30px;display:flex;align-items:center;gap:8px}
+.k-editbar__tag{height:28px;border-radius:9px;background:var(--k-ink);color:var(--k-amber);font-size:13px;font-weight:800;padding:0 10px;display:flex;align-items:center}
+.k-editbar__cancel{margin-left:auto;position:relative;height:32px;border:0;border-radius:9px;background:var(--k-chip);font-size:12.5px;font-weight:700;padding:0 10px;white-space:nowrap}
+.k-editbar__cancel::after{content:"";position:absolute;left:0;right:0;top:-6px;bottom:-6px}
+
+/* --- Итоги ---------------------------------------------------------------- */
+.k-card{background:#fff;border-radius:var(--k-r-card);box-shadow:inset 0 0 0 1px var(--k-line);padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.k-card__title{font-size:12px;font-weight:800;letter-spacing:.06em;color:var(--k-muted-2);text-transform:uppercase}
+.k-hero{box-shadow:inset 0 0 0 1px var(--k-line),inset 4px 0 0 var(--k-amber)}
+.k-hero__value{font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.k-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--k-line-soft);margin-top:6px;padding-top:10px}
+.k-metrics > div{display:flex;flex-direction:column;gap:2px;padding:0 8px;border-left:1px solid var(--k-line-soft);min-width:0}
+.k-metrics > div:first-child{padding-left:0;border-left:0}
+.k-attention{box-shadow:inset 0 0 0 1.5px var(--k-danger-line);background:#FFF8F4}
+.k-attention .k-card__title{color:var(--k-danger-text)}
+.k-bonus{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.k-bonus > div{background:var(--k-amber-tint);border-radius:12px;padding:8px 9px}
+.k-bar-row{display:grid;grid-template-columns:156px 1fr 30px;gap:8px;align-items:center;height:26px;font-size:13.5px}
+.k-bar-row i{display:block;height:10px;border-radius:5px;background:var(--k-amber)}
+.k-skeleton{background:var(--k-chip);border-radius:var(--k-r-card)}
+.k-empty{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}

@@ -14,6 +14,7 @@ for (const file of FILES) {
   const html = fs.readFileSync(new URL(file, import.meta.url), 'utf8');
   const source = [
     'activeFlavors',
+    'activeLooseFlavors',
     'restockExactInputId',
     'restockHeadId',
     'renderRestockOptions',
