@@ -4,6 +4,7 @@
 
 - `check-c32.mjs --code .`: обязательные C3.2 значения/отсутствие заменённых C3.1; без изменений исходного checker.
 - `check-c32.mjs`:46 prototype metric states; три Итога проходят отдельный visual review, не входят в46.
+  Каждый case после frameKind готовится через empty→check→target. Это устраняет зависимость от прежнего content-box замера самого sealed прототипа при padding-only safe-area смене; архив/PNG и все исходные сравнения dock/var/tile/end/overflow сохранены. В приложении установлен border-box observer, что отдельно проверяется динамически.
 - `qa-c32-live.mjs all` с `BASE_URL`: geometry, Chromium touch/scroll, motion/reduced. Strict C31 fixture owner, Service Worker blocked. Ни один private request не уходит в сеть; unknown fixture — FAIL. Изменены только Windows/dependency/path/runtime adapters, критерии не ослаблены.
 - `capture-app.cjs`: все49 оригинальных C32 PNG и реальные native states. `QA_STAGE` задаёт immutable output. `BASE_URL` переключает локальную/опубликованную страницу. Демо-прототип читается только процессом QA для setup корзины; в кассу не переносится.
 - `retained-c31.cjs`:34 retained states×360/390/430=102. Следует native handlers, синтетические данные, камера mocked. Для LC-10 ожидание исходной close operation обязательно до смены fixture режима, чтобы не получить ложное подтверждение сохранения. Физическую клавиатуру/камеру это не проверяет.

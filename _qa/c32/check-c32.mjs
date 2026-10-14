@@ -51,6 +51,11 @@ for (const x of manifest) {
   }
   const p = pages[key];
   await p.evaluate(k => C32.frameKind(k), x.frame === 'iphone' ? 'ios' : 'android');
+  // Isolate each case from the previous preset. The sealed prototype observes content-box;
+  // padding-only frame changes can otherwise retain its prior --k-current-dock measurement.
+  // Exercise both content sizes after setting the frame, then keep ALL original metric assertions.
+  await p.evaluate(() => C32.preset('empty')); await p.waitForTimeout(350);
+  await p.evaluate(() => C32.preset('check')); await p.waitForTimeout(350);
   await p.evaluate(n => C32.preset(n), x.preset); await p.waitForTimeout(450);
   if (x.scrolledToEnd) { await p.evaluate(() => document.getElementById('grid').scrollTop = 1e6); await p.waitForTimeout(80); }
   const m = await p.evaluate(() => {
