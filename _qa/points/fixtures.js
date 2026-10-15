@@ -1,0 +1,9 @@
+/* Synthetic fixture ledger only. It is not an alternative production calculator. */
+(()=>{'use strict';
+const names=['Смородина','Клубника','Криспи','Дубайский шоколад','Кокос-Маракуйя','Мята шоколад','Мункейки','Набор «Знакомство»'];
+const assortment=names.map((name,i)=>({name,catalogItemId:name==='Мункейки'?'cat_munkeyki':'demo_'+i,itemType:name==='Мункейки'?'mooncake':i===7?'set':'mochi',isPremium:i===2||i===3,availableQty:8,prices:{normal:i===6?600:i===7?720:i===2||i===3?200:180,self:i===6?360:i===7?400:100,yandex:i===6?750:i===7?1000:250},...(i===7?{bundleDefinition:{mochiQty:4,allowPromotions:false,components:[{name:'Смородина',qty:4}]}}:{})}));
+function check(i,seller,pay,name,qty,price,selfPay=''){return {num:'demo-'+i,receiptNumber:String(200+i),date:'15.10.2026',time:'10:'+String(i).padStart(2,'0'),seller,pay,selfPay,revision:1,saleKey:'demo-sale-'+i,items:[{name,qty,price,lineSum:qty*price,catalogItemId:assortment.find(x=>x.name===name).catalogItemId,itemType:name==='Мункейки'?'mooncake':'mochi',earn:['Безналичный','Наличный','Перевод','Яндекс','Смешанная'].includes(pay)?qty*(name==='Мункейки'?90:30):0}],total:qty*price,earn:['Безналичный','Наличный','Перевод','Яндекс'].includes(pay)?qty*(name==='Мункейки'?90:30):0};}
+const initial=[check(1,'Демо А','Наличный','Смородина',1,180),check(2,'Демо А','Безналичный','Клубника',16,180),check(3,'Демо А','Яндекс','Криспи',3,250),check(4,'Демо Б','Перевод','Мункейки',2,600),check(5,'Демо А','Себе оплачено','Смородина',1,100,'Наличные'),check(6,'Демо А','Себе без оплаты','Клубника',1,120),check(7,'Демо Б','Брак','Криспи',1,0)];
+const bonus={cardChecks:2,spentMinor:12000,earnedMinor:18000,pendingCount:0,activity:{changesCount:1,cancelledCount:0,spentAdjustmentMinor:0,earnedAdjustmentMinor:-100}};
+window.PreviewFixtures={assortment,initial,bonus};
+})();

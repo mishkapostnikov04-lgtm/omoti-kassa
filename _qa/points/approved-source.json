@@ -1,0 +1,17 @@
+{
+  "points-ui/points-interface.js": "78768b1541f7ddafc1e440d5e1c33952086b50b5a20b3259b0b4c5d211ba8470",
+  "points-ui/points-itogi.js": "64208ce5ecc11796e3f96d9ec5eb1fa2cce8e474c41ba77c7cdc5e21a6244c78",
+  "points-ui/points-ui.css": "08376301fd70d0c39c8ccd8ba1ad12ff4dce932683bd78f4c869eebb3b108e0a",
+  "points-ui/c32-base/components.css": "4ea61807985429301c53cf48fac0e97a31c3aed7efac01659e81eb235ad73dfd",
+  "points-ui/c32-base/geologica-400.ttf": "773bddac159927dae877ff223f42e34ef9422073387ea047f0c1b8d0c767cf0e",
+  "points-ui/c32-base/geologica-500.ttf": "ae82115f5594cf2e7652e83cbf3f36f8f820af00bf02ade01d2d90156804f3e9",
+  "points-ui/c32-base/geologica-600.ttf": "197b9f8715a1dcdd1d0161018edcc06219f1c304d5042c4d96b6386f2f113be2",
+  "points-ui/c32-base/geologica-700.ttf": "42b1e96bc88107a25a8de8573a44ea7780b40b1db7cb8fc7f379d590d7437d46",
+  "points-ui/c32-base/geologica-800.ttf": "6602a52e03f3ab8b75b2187995225bb62ab2aa1b07ad04181e471d3845110aaf",
+  "points-ui/c32-base/integration.css": "5863820fec1522a82df7b24b81af5ad96a8fbd05e9320277851f0c0f90488a09",
+  "points-ui/c32-base/itogi.css": "0c91e243b404e4bb5a955fcaf01f02903c32c097fa10fc50dccb080017086956",
+  "points-ui/c32-base/motion.css": "71224b944a7f3a4ab347356b10b6a8c2cfb11c307242da28f9bf5ed185406b5a",
+  "points-ui/c32-base/motion.js": "f0ba0cacdb9a709d4e99421ff3c25fc9d04b582e1f046efe2e9f64a9b4a40817",
+  "points-ui/c32-base/OFL.txt": "ec55a12e798b8d949be0cb8a811a6595fd5fc2bc44d07e1190405f3970f05d75",
+  "points-ui/c32-base/tokens.css": "f2a4d13dc761751688a83f7412643b0bd0490a08dfb6207e54c651a07e2fda7c"
+}
