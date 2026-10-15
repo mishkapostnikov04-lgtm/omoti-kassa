@@ -1,0 +1,18 @@
+/* Owner follow-up 2026-10-15: finish the narrow weekly report locally.
+   Keep the immutable Claude sources, all values/text and the existing scroll.
+   Only the two financial cards become denser on small phones. Static rows
+   may be shorter; disclosure buttons retain their 48px touch targets. */
+@media (max-width:400px){
+ .k-stats--points [data-sec="payout"].is-open,
+ .k-stats--points [data-sec="staff"].is-open{padding-top:10px;padding-bottom:10px}
+ .k-stats--points .k-pay__period{margin-top:2px}
+ .k-stats--points .k-pay__period b{font-size:20px}
+ .k-stats--points .k-pay__sold{margin-top:6px;padding:5px 10px}
+ .k-stats--points .k-pay__group{margin-top:6px}
+ .k-stats--points .k-pay__row{min-height:34px;padding:4px 0;font-size:14px}
+ .k-stats--points .k-pay__total{margin-top:6px;padding:8px 14px}
+ .k-stats--points .k-staffpay{margin-top:2px}
+ .k-stats--points .k-staffpay .staff-stat-row{min-height:34px}
+ .k-stats--points .k-staffpay .k-staffpay__head{min-height:28px}
+ .k-stats--points .k-staffpay__note{margin:6px 0 0;padding:8px 10px;font-size:12px;line-height:1.35}
+}
