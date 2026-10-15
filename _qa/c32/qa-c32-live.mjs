@@ -109,7 +109,7 @@ async function scroll(b) {
   if (await p.locator(SEL.unpay).count()) await p.tap(SEL.unpay);
   const n = names[0]; const q0 = (await cart(p))[n] || 0;
   for (let i = 0; i < 30; i++) await p.tap(SEL.tile(n));
-  ok(((await cart(p))[n] || 0) === q0 + 30, '30 быстрых касаний = ровно +30');
+  const tapped=(await cart(p))[n]||0;if(process.env.QA_DIAGNOSTIC){console.log('TAP_DIAGNOSTIC',JSON.stringify({q0,immediate:tapped,expected:q0+30,state:await p.evaluate(()=>C31UI.state)}));if(tapped!==q0+30){await p.waitForTimeout(150);console.log('TAP_SETTLED',JSON.stringify({after:(await cart(p))[n]||0,state:await p.evaluate(()=>C31UI.state)}));}}ok(tapped === q0 + 30, '30 быстрых касаний = ровно +30');
   ok(await drag(names[2], -180) && await drag(names[2], 180), 'после 30 добавлений прокрутка работает');
   const q1 = (await cart(p))[n]; await p.tap(SEL.count(n)); ok((await cart(p))[n] === q1, 'тап по числу не меняет количество');
   ok((await metrics(p)).docScroll === 0, 'страница ни разу не сдвинулась');
