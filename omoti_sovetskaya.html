@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>OMOTI · Касса</title>
 <link rel="apple-touch-icon" sizes="180x180" href="Dark.png">
 <link rel="icon" type="image/png" href="Dark.png">
@@ -128,6 +128,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 @media (max-width:380px){.restock-grid{grid-template-columns:1fr}.tab-btn{font-size:12px;padding:8px 6px}}
 .loyalty.is-unconfirmed{border-color:#d5b774;background:#fff8e9}.loyalty.is-unconfirmed .loyalty-card-title,.loyalty.is-unconfirmed #loyalty-card-summary{color:#705014}.loyalty.is-unconfirmed .loyalty-card-title{font-size:14px;line-height:1.45}.loyalty.is-unconfirmed #loyalty-card-summary{font-size:14px}.loyalty-correction[hidden],.loyalty-correction [hidden]{display:none!important}
 </style>
+<link rel="stylesheet" href="./points-ui/c32-base/tokens.css?v=points-c32-20261015-r2">
+<link rel="stylesheet" href="./points-ui/c32-base/components.css?v=points-c32-20261015-r2">
+<link rel="stylesheet" href="./points-ui/c32-base/itogi.css?v=points-c32-20261015-r2">
+<link rel="stylesheet" href="./points-ui/c32-base/integration.css?v=points-c32-20261015-r2">
+<link rel="stylesheet" href="./points-ui/c32-base/motion.css?v=points-c32-20261015-r2">
+<link rel="stylesheet" href="./points-ui/points-ui.css?v=points-c32-20261015-r2">
 </head>
 <body>
 <div class="app">
@@ -738,5 +744,8 @@ setInterval(function(){retryOperationQueue();},5*60*1000);
 window.addEventListener('pagehide',flushOperationQueueBeacon);
 </script>
 <script src="cashier-notices-client.js" data-point="sovetskaya" data-page="omoti_sovetskaya.html"></script>
+<script src="./points-ui/c32-base/motion.js?v=points-c32-20261015-r2"></script>
+<script src="./points-ui/points-itogi.js?v=points-c32-20261015-r2"></script>
+<script src="./points-ui/points-interface.js?v=points-c32-20261015-r2"></script>
 </body>
 </html>

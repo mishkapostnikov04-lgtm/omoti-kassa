@@ -1,0 +1,330 @@
+/* ==========================================================================
+   OMOTI · Касса · ред. 3.2 «Тише» — компоненты экрана «Касса»
+   Требует tokens.css (3.2). Префикс k- совпадает с действующей реализацией 3.1:
+   те же блоки, новые значения. Удалённые в 3.2 блоки перечислены в CHANGES.md
+   (.k-ctx, .k-staff, .k-mode, .k-tape, .k-dock__label, .is-service-перекраска, цена на плитке).
+   Журнал и Итоги — journal-stats.css.
+   ========================================================================== */
+
+.k-app{font-family:var(--k-font);color:var(--k-ink);background:var(--k-bg);font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;position:relative;min-height:100dvh;overflow:hidden}
+.k-app :where(button,input,textarea){font-family:inherit;color:inherit}
+.k-app :where(button){cursor:pointer;-webkit-tap-highlight-color:transparent}
+.k-app [hidden]{display:none!important}
+.k-app :where(button:focus-visible){outline:2px solid var(--k-amber-line);outline-offset:2px}
+
+/* Экран «Касса» — колонка: верхняя строка → строки состояния (если есть) → сетка */
+.k-kassa{position:absolute;inset:0;display:flex;flex-direction:column}
+
+/* --- Верхняя строка кассы: одна, 44 px (.k-topline — новый блок 3.2; .k-top 3.1 остаётся на Журнале и Итогах) --- */
+.k-topline{flex:none;height:var(--k-top-h);margin:calc(var(--k-top-y) + var(--k-safe-t)) var(--k-gutter) 8px;display:flex;align-items:center;gap:8px;min-width:0}
+.k-topline__point{flex:0 1 auto;min-width:0;overflow:hidden;border:0;background:transparent;padding:0 4px;height:44px;font-size:var(--k-fs-point);font-weight:var(--k-fw-point);letter-spacing:-.01em;display:flex;align-items:center;gap:4px;white-space:nowrap}
+.k-topline__point small{font-size:var(--k-fs-point-pre);font-weight:600;color:var(--k-faint);letter-spacing:.02em}
+.k-topline__point b{font-weight:inherit;overflow:hidden;text-overflow:ellipsis}
+.k-top:has(.k-pill) .k-topline__point small{display:none}   /* есть очередь или акция — «OMOTI» прячется */
+/* Вариант Б: при «Себе оплачено», «Себе без оплаты», «Брак» метка стоит на месте названия точки */
+.k-tag{flex:none;height:var(--k-tag-h);border-radius:999px;background:var(--k-ink);color:var(--k-dock-text);font-size:var(--k-fs-tag);font-weight:var(--k-fw-tag);padding:0 12px;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.k-tag i{width:8px;height:8px;border-radius:50%;background:var(--k-amber);flex:none}
+.k-tag--brak i{background:var(--k-dock-brak)}
+.k-topline .k-pill{flex:none;height:28px;border:0;border-radius:999px;padding:0 10px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.k-topline .k-pill--queue{position:relative}
+.k-topline .k-pill--queue::after{content:"";position:absolute;left:0;right:0;top:-8px;bottom:-8px}   /* касание 44 */
+.k-who{flex:none;max-width:48%;margin-left:auto;position:relative;height:var(--k-who-h);border:0;border-radius:999px;background:var(--k-pill);display:flex;align-items:center;gap:8px;padding:0 12px 0 4px;font-size:var(--k-fs-who);font-weight:var(--k-fw-who);white-space:nowrap}
+.k-who::after{content:"";position:absolute;left:0;right:0;top:-2px;bottom:-2px}      /* касание 44 */
+.k-who b{font-weight:inherit;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.k-who__av{width:var(--k-who-avatar);height:var(--k-who-avatar);border-radius:50%;background:var(--k-ink);color:var(--k-amber);font-style:normal;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
+.k-who svg{flex:none}
+.k-who--need{background:var(--k-amber);color:var(--k-ink)}
+
+/* Строка исправления чека — только при правке из Журнала, под верхней строкой */
+.k-editrow{flex:none;height:36px;margin:-4px var(--k-gutter) 8px;display:flex;align-items:center;gap:8px}
+.k-editbar__tag{height:32px;border-radius:999px;background:var(--k-ink);color:var(--k-amber);font-size:13px;font-weight:800;padding:0 12px;display:flex;align-items:center;white-space:nowrap}
+.k-editbar__cancel{margin-left:auto;position:relative;height:36px;border:0;border-radius:12px;background:var(--k-chip);font-size:13px;font-weight:700;padding:0 12px;white-space:nowrap}
+.k-editbar__cancel::after{content:"";position:absolute;left:0;right:0;top:-4px;bottom:-4px}
+
+/* Строки состояния кассы (доступ, скрытый вкус, сообщение владельца) — тексты из кода */
+.k-notices{flex:none;margin:0 var(--k-gutter) 8px;display:flex;flex-direction:column;gap:6px}
+.k-notices:empty{display:none}
+
+/* --- Сетка вкусов: 3 колонки --------------------------------------------- */
+.k-grid{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:0 var(--k-gutter) calc(var(--k-current-dock,var(--k-dock-h)) + var(--k-grid-end));display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--k-gap);align-content:start}
+.k-fade{position:absolute;left:0;right:0;bottom:var(--k-current-dock,var(--k-dock-nav-only-h));height:var(--k-fade-h);background:linear-gradient(rgba(246,245,241,0),var(--k-bg));pointer-events:none;z-index:2}
+
+/* Плитка: без рамки и без цены. Вся плитка = +1, число = «− / +» */
+.k-tile{position:relative;height:var(--k-tile-h);border-radius:var(--k-tile-r);background:var(--k-tile);padding:var(--k-tile-pad);box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-start;text-align:left;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.k-tile__hit{position:absolute;inset:0;border:0;background:transparent;border-radius:inherit;padding:0;z-index:0}
+.k-tile__name{position:relative;pointer-events:none;font-size:var(--k-fs-tile);font-weight:var(--k-fw-tile);line-height:var(--k-lh-tile);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.k-tile__status{position:absolute;left:10px;bottom:8px;pointer-events:none;font-size:12px;font-weight:600;color:var(--k-muted-2)}   /* «Нет в наличии» — текст кода */
+.k-tile--on{background:var(--k-amber-tile);box-shadow:inset 0 0 0 2px var(--k-amber-line)}
+.k-tile--off{opacity:.45}
+.k-tile--off.k-tile--on{opacity:1;background:var(--k-danger-tint);box-shadow:inset 0 0 0 2px var(--k-danger-2)}  /* скрытый вкус в чеке, как в 3.1 */
+.is-brak .k-tile--on{background:var(--k-brak-tile);box-shadow:inset 0 0 0 2px var(--k-brak-line)}
+.is-brak .k-count{background:var(--k-brak-count);color:#fff}
+
+/* Число: блок 32×28 в правом нижнем углу, отступ 6; зона касания 50×44 до края плитки */
+.k-count{position:absolute;right:var(--k-count-inset);bottom:var(--k-count-inset);z-index:1;min-width:var(--k-count-w);height:var(--k-count-h);border:0;border-radius:var(--k-count-r);background:var(--k-amber);color:var(--k-ink);font-size:var(--k-fs-count);font-weight:var(--k-fw-count);display:flex;align-items:center;justify-content:center;padding:0 7px;box-sizing:border-box}
+.k-count::after{content:"";position:absolute;top:-11px;right:-5px;bottom:-5px;left:-13px}   /* 50×44 до края плитки */
+
+/* Режим «− / +» на плитке */
+.k-tile--edit{background:var(--k-surface);box-shadow:inset 0 0 0 2px var(--k-ink);padding:5px 4px}
+.k-tile--edit .k-tile__name{display:block;white-space:nowrap;text-overflow:ellipsis;font-size:12.5px;line-height:15px;padding:0 6px}
+.k-step{position:absolute;left:4px;right:4px;bottom:4px;display:grid;grid-template-columns:minmax(40px,44px) minmax(20px,1fr) minmax(40px,44px);align-items:center;height:var(--k-step-btn)}
+.k-step button{height:var(--k-step-btn);border:0;border-radius:11px;font-size:20px;font-weight:700;padding:0}
+.k-step__minus{background:var(--k-ink);color:#fff}
+.k-step__plus{background:var(--k-amber);color:var(--k-ink)}
+.k-step b{text-align:center;font-size:20px;font-weight:800}
+
+/* --- Док: пустая касса 64 px, с чеком 174 px ---------------------------- */
+.k-dock{position:absolute;left:0;right:0;bottom:0;z-index:4;background:var(--k-dock);border-radius:var(--k-dock-r) var(--k-dock-r) 0 0;padding:var(--k-dock-pad-top) var(--k-dock-pad-x) var(--k-dock-pad-bottom);display:flex;flex-direction:column;color:#fff;box-sizing:border-box}
+.k-dock__rows{display:grid;grid-template-rows:0fr;opacity:0}
+.k-dock__rows > div{overflow:hidden;min-height:0;display:flex;flex-direction:column;gap:var(--k-dock-gap)}
+.k-dock__rows > div > :last-child{margin-bottom:var(--k-dock-gap)}
+.k-dock--has .k-dock__rows{grid-template-rows:1fr;opacity:1}
+.k-dock__r1{flex:none;display:flex;align-items:center;gap:var(--k-gap);height:var(--k-dock-row1)}
+.k-dock__r2{flex:none;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--k-gap);height:var(--k-dock-row2)}
+.k-dock__r2--go{grid-template-columns:auto 1fr}
+.k-ib{position:relative;height:44px;min-width:44px;border:0;border-radius:var(--k-r-ib);background:var(--k-dock-btn);color:var(--k-dock-text);display:flex;align-items:center;justify-content:center;gap:6px;padding:0 12px;font-size:var(--k-fs-btn);font-weight:var(--k-fw-btn);box-sizing:border-box;white-space:nowrap}
+.k-ib--check{flex:1;min-width:0;justify-content:space-between;background:var(--k-dock-text);color:var(--k-ink);font-size:var(--k-fs-check);font-weight:var(--k-fw-check);padding:0 14px}
+.k-ib--check > span{display:flex;min-width:0;white-space:pre}
+.k-ib--check .k-cnt{display:inline-block;min-width:0;overflow:hidden;text-overflow:ellipsis}   /* inline-block — для «подпрыгивания» */
+.k-ib--check svg{color:var(--k-muted-2);flex:none}
+.k-ib--card{background:var(--k-amber);color:var(--k-ink);font-weight:700}       /* карта выбрана: «•5671» */
+.k-sum{margin-left:4px;padding:0 4px;border-radius:8px;white-space:nowrap;display:flex;flex-direction:column;align-items:flex-end;line-height:1}
+.k-sum small{font-size:11px;color:#A3A19B;margin-bottom:3px}                       /* «к оплате» — только с картой (код) */
+.k-sum b{font-size:var(--k-fs-sum);font-weight:var(--k-fw-sum);letter-spacing:-.02em}
+.k-sum .k-badge{margin-bottom:3px}
+.k-pay{border:0;border-radius:var(--k-r-btn);background:var(--k-dock-btn);color:var(--k-dock-text);font-size:var(--k-fs-btn);font-weight:600;padding:0}
+.k-pay[aria-disabled="true"]{color:var(--k-dock-off)}                            /* нет продавца: тап встряхивает «Кто продаёт?» */
+.k-chosen{border:0;border-radius:var(--k-r-btn);background:transparent;box-shadow:inset 0 0 0 1.5px var(--k-amber);color:var(--k-amber);font-size:var(--k-fs-btn);font-weight:600;padding:0 13px;display:flex;align-items:center;gap:7px;white-space:nowrap}
+.k-chosen--brak{box-shadow:inset 0 0 0 1.5px var(--k-dock-brak);color:var(--k-dock-brak)}
+.k-close{position:relative;overflow:hidden;border:0;border-radius:var(--k-r-btn);background:var(--k-amber);color:var(--k-ink);font-size:var(--k-fs-close);font-weight:var(--k-fw-close);display:flex;align-items:center;justify-content:center;gap:8px;padding:0 8px;white-space:nowrap}
+.k-close--self{background:var(--k-dock-text);color:var(--k-ink)}                 /* 3.2: «Записать…» для себе — светлая */
+.k-close--brak{background:var(--k-dock-btn);color:var(--k-dock-brak);box-shadow:inset 0 0 0 1.5px var(--k-dock-brak)}  /* 3.2: обводка вместо заливки */
+.k-close[disabled]{background:var(--k-dock-off-bg);color:var(--k-dock-muted);box-shadow:none;font-size:15px;font-weight:700}
+.k-close--wait,.k-close--wait[disabled]{background:var(--k-dock-wait-bg);color:var(--k-dock-wait-text);box-shadow:none;font-size:15px}
+/* «Как оплатили» (Себе оплачено) — 44 px */
+.k-dock__sub{flex:none;display:grid;grid-template-columns:auto 1fr 1fr;gap:var(--k-gap);align-items:center;height:var(--k-dock-sub)}
+.k-dock__sub span{font-size:var(--k-fs-small);color:var(--k-dock-sub-text);padding:0 4px;white-space:nowrap}
+.k-dock__sub button{height:44px;border:0;border-radius:12px;background:var(--k-dock-btn);color:var(--k-dock-text);font-size:var(--k-fs-btn);font-weight:600}
+.k-dock__sub [aria-pressed="true"]{background:var(--k-dock-text);color:var(--k-ink)}
+/* Строка-пояснение (Себе без оплаты, Брак) — 36 px, текст кода */
+.k-dock__line{flex:none;min-height:var(--k-dock-line-h);display:flex;align-items:center;padding:0 4px;font-size:13px;line-height:1.3;color:var(--k-dock-sub-text)}
+.k-dock__line b{color:var(--k-dock-text);font-weight:700}
+
+.k-nav{flex:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--k-gap);height:var(--k-dock-nav)}
+.k-nav--4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.k-dock--has .k-nav{height:calc(var(--k-dock-nav) + var(--k-dock-nav-pad) + 1px);border-top:1px solid var(--k-dock-line);padding-top:var(--k-dock-nav-pad);box-sizing:border-box}
+.k-nav button{position:relative;border:0;border-radius:13px;background:transparent;color:var(--k-dock-muted);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:7px}
+.k-nav button::after{content:"";position:absolute;left:0;right:0;top:-4px;bottom:-4px}
+.k-nav [aria-current="page"]{background:var(--k-dock-btn);color:#fff}
+.k-nav [aria-current="page"] svg{color:var(--k-amber)}
+
+/* --- Листы, затемнение, тост ---------------------------------------------- */
+.k-scrim{position:absolute;inset:0;background:var(--k-scrim);z-index:5}
+.k-sheet{position:absolute;left:8px;right:8px;bottom:calc(var(--k-current-dock,var(--k-dock-h)) + var(--k-sheet-gap));z-index:6;background:var(--k-surface);border-radius:var(--k-r-sheet);box-shadow:var(--k-shadow-sheet);padding:8px 14px 14px;display:flex;flex-direction:column;gap:2px;box-sizing:border-box;max-height:calc(100% - var(--k-current-dock,var(--k-dock-h)) - 68px);overflow:auto}
+.k-sheet--seller{bottom:calc(64px - 16px + var(--k-dock-pad-bottom) + var(--k-sheet-gap));z-index:7}   /* поверх строк дока, как в эталоне */
+.k-sheet__head{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:48px;flex:none}
+.k-sheet__head b{font-size:var(--k-fs-sheet-h);font-weight:800}
+.k-sheet__head small{font-size:var(--k-fs-small);color:var(--k-muted-2)}
+.k-sheet__tools{display:flex;gap:6px}
+.k-tool{height:44px;min-width:44px;border:0;border-radius:12px;background:var(--k-field);font-size:13.5px;font-weight:700;padding:0 12px;display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.k-tool--icon{width:44px;padding:0}
+.k-tool[disabled]{opacity:.4}
+.k-line small s{color:var(--k-faint);font-weight:500;margin-right:4px}   /* акция: старая цена за шт */
+/* «Ещё»: пункт = строка 52 px с пояснением */
+.k-menu{min-height:52px;border:0;border-radius:14px;background:transparent;text-align:left;padding:0 12px;font-size:var(--k-fs-menu);font-weight:600;display:flex;flex-direction:column;justify-content:center}
+.k-menu:active{background:var(--k-field)}
+.k-menu small{font-size:12px;color:var(--k-muted-2);font-weight:500}
+.k-menu-group{font-size:var(--k-fs-group);font-weight:800;letter-spacing:.06em;color:var(--k-faint);padding:10px 12px 4px;border-top:1px solid var(--k-line-soft);margin-top:4px}
+/* Продавцы */
+.k-person{display:flex;align-items:center;gap:12px;min-height:52px;border:0;background:transparent;border-top:1px solid var(--k-line-soft);font-size:var(--k-fs-menu);font-weight:600;text-align:left;padding:0 4px}
+.k-person i{width:32px;height:32px;border-radius:50%;background:var(--k-ink);color:var(--k-amber);font-style:normal;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.k-person[aria-pressed="true"] i{background:var(--k-amber);color:var(--k-ink)}
+/* Тост: сверху, белый, 2 с; иконка по типу (как в 3.1) */
+.k-toast{position:absolute;left:var(--k-gutter);right:var(--k-gutter);top:calc(8px + var(--k-safe-t));min-height:48px;border-radius:16px;background:#fff;display:flex;align-items:center;gap:10px;padding:8px 12px;box-sizing:border-box;z-index:8;box-shadow:var(--k-shadow-toast);font-size:14px;font-weight:600}
+.k-toast i{width:28px;height:28px;border-radius:9px;background:var(--k-amber);display:flex;align-items:center;justify-content:center;flex:none}
+.k-toast--warn i{background:var(--k-danger-tint-2);color:var(--k-danger)}
+.k-toast--upload i{background:var(--k-ink);color:var(--k-amber)}
+.k-notices .k-status b{display:block;font-size:14.5px}
+/* Блокировка: доступ / сохранение */
+.is-locked .k-grid{opacity:.45}
+.is-locked .k-who,.is-locked .k-nav{opacity:.45}
+
+/* ==========================================================================
+   OMOTI · Касса · ред. 3.2 — Журнал (полная замена раздела «Журнал» 3.1)
+   Список — спокойный и «операционный»: №, время, продавец, оплата, сумма,
+   количество моти; метки — только карта и статусы. Вкусы — только в открытом чеке.
+   ========================================================================== */
+
+.k-jscreen{position:absolute;inset:0}   /* экран Журнала (в кассе — #screen-journal) */
+/* Шапка (геометрия 3.1: под строкой точки, 48 px) */
+.k-head{position:absolute;left:16px;right:12px;top:calc(40px + var(--k-safe-t));height:48px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.k-head h2{margin:0;font-size:var(--k-fs-h1);font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.k-head small{display:block;font-size:12px;color:var(--k-muted-2)}
+.k-head__actions{display:flex;gap:6px}
+.k-chip{height:44px;border:0;border-radius:13px;background:#fff;font-size:13.5px;font-weight:600;padding:0 13px;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.k-chip--icon{width:44px;padding:0;justify-content:center}
+
+/* Список: группы по дням; внутри группы — одна белая подложка, строки через тонкую линию */
+.k-list{position:absolute;left:var(--k-gutter);right:var(--k-gutter);top:calc(96px + var(--k-safe-t));bottom:var(--k-current-dock,var(--k-dock-nav-only-h));overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;padding-bottom:12px}
+.k-day{display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;color:var(--k-muted-2);padding:12px 6px 6px}
+.k-day:first-child{padding-top:4px}
+.k-jgroup{background:var(--k-surface);border-radius:18px;overflow:hidden;flex:none}
+.k-row{position:relative;display:flex;flex-direction:column;gap:3px;width:100%;min-height:60px;border:0;background:transparent;text-align:left;padding:10px 14px 11px;box-sizing:border-box;justify-content:center}
+.k-row + .k-row::before{content:"";position:absolute;left:14px;right:0;top:0;height:1px;background:var(--k-line-soft)}
+.k-row:active{background:var(--k-field)}
+/* Строка 1: № · время · метки (переносятся под № и не сдвигают сумму) | сумма
+   Строка 2: продавец · оплата (сокращается «…») | количество */
+.k-row__a{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:start}
+.k-row__id{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;min-width:0;min-height:22px}
+.k-row__id b{font-size:15px;font-weight:700}
+.k-row__id time{font-size:13px;color:var(--k-muted-2)}
+.k-row__sum{font-size:16px;font-weight:700;white-space:nowrap;line-height:22px}
+.k-row__b{display:flex;align-items:baseline;gap:8px;min-width:0;font-size:13px;color:var(--k-muted)}
+.k-row__who{min-width:0;flex:0 1 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.k-row__qty{margin-left:auto;flex:none;font-size:12.5px;color:var(--k-faint);white-space:nowrap}
+.k-search mark,.k-row mark,.k-rcpt mark{background:#FFE0A3;color:inherit;border-radius:4px;padding:0 1px}
+
+/* Метки: спокойные. Карта и «себе» — нейтральные; цвет — только у статусов, требующих внимания */
+.k-mark{height:20px;border-radius:6px;padding:0 6px;font-size:11.5px;font-weight:700;display:inline-flex;align-items:center;gap:4px;background:#F0EEE9;color:var(--k-ink-2);flex:none;white-space:nowrap}
+.k-mark svg{flex:none;opacity:.7}
+.k-mark--brak{background:var(--k-brak-tile);color:var(--k-danger-text)}            /* «Брак» */
+.k-mark--quiet{background:transparent;padding:0;color:var(--k-faint);font-weight:600} /* «изменён», «акция −N%» */
+.k-mark--queue{background:var(--k-ink);color:var(--k-amber)}                       /* «ожидает отправки» — как в 3.1 */
+.k-mark--recon{background:var(--k-danger-tint-2);color:var(--k-danger-text)}       /* «Ожидает сверки» — как в 3.1 */
+
+/* Поиск (3.1, без изменений по поведению) */
+.k-search{display:flex;gap:8px;align-items:center;height:48px}
+.k-search__field{flex:1;min-width:0;height:48px;border-radius:15px;background:#fff;box-shadow:inset 0 0 0 2px var(--k-ink);display:flex;align-items:center;gap:8px;padding:0 2px 0 12px;box-sizing:border-box}
+.k-search__field input{border:0;outline:0;background:transparent;font-size:16px;flex:1;min-width:0;font-family:inherit}
+.k-search__note{display:flex;justify-content:space-between;font-size:12.5px;color:var(--k-muted-2);padding:4px 6px 8px}
+.k-search__help{background:var(--k-surface);border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;line-height:1.55}
+.k-search__help small{font-size:12.5px;color:var(--k-muted-2)}
+.k-empty{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:36px 16px;font-size:14px;line-height:1.45;color:var(--k-muted)}
+.k-empty b{font-size:20px;color:var(--k-ink)}
+.k-empty .k-btn{max-width:240px}
+.k-empty__icon{width:56px;height:56px;border-radius:18px;background:var(--k-tile);display:flex;align-items:center;justify-content:center;color:var(--k-muted-2)}
+
+/* --- Открытый чек --------------------------------------------------------- */
+.k-rcpt{position:absolute;left:var(--k-gutter);right:var(--k-gutter);top:calc(40px + var(--k-safe-t));bottom:var(--k-current-dock,var(--k-dock-nav-only-h));display:flex;flex-direction:column}
+.k-rcpt__head{flex:none;height:48px;display:flex;align-items:center}
+.k-rcpt__body{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:8px 0 12px}
+.k-rcpt__title{padding:2px 4px 6px}
+.k-rcpt__title h2{margin:0;font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.k-rcpt__title span{display:block;margin-top:4px;font-size:13px;color:var(--k-muted)}
+.k-rcpt__card{background:var(--k-surface);border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.k-rcpt__pay{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+.k-rcpt__pay span{font-size:15px;font-weight:600;padding-bottom:4px}
+.k-rcpt__pay b{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1;white-space:nowrap;text-align:right}
+.k-rcpt__pay s{display:block;font-size:13px;font-weight:500;color:var(--k-faint);margin-bottom:4px}
+.k-rcpt__marks{display:flex;flex-wrap:wrap;gap:4px}
+.k-rcpt__note{font-size:13px;color:var(--k-muted);line-height:1.4}
+.k-rcpt__h{font-size:12px;font-weight:800;letter-spacing:.06em;color:var(--k-muted-2);text-transform:uppercase;display:flex;justify-content:space-between}
+.k-rcpt__items{display:flex;flex-direction:column}
+.k-rcpt__item{display:grid;grid-template-columns:minmax(0,1fr) auto 76px;gap:10px;align-items:center;min-height:42px;font-size:14.5px;border-top:1px solid var(--k-line-soft)}
+.k-rcpt__item:first-child{border-top:0}
+.k-rcpt__item span:first-child{font-weight:600}
+.k-rcpt__item span:nth-child(2){color:var(--k-muted-2);font-size:13.5px}
+.k-rcpt__item b{text-align:right;font-weight:700}
+.k-rcpt__total{display:flex;justify-content:space-between;align-items:baseline;border-top:1.5px solid var(--k-ink);padding-top:10px;margin-top:2px;font-size:14px;font-weight:600}
+.k-rcpt__total b{font-size:18px;font-weight:800}
+.k-rcpt__dl{display:grid;grid-template-columns:1fr auto;gap:6px 12px;margin:0;font-size:14px}
+.k-rcpt__dl dt{color:var(--k-muted)}
+.k-rcpt__dl dd{margin:0;font-weight:700;text-align:right}
+.k-rcpt .k-btn{flex:none}
+.k-danger-zone{flex:none;margin-top:6px;border-top:1px dashed #D3D1CA;padding-top:10px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.k-danger-zone span{font-size:12px;color:var(--k-muted-2);line-height:1.35}
+
+/* ==========================================================================
+   Блоки 3.1 без изменений (перенесены из anikina-c31/components.css как есть)
+   ========================================================================== */
+/* Верхняя строка Журнала и Итогов (на Кассе её заменяет .k-topline) */
+.k-top{position:absolute;left:16px;right:16px;top:calc(var(--k-top-line) + var(--k-safe-t));height:26px;display:flex;align-items:center;gap:8px}
+.k-point{border:0;background:transparent;padding:0;height:26px;font-size:13px;font-weight:600;color:var(--k-muted);display:flex;align-items:center;gap:5px}
+.k-point b{color:var(--k-ink);font-weight:700}
+.k-pill{height:24px;border:0;border-radius:999px;padding:0 9px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:5px}
+.k-pill--queue{background:var(--k-ink);color:var(--k-amber)}
+.k-pill--promo{background:var(--k-amber);color:var(--k-ink)}
+
+/* Подсказка при первом использовании */
+.k-hint{position:absolute;z-index:6;background:var(--k-ink);color:#fff;border-radius:12px;padding:9px 12px;font-size:13px;font-weight:600;line-height:1.3;box-shadow:0 10px 24px -8px rgba(0,0,0,.45);white-space:nowrap;pointer-events:none}
+.k-hint em{font-style:normal;color:var(--k-amber)}
+.k-hint::after{content:"";position:absolute;bottom:-5px;left:var(--k-hint-arrow,50%);width:12px;height:12px;background:var(--k-ink);transform:translateX(-6px) rotate(45deg)}
+
+/* Клавиатура открыта (фокус в поле листа): док скрыт, лист у клавиатуры */
+.k-app.is-kb-open .k-dock{transform:translateY(100%);visibility:hidden}
+.is-kb-open .k-sheet{bottom:calc(var(--k-kb-h, 0px) + 8px)}   /* --k-kb-h из visualViewport */
+
+/* Тело листа, крестик, модальные окна */
+.k-sheet__body{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
+.k-x{width:44px;height:44px;border:0;border-radius:13px;background:var(--k-field);display:flex;align-items:center;justify-content:center;flex:none}
+.k-modal{position:absolute;left:8px;right:8px;bottom:8px;background:var(--k-surface);border-radius:var(--k-r-modal);z-index:6;padding:18px 16px 16px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box;box-shadow:0 -10px 40px rgba(0,0,0,.25)}
+.k-modal h3{margin:0;font-size:21px;font-weight:800}
+
+/* Строка раскрытого чека */
+.k-line{display:grid;grid-template-columns:1fr auto 54px;gap:8px;align-items:center;min-height:52px;padding:4px 0;border-top:1px solid var(--k-line-soft)}
+.k-line__name b{font-size:14px;font-weight:600;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.k-line__name small{display:block;font-size:11.5px;color:var(--k-muted-2)}
+.k-line__sum{text-align:right;font-size:14.5px;font-weight:700}
+.k-qty{display:flex;align-items:center;background:var(--k-field);border-radius:12px;padding:2px}
+.k-qty button{width:40px;height:40px;border:0;border-radius:10px;background:#fff;font-size:19px;font-weight:600;box-shadow:0 1px 1px rgba(0,0,0,.06)}
+.k-qty span{width:28px;text-align:center;font-size:15.5px;font-weight:700}
+.k-total{display:flex;justify-content:space-between;align-items:baseline;border-top:1.5px solid var(--k-ink);padding-top:10px}
+.k-total span{font-size:14px;font-weight:600}
+.k-total b{font-size:24px;font-weight:800;letter-spacing:-.02em}
+
+/* --- Поля и кнопки в листах ----------------------------------------------- */
+.k-label{font-size:12.5px;color:#4A4945;font-weight:500}
+.k-field{height:52px;border:0;border-radius:var(--k-r-btn);background:var(--k-field);padding:0 14px;font-size:16px;box-sizing:border-box;width:100%;min-width:0}   /* 16px — iOS не масштабирует */
+.k-field:focus{outline:0;background:#fff;box-shadow:inset 0 0 0 2px var(--k-ink)}
+.k-field--money{font-size:20px;font-weight:700;text-align:right}
+.k-textarea{min-height:64px;border:0;border-radius:var(--k-r-btn);background:var(--k-field);padding:10px 12px;font-size:16px;line-height:1.35;width:100%;box-sizing:border-box;resize:none}
+.k-seg{display:grid;grid-template-columns:1fr 1fr;background:var(--k-field);border-radius:var(--k-r-btn);padding:3px;gap:3px}
+.k-seg button{height:44px;border:0;border-radius:11px;background:transparent;font-size:14px;font-weight:700;color:var(--k-muted)}
+.k-seg [aria-pressed="true"]{background:var(--k-ink);color:#fff}
+.k-btn{height:52px;border:0;border-radius:15px;background:var(--k-ink);color:#fff;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;width:100%}
+.k-btn--light{background:var(--k-field);color:var(--k-ink);font-size:14px;font-weight:600;height:48px}
+.k-btn--amber{background:var(--k-amber);color:var(--k-ink);font-weight:800}
+.k-btn--danger{background:var(--k-danger);color:#fff;font-weight:800}
+.k-btn--danger-outline{height:44px;width:auto;background:#fff;box-shadow:inset 0 0 0 1.5px #E7A88A;color:var(--k-danger);font-size:13.5px;padding:0 14px}
+.k-done{height:44px;border:0;border-radius:12px;background:var(--k-ink);color:#fff;font-size:14px;font-weight:700;padding:0 14px;flex:none}
+.k-link{height:44px;border:0;border-radius:12px;background:var(--k-field);font-size:13px;font-weight:600;padding:0 12px}
+.k-eq{border-radius:var(--k-r-btn);padding:10px 14px;display:flex;flex-direction:column;gap:3px;font-size:13.5px;line-height:1.35}
+.k-eq--ok{background:var(--k-amber-tint);box-shadow:inset 0 0 0 1.5px var(--k-amber-line)}
+.k-eq--ok b{color:var(--k-amber-text)}
+.k-eq--bad{background:var(--k-danger-tint-2);color:#8A2C05;box-shadow:inset 0 0 0 1.5px var(--k-danger-2)}
+
+/* Статусы (карта, проведение, ошибки) */
+.k-status{border-radius:13px;padding:11px 12px;font-size:13.5px;line-height:1.42}
+.k-status--info{background:var(--k-field);color:var(--k-ink-2)}
+.k-status--warn{background:var(--k-amber-tint);color:#4A3000;box-shadow:inset 0 0 0 1.5px #F2CE8E}
+.k-status--err{background:var(--k-danger-tint);color:#8A2C05;box-shadow:inset 0 0 0 1.5px #F2B79F}
+.k-card-lock{box-shadow:inset 0 0 0 2px var(--k-amber-line)}       /* карточка ожидания */
+.k-card-bad{box-shadow:inset 0 0 0 2px #E7A88A}                    /* конфликт, сверка с владельцем */
+
+/* --- Итоги ---------------------------------------------------------------- */
+.k-card{background:#fff;border-radius:var(--k-r-card);box-shadow:inset 0 0 0 1px var(--k-line);padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.k-card__title{font-size:12px;font-weight:800;letter-spacing:.06em;color:var(--k-muted-2);text-transform:uppercase}
+.k-hero{box-shadow:inset 0 0 0 1px var(--k-line),inset 4px 0 0 var(--k-amber)}
+.k-hero__value{font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.k-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--k-line-soft);margin-top:6px;padding-top:10px}
+.k-metrics > div{display:flex;flex-direction:column;gap:2px;padding:0 8px;border-left:1px solid var(--k-line-soft);min-width:0}
+.k-metrics > div:first-child{padding-left:0;border-left:0}
+.k-attention{box-shadow:inset 0 0 0 1.5px var(--k-danger-line);background:#FFF8F4}
+.k-attention .k-card__title{color:var(--k-danger-text)}
+.k-bonus{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.k-bonus > div{background:var(--k-amber-tint);border-radius:12px;padding:8px 9px}
+.k-bar-row{display:grid;grid-template-columns:156px 1fr 30px;gap:8px;align-items:center;height:26px;font-size:13.5px}
+.k-bar-row i{display:block;height:10px;border-radius:5px;background:var(--k-amber)}
+.k-skeleton{background:var(--k-chip);border-radius:var(--k-r-card)}
+.k-empty{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+
+/* ==========================================================================
+   OMOTI · Касса · ред. 3.2 — Итоги: только «без лишних рамок».
+   Раздел «Итоги» 3.1 остаётся; здесь — что меняется поверх него.
+   ========================================================================== */
+.k-card{box-shadow:none}
+.k-hero{box-shadow:inset 4px 0 0 var(--k-amber)}                                 /* выручка: только янтарная полоса слева */
+.k-attention{box-shadow:inset 0 0 0 1.5px var(--k-danger-line)}                  /* «Требует внимания» */
+.k-card-lock{box-shadow:inset 0 0 0 2px var(--k-amber-line)}
+.k-card-bad{box-shadow:inset 0 0 0 2px #E7A88A}
+.k-skeleton{background:var(--k-tile)}

@@ -1,0 +1,137 @@
+/* ==========================================================================
+   OMOTI · Новогодняя / Советская · C3.2 «Тише» — только то, чего нет у Аникиной.
+   Подключается ПОСЛЕ points-ui/c32-base/ — зафиксированной копии базовых стилей C3.2 Аникиной
+   (tokens, components, itogi, integration, motion; копия от claude-design-base, см. CHANGELOG-DESIGN.md). Новых цветов нет — только токены C3.2.
+   Разделы: 1 навигация из 4 · 2 Итоги «К выплате» · 3 сотрудники с выплатой · 4 «Что заканчивается?» · 5 PIN.
+   ========================================================================== */
+
+/* --- 1. Навигация из 4 разделов: иконка 18 над подписью 11,5; высота ряда 40 (как у Аникиной) ---- */
+.k-points .k-nav--4{gap:4px}
+.k-points .k-nav--4 button{flex-direction:column;gap:3px;font-size:11.5px;line-height:1;letter-spacing:-.01em;white-space:nowrap;min-width:0}
+.k-points .k-nav--4 button svg{width:18px;height:18px;flex:none}
+
+/* Продавец сбрасывается после каждого чека: плашка «Кто продаёт?» должна читаться целиком и на 360 */
+.k-points .k-who--need{max-width:62%}
+
+/* --- 2. Итоги: раздел «К выплате» — расчёт для еженедельного скриншота -------------------------- */
+.k-stats--points .k-pay__period{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;margin-top:8px}
+.k-stats--points .k-pay__period b{font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.15;white-space:nowrap}
+.k-stats--points .k-pay__sold{margin-top:10px;padding:9px 11px;border-radius:12px;background:var(--k-bg);font-size:13.5px;line-height:1.35;color:var(--k-muted)}
+.k-stats--points .k-pay__sold b{color:var(--k-ink);font-weight:700}
+.k-stats--points .k-pay__group{margin:14px 0 0;font-size:11.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--k-muted-2)}
+.k-stats--points .k-pay__row{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:44px;padding:6px 0;border-top:1px solid var(--k-line-soft);font-size:15px;line-height:1.25;box-sizing:border-box}
+.k-stats--points .k-pay__group+.k-pay__row{border-top:0}
+.k-stats--points .k-pay__row>span:first-child{display:flex;flex-direction:column;gap:2px;min-width:0}
+.k-stats--points .k-pay__hint{font-size:12px;color:var(--k-muted-2);font-weight:500}
+.k-stats--points .k-pay__val{font-weight:700;white-space:nowrap;text-align:right;flex:none}
+.k-stats--points .k-pay__row--earn .k-pay__val{font-size:18px;font-weight:800}
+.k-stats--points .k-pay__row--minus .k-pay__val::before{content:"− "}   /* сервер: payout = earned − cashReceived − selfPaidCash − selfUnpaid */
+.k-stats--points .k-pay__total{margin-top:12px;border-radius:16px;background:var(--k-amber);color:var(--k-ink);padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.k-stats--points .k-pay__total>span:first-child{font-size:16px;font-weight:800}
+.k-stats--points .k-pay__total #p-total{font-size:32px;font-weight:800;letter-spacing:-.02em;line-height:1;white-space:nowrap}
+
+/* --- 3. Сотрудники: имя · продано · «К выплате» (staff[].payout кода) ---------------------------- */
+.k-stats--points .k-kpis--two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.k-stats--points .k-staffpay{margin-top:6px}
+.k-stats--points .k-staffpay .staff-stat-row{display:grid;grid-template-columns:minmax(0,1fr) 60px 104px;gap:10px;align-items:center;min-height:44px;padding:0;border:0;border-top:1px solid var(--k-line-soft);font-size:15px}
+.k-stats--points .k-staffpay .k-staffpay__head{min-height:28px;border-top:0;align-items:end;padding-bottom:4px}
+.k-stats--points .k-staffpay .k-staffpay__head .ss-payout{white-space:normal;line-height:1.2}
+.k-stats--points .k-staffpay__note{margin-top:8px}
+.k-stats--points .k-staffpay .k-staffpay__head span{font-size:12px;font-weight:600;color:var(--k-muted-2)}
+.k-stats--points .k-staffpay .ss-name{font-size:inherit;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.k-stats--points .k-staffpay .ss-qty{font-size:13.5px;color:var(--k-muted-2);text-align:right;min-width:0;white-space:nowrap}
+.k-stats--points .k-staffpay .ss-payout{font-size:inherit;font-weight:800;text-align:right;min-width:0;white-space:nowrap}
+.k-stats--points .k-staffpay .k-staffpay__head .ss-name,.k-stats--points .k-staffpay .k-staffpay__head .ss-qty,.k-stats--points .k-staffpay .k-staffpay__head .ss-payout{font-size:12px;font-weight:600;color:var(--k-muted-2)}
+
+/* --- 4. «Что заканчивается?» ---------------------------------------------------------------------- */
+.k-restock{background:var(--k-bg)}
+.k-restock__scroll{position:absolute;left:0;right:0;top:calc(96px + var(--k-safe-t));bottom:var(--k-current-dock,var(--k-dock-nav-only-h));overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:2px var(--k-gutter) 112px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box}
+.k-restock .restock-note{margin:0;border:0;border-radius:16px;background:var(--k-surface);padding:11px 13px;font-size:13px;line-height:1.42;color:var(--k-ink-2)}
+.k-restock .restock-last{margin:0;border:0;border-radius:14px;background:var(--k-amber-tint);box-shadow:inset 0 0 0 1px var(--k-amber-soft-line);padding:10px 12px 10px 40px;font-size:13px;line-height:1.4;color:#4A3000;position:relative}
+.k-restock .restock-last::before{content:"";position:absolute;left:12px;top:10px;width:20px;height:20px;border-radius:7px;background:var(--k-amber)}
+.k-restock .restock-last::after{content:"";position:absolute;left:19px;top:13px;width:5px;height:10px;border:solid var(--k-ink);border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+.k-restock .restock-card{margin:0;padding:0;border:0;background:transparent}
+.k-restock .restock-title{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0;padding:6px 6px 6px;font-size:12.5px;font-weight:700;color:var(--k-muted-2);letter-spacing:.02em}
+.k-restock .restock-title small{font-size:12.5px;font-weight:600;letter-spacing:0}
+/* строка вкуса */
+.k-restock .restock-flavor-list{display:flex;flex-direction:column;gap:6px}
+.k-restock .restock-fact-card{border:0;border-radius:14px;background:var(--k-surface);overflow:visible}
+.k-restock .restock-fact-card.selected{background:var(--k-amber-tile);box-shadow:inset 0 0 0 2px var(--k-amber-line)}
+.k-restock .restock-fact-card.expanded{box-shadow:inset 0 0 0 2px var(--k-ink)}
+.k-restock .restock-fact-head{display:flex;align-items:center;gap:6px;min-height:48px;padding:0 10px 0 13px;border-radius:14px}
+.k-restock .restock-fact-name{flex:1;min-width:0;font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.k-restock .k-chev{display:flex;color:var(--k-muted-2);flex:none;transition:transform var(--k-t-sheet,260ms) var(--k-ease,ease)}
+.k-restock .restock-fact-card.expanded .k-chev{transform:rotate(180deg)}
+/* остаток по системе — тон из restockStockTone() кода */
+.k-restock .restock-stock-pill{height:24px;border:0;border-radius:999px;padding:0 9px;display:inline-flex;align-items:center;font-size:11.5px;font-weight:700;white-space:nowrap;flex:none;background:#F0EEE9;color:var(--k-muted)}
+.k-restock .restock-stock-pill.stock-negative,.k-restock .restock-stock-pill.stock-zero{background:var(--k-danger-tint-2);color:var(--k-danger-text)}
+.k-restock .restock-stock-pill.stock-low{background:var(--k-amber-tint);color:var(--k-amber-text);box-shadow:inset 0 0 0 1px var(--k-amber-soft-line)}
+.k-restock .restock-stock-pill.stock-ok{background:var(--k-surface);color:var(--k-ink-2);box-shadow:inset 0 0 0 1px #D3D1CA}
+.k-restock .restock-stock-pill.stock-high{background:#F0EEE9;color:var(--k-muted)}
+/* отметка факта: точное — чёрная, 6+ — янтарная с пунктиром */
+.k-restock .restock-selected-pill{height:26px;min-width:0;border-radius:9px;padding:0 9px;display:inline-flex;align-items:center;background:var(--k-ink);color:#fff;font-size:12.5px;font-weight:800;white-space:nowrap;flex:none;box-sizing:border-box}
+.k-restock .restock-selected-pill.is-six{background:var(--k-amber-tint);color:var(--k-amber-text);border:1.5px dashed var(--k-amber-line)}
+/* раскрытая строка: 0–5 одним рядом; «6+» и «Точное количество» — вторым рядом пополам */
+.k-restock .restock-fact-card:not(.expanded)>div{display:none}
+.k-restock .restock-fact-card.expanded>div{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;padding:2px 10px 10px}
+.k-restock .restock-fact-card.expanded .restock-fact-buttons,.k-restock .restock-fact-card.expanded .restock-exact-area,.k-restock .restock-fact-card.expanded .restock-exact-actions{display:contents}
+.k-restock .restock-fact-btn{height:44px;min-height:0;border:0;border-radius:12px;background:var(--k-field);color:var(--k-ink);font-size:17px;font-weight:700;padding:0}
+.k-restock .restock-fact-btn.active{background:var(--k-ink);color:#fff;border:0}
+.k-restock .restock-fact-btn.restock-six,.k-restock .restock-exact-open{grid-column:span 3;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1.1;padding:0 6px;text-align:center}
+.k-restock .restock-fact-btn.restock-six{background:var(--k-amber-tint);border:1.5px dashed var(--k-amber-line);color:var(--k-amber-text)}
+.k-restock .restock-fact-btn.restock-six.active{background:var(--k-amber);border-style:solid;color:var(--k-ink)}
+.k-restock .restock-fact-btn.restock-six b{font-size:17px}
+.k-restock .restock-six small,.k-restock .restock-exact-open small{font-size:11px;font-weight:600;color:var(--k-muted-2)}
+.k-restock .restock-six.active small{color:var(--k-ink-2)}
+.k-restock .restock-exact-open{min-height:0;border:0;border-radius:12px;background:var(--k-surface);box-shadow:inset 0 0 0 1.5px var(--k-ink);color:var(--k-ink);font-size:13.5px;font-weight:700}
+.k-restock .restock-exact-open b{font-size:13.5px}
+.k-restock .restock-exact-clear{grid-column:1/-1;min-height:40px;height:40px;padding:0 2px;border:0;background:transparent;text-align:left;font-size:13px;font-weight:700;color:var(--k-amber-text)}
+/* ввод точного количества */
+.k-restock .restock-exact-panel{grid-column:1/-1;border:0;padding:4px 0 0}
+.k-restock .restock-exact-label{font-size:12.5px;font-weight:700;margin-bottom:6px;color:var(--k-ink)}
+.k-restock .restock-exact-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px}
+.k-restock .restock-exact-input{height:48px;min-height:0;border:0;border-radius:13px;background:#fff;box-shadow:inset 0 0 0 2px var(--k-ink);padding:0 12px;font-size:18px;font-weight:700}
+.k-restock .restock-exact-input:focus{outline:0}
+.k-restock .restock-exact-input[aria-invalid="true"]{box-shadow:inset 0 0 0 2px var(--k-danger)}
+.k-restock .restock-exact-save{height:48px;min-height:0;border:0;border-radius:13px;background:var(--k-ink);color:#fff;font-size:15px;font-weight:700;padding:0 18px}
+.k-restock .restock-exact-help{margin-top:6px;font-size:12px;line-height:1.35;color:var(--k-muted)}
+.k-restock .restock-exact-help.restock-exact-error{color:var(--k-danger);font-weight:600}
+.k-restock .restock-fact-head:focus-visible,.k-restock .restock-fact-btn:focus-visible,.k-restock .restock-exact-open:focus-visible,.k-restock .restock-exact-clear:focus-visible,.k-restock .restock-exact-save:focus-visible,.k-restock .restock-option:focus-visible{outline:2px solid var(--k-amber-line);outline-offset:2px}
+/* расходники: плитки-переключатели, класс .active читает код */
+.k-restock #restock-supplies{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.k-restock .restock-option{min-height:56px;border:0;border-radius:14px;background:var(--k-surface);color:var(--k-ink);padding:8px 10px 8px 12px;font-size:13px;font-weight:600;line-height:1.2;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.k-restock .restock-option span{min-width:0;overflow-wrap:anywhere}
+.k-restock .restock-option i{width:22px;height:22px;border-radius:7px;box-shadow:inset 0 0 0 1.5px #D3D1CA;flex:none;display:flex;align-items:center;justify-content:center;color:var(--k-ink)}
+.k-restock .restock-option i svg{visibility:hidden}
+.k-restock .restock-option.active{background:var(--k-amber-tile);box-shadow:inset 0 0 0 2px var(--k-amber-line);font-weight:600}
+.k-restock .restock-option.active i{background:var(--k-amber);box-shadow:none}
+.k-restock .restock-option.active i svg{visibility:visible}
+/* отправка: закреплена над доком */
+.k-send-bar{position:absolute;left:0;right:0;bottom:var(--k-current-dock,var(--k-dock-nav-only-h));z-index:3;padding:22px var(--k-gutter) 10px;background:linear-gradient(rgba(246,245,241,0),var(--k-bg) 22px);display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.k-send-bar>*{pointer-events:auto}
+.k-send-bar__hint{margin:0;text-align:center;font-size:12.5px;font-weight:600;color:var(--k-muted-2)}
+.k-restock .restock-submit{height:52px;margin:0;border:0;border-radius:15px;background:var(--k-amber);color:var(--k-ink);font-size:16px;font-weight:800;padding:0 14px;opacity:1}
+.k-restock .restock-submit::after{content:attr(data-count)}
+.k-restock .restock-submit:disabled{background:var(--k-chip);color:var(--k-faint);opacity:1}
+.k-restock .restock-submit[aria-busy="true"]{background:var(--k-dock-wait-bg);color:var(--k-dock-wait-text)}
+.c31-active .is-kb-open .k-send-bar{visibility:hidden}
+
+/* --- 5. PIN Итогов — только Советская (разметка #pin-overlay кода) ----------------------------- */
+.c31-active .pin-overlay.k-pin{background:var(--k-bg);z-index:95;align-items:stretch;justify-content:center}
+.k-pin .pin-box{width:100%;max-width:480px;min-height:100%;margin:0 auto;border-radius:0;background:transparent;padding:calc(88px + var(--k-safe-t)) 24px calc(28px + var(--k-safe-b));display:flex;flex-direction:column;align-items:center;box-sizing:border-box}
+.k-pin__icon{width:56px;height:56px;border-radius:18px;background:var(--k-amber-tint);box-shadow:inset 0 0 0 1.5px var(--k-amber-soft-line);color:var(--k-amber-text);display:flex;align-items:center;justify-content:center;flex:none}
+.k-pin .pin-title{margin:14px 0 4px;font-size:var(--k-fs-h1);font-weight:800;letter-spacing:-.02em}
+.k-pin .pin-sub{margin:0;font-size:14px;color:var(--k-muted)}
+.k-pin.is-error .pin-sub{color:var(--k-danger);font-weight:600}
+.k-pin .pin-dots{gap:18px;margin:26px 0 auto;padding-bottom:24px}
+.k-pin .pin-dot{width:16px;height:16px;border:0;background:transparent;box-shadow:inset 0 0 0 2px var(--k-ink)}
+.k-pin .pin-dot.filled{background:var(--k-ink)}
+.k-pin .pin-dot.error{background:var(--k-danger);box-shadow:inset 0 0 0 2px var(--k-danger)}
+.k-pin .pin-numpad{width:100%;max-width:330px;gap:10px}
+.k-pin .pin-key{height:64px;padding:0;border:0;border-radius:18px;background:var(--k-surface);box-shadow:inset 0 0 0 1px var(--k-line);color:var(--k-ink);font-size:28px;font-weight:600}
+.k-pin .pin-key:active{background:var(--k-field)}
+.k-pin .pin-key.cancel,.k-pin .pin-key.del{background:transparent;box-shadow:none;color:var(--k-ink-2);font-size:15px;font-weight:700}
+.k-pin .pin-key.del{font-size:24px;font-weight:500}
+.k-pin .pin-key:focus-visible{outline:2px solid var(--k-amber-line);outline-offset:2px}
+@media (max-height:700px){.k-pin .pin-box{padding-top:calc(40px + var(--k-safe-t))}.k-pin .pin-key{height:56px}}
+@media (prefers-reduced-motion:reduce){.k-restock .k-chev{transition:none}}
