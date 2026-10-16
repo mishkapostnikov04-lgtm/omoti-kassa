@@ -11,7 +11,7 @@ html:not([data-cashier-boot="ready"]) .app{visibility:hidden!important;opacity:0
 <script id="points-boot-controller">/* Points startup supervisor (adapted from reviewed Anikina R2). No pricing, API transport, queue or bonus ownership. */
 (() => {
  'use strict';
- const BUILD='points-boot-20261015-r1',RELEASE='points-boot-20261015-r1',KEY='omoti_sovetskaya_boot_draft_v1',DIAG='omoti_sovetskaya_boot_diag_v1';
+ const BUILD='points-boot-20261015-r1',RELEASE='points-freeze-20261016-r1',KEY='omoti_sovetskaya_boot_draft_v1',DIAG='omoti_sovetskaya_boot_diag_v1';
  const root=document.documentElement;let state='loading',ui=false,native=false,attached=false,restored=false,wasReady=false,needsCard=false,lastIssue=null,saving=false,retained=null;
  let activeOperations=0;const records=[],$=id=>document.getElementById(id),app=()=>document.querySelector('.app');
  function path(value){try{const u=new URL(value,location.href);return u.pathname+(u.searchParams.has('v')?'?v='+u.searchParams.get('v'):'');}catch(_){return 'inline';}}
@@ -37,10 +37,20 @@ html:not([data-cashier-boot="ready"]) .app{visibility:hidden!important;opacity:0
   for(const name of ['mixedCashReceived','mixedTransferAmount','editPromotionDiscountPercent'])if(!Number.isFinite(Number(s[name]||0)))throw Error('Некорректные поля черновика; данные не удалены');
   mixedCashReceived=Number(s.mixedCashReceived||0);mixedTransferAmount=Number(s.mixedTransferAmount||0);mixedTransferMode=s.mixedTransferMode==='refund'?'refund':'received';editNum=s.editNum||null;editDate=String(s.editDate||'');editTime=String(s.editTime||'');editSaleKey=String(s.editSaleKey||'');editOriginalPayType=String(s.editOriginalPayType||'');editPromotionId=String(s.editPromotionId||'');editPromotionName=String(s.editPromotionName||'');editPromotionDiscountPercent=Number(s.editPromotionDiscountPercent||0);needsCard=Boolean(s.requiresCard);restored=true;renderSellers();renderPayBtns();updateCart();
  }
- function recoveryNotice(){if(!restored&&!needsCard&&!retained)return;let box=$('cashier-draft-notice');if(!box){box=document.createElement('section');box.id='cashier-draft-notice';box.className='k-status k-status--warn';const text=document.createElement('p');box.append(text);for(const [label,action]of [['Выбрать карту',()=>C31UI.openSheet('card')],['Продолжить без карты',()=>{needsCard=false;restored=false;box.hidden=true;save();}]]){const b=document.createElement('button');b.type='button';b.className='k-btn k-btn--light';b.textContent=label;b.onclick=action;box.append(b);}document.querySelector('.k-notices').append(box);document.querySelector('.k-notices').hidden=false;}if(retained&&!box.querySelector('details')){const details=document.createElement('details'),summary=document.createElement('summary'),text=document.createElement('pre');summary.textContent='Сохранённый черновик';text.style.cssText='white-space:pre-wrap;font:inherit';text.textContent=Object.entries(retained.cart||{}).map(([name,qty])=>name+' × '+qty).join('\n')+'\n'+String(retained.seller||'')+' · '+String(retained.payType||'')+'\n'+String(retained.comment||'');details.append(summary,text);box.append(details);}box.querySelector('p').textContent=retained?'Черновик незавершённой операции сохранён. Сначала проверьте её статус или откройте чек из журнала; повторная продажа автоматически не создаётся.':needsCard?'Черновик восстановлен. Выберите карту заново перед продажей или явно продолжите без карты. Ожидающие бонусные операции проверяются прежним модулем.':'Черновик восстановлен: товары, сотрудник, оплата и комментарий сохранены.';box.querySelectorAll('button').forEach(b=>b.hidden=!needsCard);}
+ function recoveryNotice(){if(!restored&&!needsCard&&!retained)return;let box=$('cashier-draft-notice');if(!box){box=document.createElement('section');box.id='cashier-draft-notice';box.className='k-status k-status--warn';const text=document.createElement('p');box.append(text);for(const [label,action]of [['Выбрать карту',()=>C31UI.openSheet('card')],['Продолжить без карты',()=>{if(closeCheckInFlight||window.C31UI?.state.busy||window.AnikinaLoyalty?.isPending()||window.CashierLoyaltyCorrections?.isPending())return;if(window.AnikinaLoyalty&&!AnikinaLoyalty.clear())return;needsCard=false;restored=false;box.hidden=true;updateCart();save();}]]){const b=document.createElement('button');b.type='button';b.className='k-btn k-btn--light';b.textContent=label;b.onclick=action;box.append(b);}document.querySelector('.k-notices').append(box);document.querySelector('.k-notices').hidden=false;}if(retained&&!box.querySelector('details')){const details=document.createElement('details'),summary=document.createElement('summary'),text=document.createElement('pre');summary.textContent='Сохранённый черновик';text.style.cssText='white-space:pre-wrap;font:inherit';text.textContent=Object.entries(retained.cart||{}).map(([name,qty])=>name+' × '+qty).join('\n')+'\n'+String(retained.seller||'')+' · '+String(retained.payType||'')+'\n'+String(retained.comment||'');details.append(summary,text);box.append(details);}box.querySelector('p').textContent=retained?'Черновик незавершённой операции сохранён. Сначала проверьте её статус или откройте чек из журнала; повторная продажа автоматически не создаётся.':needsCard?'Черновик восстановлен. Выберите карту заново перед продажей или явно продолжите без карты. Ожидающие бонусные операции проверяются прежним модулем.':'Черновик восстановлен: товары, сотрудник, оплата и комментарий сохранены.';box.querySelectorAll('button').forEach(b=>b.hidden=!needsCard);}
  function finish(){if(state==='error'||!ui||!native||document.readyState==='loading'||required().some(el=>!el.dataset.bootLoaded))return;try{healthy();if(!attached){restore();const original=updateCart;updateCart=function(...a){const result=original(...a);if(attached)save();return result;};attached=true;}state='ready';wasReady=true;render();recoveryNotice();save();}catch(e){fail('ready-check',e);}}
  function preflight(build){if(state==='error')return false;try{if(build!==BUILD||!native)throw Error('Несовместимая последовательность запуска');verify();return true;}catch(e){fail('preflight',e);return false;}}
- function canOperate(){if(state!=='ready')return false;if(needsCard&&!$('loyalty-panel').classList.contains('is-selected')){recoveryNotice();window.C31UI?.openSheet('card');return false;}return true;}
+ function canOperate(){
+  if(state!=='ready')return false;
+  if(needsCard){
+   const panel=$('loyalty-panel');
+   // Both states require an explicit fresh lookup. First-purchase eligibility
+   // is finally checked by unchanged provider checkout, with no redemption.
+   if(!panel.classList.contains('is-selected')&&!panel.classList.contains('is-unconfirmed')){recoveryNotice();window.C31UI?.openSheet('card');return false;}
+   needsCard=false;restored=false;const notice=$('cashier-draft-notice');if(notice&&!retained)notice.hidden=true;save();
+  }
+  return true;
+ }
  function resume(){if(state==='ready'){try{healthy();}catch(e){fail('resume-check',e);}}else finish();}
  function inFlight(){try{return activeOperations>0||closeCheckInFlight||window.C31UI?.state.busy;}catch(_){return false;}}
  function track(fn){return function(...args){activeOperations++;let value;try{value=fn.apply(this,args);}catch(e){activeOperations--;save();throw e;}return Promise.resolve(value).finally(()=>{activeOperations--;save();});};}
@@ -329,8 +339,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
   <button type="button" id="registration-qr-return" class="registration-qr-return">Вернуться к продаже</button>
 </dialog>
 <script src="./cashier-registration-qr-v1.js?v=20261004" data-boot-resource="cashier-registration-qr-v1.js" integrity="sha384-DF9Nz5WDKrofbAyql6ER8H74c+yHtN1K5LmQ2Z3mnXQ12zfNPC/giYOCidQCgmnm" crossorigin="anonymous" onload="PointsBoot.resourceReady(this)" onerror="PointsBoot.resourceFailed(this)"></script>
-<script src="./cashier-loyalty-connection-v1.js?v=20261006" data-boot-resource="cashier-loyalty-connection-v1.js" integrity="sha384-GKdpDE07LT75Xd44TkRrgk6M6WXR+YYepf+sFlxKvqOWZunB4ddsGWnHsvZ9eWaU" crossorigin="anonymous" onload="PointsBoot.resourceReady(this)" onerror="PointsBoot.resourceFailed(this)"></script>
-<script src="./anikina-loyalty-v1.js?v=20261009-history-fix" data-boot-resource="anikina-loyalty-v1.js" integrity="sha384-YwtBL0u/sy3R/w5NpZwyzH/BrRa7MWxfNbXvyDVN2xXyjNZcZ3G5MLaa64shJd69" crossorigin="anonymous" onload="PointsBoot.resourceReady(this)" onerror="PointsBoot.resourceFailed(this)"></script>
+<script src="./cashier-loyalty-connection-v1.js?v=20261006&amp;fix=20261016-state-r2" data-boot-resource="cashier-loyalty-connection-v1.js" integrity="sha384-qsHk5iD2XmMX1yrAAm5QDO7mAWOQzTQVhVqKmnUjh/64CesgPRQViDESdonTjsWX" crossorigin="anonymous" onload="PointsBoot.resourceReady(this)" onerror="PointsBoot.resourceFailed(this)"></script>
+<script src="./anikina-loyalty-v1.js?v=20261009-history-fix&amp;fix=20261016-state-r2" data-boot-resource="anikina-loyalty-v1.js" integrity="sha384-x23gzN2D8A5DPucPLe1CKwopIuhD+ROP0LaFiY/pscgHISKX/JoFPA2QGBfZK2sv" crossorigin="anonymous" onload="PointsBoot.resourceReady(this)" onerror="PointsBoot.resourceFailed(this)"></script>
 <script>
 /* Preserve ordinary sales if the separately cached bonus module fails to load.
  * Missing bonus code must never route a bonus correction into the offline queue. */
@@ -486,11 +496,49 @@ function setRestockMotiFact(name,mode,qty){const current=restockMotiFacts[name];
 function selectedRestockMotiItems(){const visible=new Set(activeLooseFlavors()); return Object.entries(restockMotiFacts).filter(function(entry){return visible.has(entry[0]);}).map(function(entry){const name=entry[0], fact=entry[1], info=restockStockInfo(name)||{}, catalogItem=cashierKnownAssortment[name]||{}; return {itemType:'moti',catalogItemId:info.catalogItemId||catalogItem.catalogItemId||null,legacyFlavorName:info.legacyFlavorName||name,label:name,mode:fact.mode,qty:Number(fact.qty),sixPlus:fact.mode==='more_than_5'};});}
 function selectedRestockSupplyItems(){return Array.from(document.querySelectorAll('.restock-option.active')).map(function(input){return {itemType:'supply',supplyItemId:input.dataset.restockValue,label:input.dataset.restockLabel};});}
 function selectedRestockItems(){return selectedRestockMotiItems().concat(selectedRestockSupplyItems());}
-function updateRestockSubmitState(){const btn=document.getElementById('restock-submit'); if(!btn) return; btn.disabled=!selectedRestockItems().length||!!restockExactEditorFlavor;}
+function updateRestockSubmitState(){const btn=document.getElementById('restock-submit');if(!btn)return;let pending=false;try{pending=!!readRestockPendingSubmission();restockPendingError=false;}catch(_){restockPendingError=true;}const busy=!!restockSubmitInFlight;btn.disabled=busy||restockPendingError||(!pending&&(!selectedRestockItems().length||!!restockExactEditorFlavor));btn.textContent=busy?'Отправляю...':restockPendingError?'Нужна проверка заявки':pending?'Повторить отправку':'Отправить';for(const id of ['restock-flavors','restock-supplies']){const el=document.getElementById(id);if(el)el.inert=busy;}}
 function clearRestockSelection(){restockMotiFacts={}; restockExpandedFlavor=''; restockExactEditorFlavor=''; restockExactDrafts={}; document.querySelectorAll('.restock-option.active').forEach(function(input){input.classList.remove('active');}); renderRestockOptions();}
 function saveRestockSentNow(){const n=novosibirskNow(); localStorage.setItem(RESTOCK_LAST_SENT_KEY, JSON.stringify({day:n.date,time:n.time,ts:n.utc,timezone:n.timezone})); renderRestockLastSent();}
-function loadRestockStock(){restockStockLoading=true; const payload={action:'stock',locationId:'sovetskaya'}; fetchWithTimeout(RESTOCK_STOCK_API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)},CASHIER_REQUEST_TIMEOUT_MS).then(function(res){return res.json();}).then(function(json){if(!json.ok) throw new Error(json.error||'stock failed'); restockSystemStock={}; (json.items||[]).forEach(function(item){const key=restockLookupKey(item.legacyFlavorName); if(key) restockSystemStock[key]={legacyFlavorName:item.legacyFlavorName,catalogItemId:item.catalogItemId||null,qty:Number(item.qty||0)};}); restockStockLoaded=true;}).catch(function(){restockStockLoaded=true;}).finally(function(){restockStockLoading=false; renderRestockOptions();});}
-function submitRestock(){if(window.PointsBoot?.state!=='ready')return;const items=selectedRestockItems(); if(!items.length){showToast('Выберите позиции'); return;} const btn=document.getElementById('restock-submit'); btn.disabled=true; btn.textContent='Отправляю...'; const nsk=novosibirskNow(); const payload={action:'check',locationId:'sovetskaya',pointName:'Советская',createdBy:'касса',clientCreatedAt:nsk.utc,countedAt:nsk.dateTime,clientTimezone:nsk.timezone,clientLocalDate:nsk.date,clientLocalTime:nsk.time,source:'cashier_restock_tab',items:items}; return fetchWithTimeout(RESTOCK_CHECK_API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)},CASHIER_REQUEST_TIMEOUT_MS).then(function(res){return res.json();}).then(function(json){if(!json.ok) throw new Error(json.error||'Не удалось отправить'); clearRestockSelection(); saveRestockSentNow(); restockStockLoaded=false; loadRestockStock(); showToast('Спасибо, учтём при довозе.');}).catch(function(e){showToast('Ошибка: '+(e.message||e));}).finally(function(){btn.textContent='Отправить'; updateRestockSubmitState();});}
+let restockStockGeneration=0,restockStockError=false;
+function renderRestockStockStatus(){let el=document.getElementById('restock-stock-status');if(!el){el=document.createElement('div');el.id='restock-stock-status';el.className='restock-note';el.setAttribute('role','status');const text=document.createElement('span'),button=document.createElement('button');text.textContent='Системные остатки не обновлены. Ваши отметки сохранены. ';button.type='button';button.textContent='Повторить загрузку';button.onclick=()=>loadRestockStock();el.append(text,button);document.querySelector('#screen-restock .restock-note').append(el);}el.hidden=!restockStockError;}
+function loadRestockStock(){const generation=++restockStockGeneration;restockStockLoading=true;restockStockError=false;renderRestockStockStatus(); const payload={action:'stock',locationId:'sovetskaya'}; return fetchWithTimeout(RESTOCK_STOCK_API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)},CASHIER_REQUEST_TIMEOUT_MS).then(function(res){return res.json();}).then(function(json){if(generation!==restockStockGeneration)return;if(!json.ok) throw new Error(json.error||'stock failed'); restockSystemStock={}; (json.items||[]).forEach(function(item){const key=restockLookupKey(item.legacyFlavorName); if(key) restockSystemStock[key]={legacyFlavorName:item.legacyFlavorName,catalogItemId:item.catalogItemId||null,qty:Number(item.qty||0)};}); restockStockLoaded=true;}).catch(function(){if(generation!==restockStockGeneration)return;restockStockLoaded=true;restockStockError=true;}).finally(function(){if(generation!==restockStockGeneration)return;restockStockLoading=false;renderRestockOptions();renderRestockStockStatus();});}
+let restockSubmitInFlight=null,restockPendingPayload=null,restockPendingError=false;
+const RESTOCK_PENDING_SUBMISSION_KEY='omoti_sovetskaya_restock_submission_pending_v1';
+function readRestockPendingSubmission(){
+  if(restockPendingPayload)return restockPendingPayload;
+  const raw=localStorage.getItem(RESTOCK_PENDING_SUBMISSION_KEY);if(!raw)return null;
+  const payload=JSON.parse(raw);
+  if(!payload||payload.action!=='check'||payload.locationId!=='sovetskaya'||!Array.isArray(payload.items)||!payload.items.length||!payload.clientCreatedAt||!payload.countedAt)throw Error('Invalid saved restock submission');
+  restockPendingPayload=payload;return payload;
+}
+function saveRestockPendingSubmission(payload){const raw=JSON.stringify(payload);localStorage.setItem(RESTOCK_PENDING_SUBMISSION_KEY,raw);if(localStorage.getItem(RESTOCK_PENDING_SUBMISSION_KEY)!==raw)throw Error('Restock storage unavailable');restockPendingPayload=JSON.parse(raw);return restockPendingPayload;}
+function clearRestockPendingSubmission(){localStorage.removeItem(RESTOCK_PENDING_SUBMISSION_KEY);if(localStorage.getItem(RESTOCK_PENDING_SUBMISSION_KEY)!==null)throw Error('Restock confirmation storage unavailable');restockPendingPayload=null;restockPendingError=false;}
+function clearAcknowledgedRestockItems(payload){
+  for(const item of payload.items){
+    if(item.itemType==='moti'){
+      const name=Object.keys(restockMotiFacts).find(n=>n===item.label||n===item.legacyFlavorName),fact=restockMotiFacts[name];
+      if(fact&&fact.mode===item.mode&&Number(fact.qty)===Number(item.qty)){delete restockMotiFacts[name];delete restockExactDrafts[name];}
+    }else for(const el of document.querySelectorAll('#restock-supplies .restock-option'))if(el.dataset.restockValue===item.supplyItemId)el.classList.remove('active');
+  }
+  renderRestockOptions();
+}
+function submitRestock(){
+  if(window.PointsBoot?.state!=='ready')return;
+  if(restockSubmitInFlight)return restockSubmitInFlight;
+  let payload;
+  try{
+    payload=readRestockPendingSubmission();
+    if(!payload){const items=selectedRestockItems();if(!items.length){showToast('Выберите позиции');return;}
+      const nsk=novosibirskNow();payload=saveRestockPendingSubmission({action:'check',locationId:'sovetskaya',pointName:'Советская',createdBy:'касса',clientCreatedAt:nsk.utc,countedAt:nsk.dateTime,clientTimezone:nsk.timezone,clientLocalDate:nsk.date,clientLocalTime:nsk.time,source:'cashier_restock_tab',items:items});
+    }
+  }catch(_){restockPendingError=true;showToast('Не удалось сохранить заявку на телефоне. Данные не отправлены; не очищайте хранилище.');updateRestockSubmitState();return;}
+  restockSubmitInFlight=Promise.resolve().then(()=>fetchWithTimeout(RESTOCK_CHECK_API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)},CASHIER_REQUEST_TIMEOUT_MS))
+    .then(async res=>{const json=await res.json();if(!res.ok||!json.ok){if([400,422].includes(res.status))clearRestockPendingSubmission();throw Error(json.error||'Не удалось отправить');}return json;})
+    .then(()=>{clearRestockPendingSubmission();clearAcknowledgedRestockItems(payload);try{saveRestockSentNow();}catch(_){}restockStockLoaded=false;loadRestockStock();showToast('Спасибо, учтём при довозе.');})
+    .catch(()=>{showToast(restockPendingPayload?'Ответ не подтверждён. Повторите отправку той же заявки — новая не создастся.':'Заявка отклонена. Проверьте отмеченные позиции и повторите.');})
+    .finally(()=>{restockSubmitInFlight=null;updateRestockSubmitState();});
+  updateRestockSubmitState();return restockSubmitInFlight;
+}
 function changeQty(name,delta){if(delta>0&&!editNum&&cashierKnownAssortment[name]?.itemType==='set'&&(cart[name]||0)+delta>Number(cashierKnownAssortment[name].availableQty||0)){showToast('Недостаточно готовых наборов');return;}if(delta>0&&!editNum&&!activeFlavors().includes(name)){showToast('Этот вкус скрыт в кассе');return;} cart[name]=(cart[name]||0)+delta; if(cart[name]<=0) delete cart[name]; updateCart();}
 function cartTotal(){return Object.entries(cart).filter(function(x){return x[1]>0;}).reduce(function(total,x){return total+effectivePrice(x[0],payType)*Number(x[1]||0);},0);}
 function mixedPaymentBreakdown(){return {cashReceived:Number(mixedCashReceived||0),transferReceived:mixedTransferMode==='received'?Number(mixedTransferAmount||0):0,transferRefund:mixedTransferMode==='refund'?Number(mixedTransferAmount||0):0};}
@@ -757,7 +805,7 @@ if(window.AnikinaLoyalty){
     ready:function(total){return !!seller&&!!payType&&Object.values(cart).some(q=>q>0)&&
       !Object.keys(cart).some(n=>cart[n]>0&&!activeFlavors().includes(n))&&
       (payType!=='Смешанная'||mixedPaymentIsValid(total));},
-    request:async function(action,payload){return CashierConnection.loyalty('https://orders.omoti.ru/b2c-api/b2c/cashier/sovetskaya/loyalty/',action,payload,cashierToken);},
+    request:async function(action,payload,readOptions){return CashierConnection.loyalty('https://orders.omoti.ru/b2c-api/b2c/cashier/sovetskaya/loyalty/',action,payload,cashierToken,readOptions);},
     buildPayload:function(){return buildCloseCheckDraft(Object.entries(cart).filter(x=>x[1]>0),false).payload;},
     discardIdentity:function(identity){cashierLastCheckNum=Math.max(cashierLastCheckNum,Number(identity?.num||pendingCheckDraft?.num||0));pendingCheckDraft=null;clearPendingCloseDraft();updateCart();},
     lock:function(locked){
@@ -807,6 +855,6 @@ window.PointsBoot?.nativeReady();
 <script src="cashier-notices-client.js" data-point="sovetskaya" data-page="omoti_sovetskaya.html" data-boot-resource="cashier-notices-client.js" integrity="sha384-mK1UvA1s/e2LdzZ261ZHBehBl3zULByJJAo0wqhevqckc8jv8TlxD8sJne4IGkEo" crossorigin="anonymous" onload="PointsBoot.resourceReady(this)" onerror="PointsBoot.resourceFailed(this)"></script>
 <script src="./points-ui/c32-base/motion.js?v=points-c32-20261015-r2" data-boot-resource="points-ui/c32-base/motion.js" integrity="sha384-ZhhT9ds69c3dg3Be6jxM+ye+tHtVByTib42+yV9pVAFURi0jSR+O7IAwPVX2QCXN" crossorigin="anonymous" onload="PointsBoot.resourceReady(this)" onerror="PointsBoot.resourceFailed(this)"></script>
 <script src="./points-ui/points-itogi.js?v=points-c32-20261015-r2" data-boot-resource="points-ui/points-itogi.js" integrity="sha384-KlTXz4CioQaZdG9yzIC9Ut1mOQf1XAdIqKl7qJMlIdK+fcvpnUd6OVrV33OFZv+a" crossorigin="anonymous" onload="PointsBoot.resourceReady(this)" onerror="PointsBoot.resourceFailed(this)"></script>
-<script src="./points-ui/points-interface.js?v=points-c32-20261015-r2" data-boot-resource="points-ui/points-interface.js" integrity="sha384-WFgwD8W7pjVPd7+E7DsmpX9Pq0x+ndCJSHqYCGx65eS6i1/mxwAwhjTH9Ika+Ryq" crossorigin="anonymous" onload="PointsBoot.resourceReady(this)" onerror="PointsBoot.resourceFailed(this)"></script>
+<script src="./points-ui/points-interface.js?v=points-boot-20261015-r1&amp;fix=20261016-state-r2" data-boot-resource="points-ui/points-interface.js" integrity="sha384-c8CJz+15PtDsGS0V1Je585P9n0OyH1xixybz8putfIHzvaV3PREX9eJ4FND3I1E3" crossorigin="anonymous" onload="PointsBoot.resourceReady(this)" onerror="PointsBoot.resourceFailed(this)"></script>
 </body>
 </html>
