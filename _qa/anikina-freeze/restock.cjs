@@ -3,7 +3,7 @@ const H=require('./shift-harness.cjs'),assert=require('node:assert/strict'),fs=r
 const out=path.resolve(process.env.QA_OUTPUT||path.join(H.root,'../evidence/restock'));fs.mkdirSync(out,{recursive:true});const rows=[];
 (async()=>{const server=await H.server(),browser=await H.chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});
 async function test(point,name,fn){let t;try{t=await H.context(browser,server.url,point);await t.page.locator('.k-nav button').nth(3).click();await t.page.waitForFunction(()=>!restockStockLoading);await fn(t);assert.deepEqual(t.s.errors,[]);assert.deepEqual(t.s.leaks,[]);rows.push({point,name,status:'PASS'});console.log('PASS',point,name);}catch(e){rows.push({point,name,status:'FAIL',error:e.stack});console.error('FAIL',point,name,e.message.split('\n')[0]);}finally{if(t)await t.ctx.close();fs.writeFileSync(path.join(out,'RESULT.json'),JSON.stringify({rows,productionBusinessCalls:0},null,2));}}
-try{for(const point of ['novogodnyaya','sovetskaya']){
+try{for(const point of ['novogodnyaya','sovetskaya'].filter(p=>!process.env.QA_POINT||process.env.QA_POINT===p)){
  await test(point,'single flight survives redraw and repeated submit',async t=>{
   const {page:p,s}=t;let release;const gate=new Promise(r=>release=r);s.gates.requests=payload=>payload.action==='check'?gate:undefined;
   try{await p.evaluate(()=>setRestockMotiFact('Смородина','exact',0));await p.locator('#restock-submit').click();await p.waitForFunction(()=>!!restockSubmitInFlight);

@@ -2,7 +2,7 @@
 
 Local branch: `fix/cashier-state-audit-20261016`. Baseline: `4f2294a8d76dc0eeb2cf4824ed0b0ba2889baaed`.
 
-**Do not merge, push or deploy without fresh owner approval.** The owner superseded the original deployment instruction with a full audit and a publication hold. No production receipts, wallet operations, device enrollment or restock requests may be created for QA.
+The initial audit was held locally. The owner subsequently authorized deployment of all three cashiers on 16 October, including immediate publication of the points during opening hours. Publish sequentially: Anikina, verify, Novogodnyaya, verify, Sovetskaya, verify. Never force a client reload or clear client data. No production receipts, wallet operations, device enrollment or restock requests may be created for QA.
 
 ## Findings and ownership
 
@@ -24,7 +24,7 @@ New local pending keys: `omoti_novogodnyaya_restock_submission_pending_v1` and `
 
 No backend/API contract, database, monetary formula, tariff, configured PIN, stylesheet, font, worker or notification changes. Protected receipt/correction coordinators and purchase/status/cancel functions are checked against the baseline. No automatic `skipWaiting`, cache cleanup or reload of an active cashier.
 
-All three HTML manifests must be published together with changed shared resources. There are 45 exact SRI entries. An old cached HTML can safely stop at an integrity/version error; its explicit safe retry must fetch the fresh HTML manifest. Never clear application storage to accelerate an update.
+Sequential rollout uses immutable copies under `releases/20261016-state-r3/`. The four original JS addresses remain byte-for-byte baseline compatible with older HTML and cashiers not yet switched. Each HTML is published in its own stage with the assets it selects; there are 45 exact SRI entries across all three. New release copies are exactly the audited fix bytes, with no added runtime changes. Tests follow actual manifest addresses rather than assuming original root filenames. Never clear application storage to accelerate an update.
 
 ## Checks
 
@@ -57,6 +57,6 @@ Evidence is outside the deployment tree in `../evidence/` and `../_local_artifac
 
 On 16 October the public HTML of all three cashiers matched baseline main and already contained C3.2. A separate remote `points-c32-ui` branch was not present; the older “not published” sentence in `_qa/points/README.md` describes a historical preparation stage. This audit used the exact available C3.2 source; no unavailable home-computer working files were assumed current.
 
-Before any future publication, re-fetch main and reconcile later work rather than replacing it with this snapshot. Require fresh approval, a whole compatible asset set, and public SHA verification. Do not restore a database or clear pending identities for rollback.
+Before publication, re-fetch main and reconcile later work rather than replacing it with this snapshot. Authorization is recorded above. Verify each published HTML and its exact assets, then run fixture-only browser acceptance against the public URL before proceeding. Roll back the affected HTML to its previous commit on a critical acceptance failure; original JS remains available. Do not restore a database or clear pending identities for rollback.
 
 Actual iPhone installed-PWA acceptance remains: keyboard/safe areas and touch reachability during bonus editing, long background suspension/OS process termination, real camera scanning, real device/network conditions and provider responses, and safe update of an already installed older shell. Synthetic Chromium lifecycle events are not a physical iPhone test. No real provider purchase was executed by this audit.

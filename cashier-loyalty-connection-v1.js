@@ -19,14 +19,8 @@
       status: Number(error.status) || null, attempt: attempt, durationMs: Date.now() - started
     });
   }
-  function cancelled(stage) {
-    return Object.assign(new Error('Поиск остановлен.'), {code:'CASHIER_READ_CANCELLED',stage:stage,retryable:false});
-  }
-  async function once(url, options, timeoutMs, stage, readSignal) {
-    if(readSignal?.aborted) throw cancelled(stage);
+  async function once(url, options, timeoutMs, stage) {
     const controller = new AbortController();
-    const abortRead=()=>controller.abort();
-    readSignal?.addEventListener('abort',abortRead,{once:true});
     const timer = setTimeout(function () { controller.abort(); }, timeoutMs);
     try {
       const res = await fetch(url, Object.assign({}, options, { signal: controller.signal }));
@@ -38,18 +32,17 @@
       }
       return { res: res, data: data };
     } catch (error) {
-      if (readSignal?.aborted) throw cancelled(stage);
       if (error.stage) throw error;
       if (controller.signal.aborted || error.name === 'AbortError') throw failure(stage, 'CASHIER_TIMEOUT');
       throw failure(stage, 'CASHIER_CONNECTION_ERROR');
-    } finally { clearTimeout(timer);readSignal?.removeEventListener('abort',abortRead); }
+    } finally { clearTimeout(timer); }
   }
   async function run(task, stage, attempts) {
     for (let attempt = 1; attempt <= attempts; attempt++) {
       const started = Date.now();
       try { return await task(); }
       catch (error) {
-        if(error.code!=='CASHIER_READ_CANCELLED') diagnostic(error, stage, attempt, started);
+        diagnostic(error, stage, attempt, started);
         // Authentication has its own retry. Do not multiply retries at an outer layer.
         if (!error.retryable || (error.stage && error.stage !== stage) || attempt === attempts) throw error;
         await new Promise(function (resolve) { setTimeout(resolve, 600); });
@@ -64,19 +57,14 @@
       return result;
     }, 'access', read ? 2 : 1);
   }
-  async function loyalty(url, action, payload, getToken, readOptions) {
+  async function loyalty(url, action, payload, getToken) {
     const read = action === 'card' || action === 'quote';
-    // Cancellation and the shorter deadline apply only to read-only requests.
-    // Checkout/status/cancel retain their original 30s deadline and one attempt.
-    const readSignal=read?readOptions?.signal:undefined;
     return run(async function () {
-      if(readSignal?.aborted) throw cancelled(action);
       const token = await getToken();
-      if(readSignal?.aborted) throw cancelled(action);
       const result = await once(url + action, {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
         body: JSON.stringify(payload)
-      }, read?12000:30000, action, readSignal);
+      }, 30000, action);
       const res = result.res, data = result.data;
       if (!res.ok || !data || !data.ok) {
         const code = data && data.code;

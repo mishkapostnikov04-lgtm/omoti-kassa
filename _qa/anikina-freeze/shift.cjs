@@ -8,7 +8,7 @@ async function idle(p,point){
 }
 (async()=>{const server=await H.server(),browser=await H.chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});
 async function test(point,name,fn){let t;try{t=await H.context(browser,server.url,point);await fn(t);assert.deepEqual(t.s.errors,[]);assert.deepEqual(t.s.leaks,[]);rows.push({point,name,status:'PASS'});console.log('PASS',point,name);}catch(e){console.error('FAIL',point,name,e.message.split('\n')[0]);rows.push({point,name,status:'FAIL',error:e.stack});if(t)await t.page.screenshot({path:path.join(out,point+'-'+name.replace(/[^a-z0-9]/gi,'-')+'.png')}).catch(()=>{});}finally{if(t)await t.ctx.close();fs.writeFileSync(path.join(out,'RESULT.json'),JSON.stringify({rows,productionBusinessCalls:0},null,2));}}
-try{for(const point of Object.keys(H.files)){
+try{for(const point of Object.keys(H.files).filter(p=>!process.env.QA_POINT||process.env.QA_POINT===p)){
  for(const delay of [0,80])await test(point,'continuous shift '+delay,async t=>{
   const {page:p,s}=t;s.delay=delay;
   await H.add(p);await H.pay(p,'Безналичный');await H.card(p);await H.ready(p);await H.close(p);await idle(p,point);

@@ -3,12 +3,17 @@ const H=require('../c31/harness.cjs');
 const catalog=H.assortment;
 const files={anikina:'omoti_anikina.html',novogodnyaya:'omoti_kassa.html',sovetskaya:'omoti_sovetskaya.html'};
 const labels={anikina:'Аникина',novogodnyaya:'Новогодняя',sovetskaya:'Советская'};
+async function server(){
+ if(!process.env.QA_PUBLIC_BASE)return H.server();
+ const url=new URL(process.env.QA_PUBLIC_BASE);if(url.protocol!=='https:'||url.hostname!=='mishkapostnikov04-lgtm.github.io'||url.pathname!=='/omoti-kassa/')throw Error('Unsupported public QA origin');
+ return {url:url.href.replace(/\/$/,''),s:{close(done){if(done)done();}}};
+}
 async function context(browser,base,point){
  const ctx=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true,locale:'ru-RU',timezoneId:'Asia/Novosibirsk',serviceWorkers:'block',reducedMotion:'reduce'});
  const s={point,calls:[],errors:[],leaks:[],checks:[],restocks:[],cards:[],gates:{},fail:{},delay:0,last:null,seq:100,unknown:false,newCard:false,stockQty:10,restockEvents:new Set()};
  function responseCheck(p){const items=p.items.map(x=>({...x,price:p.pay==='Брак'?0:catalog.find(i=>i.name===x.name)?.prices[p.pay?.startsWith('Себе')?'self':p.pay==='Яндекс'?'yandex':'normal']||180}));return {...p,receiptNumber:String(++s.seq),revision:1,point:labels[point],date:'16.10.2026',time:'15:00',items,total:p.expectedTotalMinor!=null?(p.expectedTotalMinor-(p.redeemMinor||0))/100:items.reduce((a,x)=>a+x.price*x.qty,0)};}
  await ctx.route('**/*',async r=>{
-  const req=r.request(),u=new URL(req.url());if(u.origin===base)return r.continue();
+  const req=r.request(),u=new URL(req.url());if(u.origin===new URL(base).origin){if(req.method()!=='GET')throw Error('Static QA requests must be read only');return r.continue();}
   if(u.hostname!=='orders.omoti.ru'){s.leaks.push(u.hostname);return r.abort();}
   const p=req.postData()?JSON.parse(req.postData()):{},action=u.pathname.split('/').at(-1),stockQty=s.stockQty;s.calls.push({path:u.pathname,action,method:req.method(),body:p});
   if(s.gates[action])await (typeof s.gates[action]==='function'?s.gates[action](p):s.gates[action]);if(s.delay)await new Promise(resolve=>setTimeout(resolve,s.delay));
@@ -67,4 +72,4 @@ async function card(p,number='1234567'){
 }
 async function ready(p){await p.waitForFunction(()=>!document.getElementById('close-btn').disabled);}
 async function close(p){await dismiss(p);await ready(p);await p.locator('#close-btn').click();await p.waitForFunction(()=>!Object.values(cart).some(q=>q>0)&&!AnikinaLoyalty.isPending());await p.waitForTimeout(300);}
-module.exports={...H,files,labels,context,seller,add,pay,card,ready,close,dismiss};
+module.exports={...H,files,labels,server,context,seller,add,pay,card,ready,close,dismiss};

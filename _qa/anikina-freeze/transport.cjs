@@ -4,7 +4,7 @@ function fixture(){
  let time=0,id=0,calls=0;const timers=new Map();
  const w={console:{warn(){}}};
  const ctx={window:w,AbortController,Error,Object,JSON,Promise,Date:{now:()=>time},setTimeout(fn,ms){timers.set(++id,{at:time+ms,fn});return id;},clearTimeout(k){timers.delete(k);},fetch(url,opts){calls++;return new Promise((resolve,reject)=>opts.signal.addEventListener('abort',()=>reject(Object.assign(Error('aborted'),{name:'AbortError'})),{once:true}));}};
- vm.runInNewContext(fs.readFileSync(path.resolve(__dirname,'../../cashier-loyalty-connection-v1.js'),'utf8'),ctx);
+ vm.runInNewContext(fs.readFileSync(path.resolve(__dirname,'../..',require('./resources.cjs').resource('omoti_anikina.html','cashier-loyalty-connection-v1.js')),'utf8'),ctx);
  const flush=async()=>{for(let i=0;i<30;i++)await Promise.resolve();};
  return {api:w.CashierConnection,get calls(){return calls;},get timers(){return timers.size;},flush,async tick(ms){time+=ms;for(const[k,t]of [...timers])if(t.at<=time){timers.delete(k);t.fn();}await flush();}};
 }

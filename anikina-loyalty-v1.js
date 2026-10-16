@@ -294,8 +294,6 @@
   function isPending() { return !!state.pending || state.storageBlocked; }
   function message(text) { $('loyalty-status').textContent = text; $('loyalty-status').hidden = !text; }
   function invalidate() {
-    state.lookupController?.abort();state.lookupController=null;
-    state.quoteController?.abort();state.quoteController=null;
     state.revision++; clearTimeout(state.quoteTimer); state.quoteTimer=null;
     state.calculation=null; state.quoteKey=''; state.waitingKey=''; state.failedKey=''; state.quoteError='';
   }
@@ -307,13 +305,11 @@
   }
   function inputKey(input) { return JSON.stringify([input, Math.round(hooks.total()*100)]); }
   function requestQuote(input,key) {
-    state.quoteController?.abort();state.quoteController=null;
     state.waitingKey=key; const revision=++state.revision;
     clearTimeout(state.quoteTimer);
     state.quoteTimer=setTimeout(async () => {
       try {
-        const controller=new AbortController();state.quoteController=controller;
-        const result=await hooks.request('quote',input,{signal:controller.signal});
+        const result=await hooks.request('quote',input);
         if (revision!==state.revision || key!==inputKey(quoteInput())) return;
         state.calculation=result; state.balance=result.balanceMinor; state.quoteKey=key; state.quoteError='';
         state.priceBasis={key:priceBasisKey(),totalMinor:result.totalMinor,maximumMinor:result.maximumMinor};
@@ -321,7 +317,7 @@
         if (revision!==state.revision) return;
         state.failedKey=key; state.quoteError=error.message || 'Не удалось рассчитать бонусы.';
       } finally {
-        if (revision===state.revision) { state.quoteController=null;state.waitingKey=''; hooks.refresh(); }
+        if (revision===state.revision) { state.waitingKey=''; hooks.refresh(); }
       }
     },250);
   }
@@ -409,8 +405,7 @@
     state.card=''; state.cardHolderName=''; state.balance=null; state.lookup=true; state.lookupFailed=false; state.maximumSelected=false; state.priceBasis=null; state.registrationUnconfirmed=false; $('loyalty-card').value=value; $('loyalty-amount').value='0';
     message(fromScan ? 'Считан номер '+value+'. Проверяем карту…' : 'Проверяем карту…'); hooks.refresh();
     try {
-      const controller=new AbortController();state.lookupController=controller;
-      const result=await hooks.request('card',{cardCode:value},{signal:controller.signal});
+      const result=await hooks.request('card',{cardCode:value});
       if(revision!==state.revision) return false;
       state.card=value; state.balance=result.balanceMinor;
       state.registrationUnconfirmed=result.registrationUnconfirmed===true;
@@ -428,13 +423,7 @@
           : error.message || 'Не удалось проверить карту. Повторите или уберите карту.');
       }
       return false;
-    } finally { if(revision===state.revision) {state.lookupController=null;state.lookup=false; hooks.refresh();} }
-  }
-  function cancelLookup() {
-    if(!state.lookup||isPending()||state.sending)return false;
-    invalidate();state.lookup=false;state.lookupFailed=true;
-    message('Поиск остановлен. Нажмите «Повторить поиск» или уберите карту.');
-    hooks.refresh();return true;
+    } finally { if(revision===state.revision) {state.lookup=false; hooks.refresh();} }
   }
   function pendingMessage(text,canCancel=false) {
     $('loyalty-pending').hidden=false; $('loyalty-pending-message').textContent=text;
@@ -725,5 +714,5 @@
     update();
     if(state.pending) acknowledgeSavedStatus();
   }
-  window.AnikinaLoyalty = Object.freeze({ init, update, clear, cancelLookup, stopCamera, isActive, isPending, submit, cardNumber, cents, quote, decodeFrame, loadDecoder });
+  window.AnikinaLoyalty = Object.freeze({ init, update, clear, stopCamera, isActive, isPending, submit, cardNumber, cents, quote, decodeFrame, loadDecoder });
 })();
