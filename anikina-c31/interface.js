@@ -109,10 +109,18 @@
  document.addEventListener('click',e=>{if(stepName&&!e.target.closest('.k-tile--edit')){e.preventDefault();e.stopImmediatePropagation();stepName='';renderFlavors();}hideHint();},true);
  resetForm=function(){const pending=window.AnikinaLoyalty?.isPending()||window.CashierLoyaltyCorrections?.isPending();originals.resetForm();if(!pending){undo=[];stepName='';openSheet('');}sync();};
  setSeller=function(el,name){originals.setSeller(el,name);openSheet('');sync();};
- setPay=function(el,type){originals.setPay(el,type);if(type==='Смешанная'&&opened!=='mixed')openSheet('mixed');else if(type!=='Смешанная'&&opened==='more')openSheet('');sync();};
+ setPay=function(el,type){
+  // Explicitly leave a read-only card flow when choosing a service operation.
+  // clear() invalidates its revision: a late reply cannot replace this choice.
+  if(!['Безналичный','Наличный','Перевод','Смешанная'].includes(type)&&window.AnikinaLoyalty?.isActive()){
+   if(uiSaveBarrier||closeCheckInFlight||AnikinaLoyalty.isPending()||window.CashierLoyaltyCorrections?.isPending()||!AnikinaLoyalty.clear())return;
+  }
+  originals.setPay(el,type);if(type==='Смешанная'&&opened!=='mixed')openSheet('mixed');else if(type!=='Смешанная'&&opened==='more')openSheet('');sync();
+ };
  showModal=function(){openSheet('');originals.showModal();};
  switchTab=function(next){if(document.querySelector('[data-loyalty-locked],[data-correction-locked]')||closeCheckInFlight||uiSaveBarrier)return;openSheet('');tab=next;detail='';if(typeof detailWrap!=='undefined'){detailWrap.hidden=true;listWrap.hidden=false;header.hidden=false;searchBox.hidden=true;}originals.switchTab(next);$('screen-'+next).append(dock);sync();};
- function restoreSavingControls(){if(closeCheckInFlight||uiSaveBarrier)return;kassa.querySelectorAll('[data-c31-saving]').forEach(el=>{el.disabled=el.dataset.c31Saving==='true';delete el.dataset.c31Saving;});}
+ // Presentation owns inert only; native bonus owners retain disabled.
+ function restoreSavingControls(){if(closeCheckInFlight||uiSaveBarrier)return;kassa.querySelectorAll('[data-c31-saving-inert]').forEach(el=>{el.inert=el.dataset.c31SavingInert==='true';delete el.dataset.c31SavingInert;});}
  updateCart=function(){restoreSavingControls();originals.updateCart();grossText=$('total-sum').textContent;sync();};
  let saveAttempt=null,successView=null,successUntil=0,successTimer,lastToast={serial:0,text:''};const showToastBase=showToast;showToast=function(text){lastToast={serial:lastToast.serial+1,text:String(text)};return showToastBase(text);};
  closeCheck=function(){if(!window.AnikinaBoot.canOperate()||uiSaveBarrier)return;const attempt={names:Object.keys(cart).filter(n=>cart[n]>0),brak:payType==='Брак',toastSerial:lastToast.serial,view:{qty:$('c31-cart').querySelector('.k-cnt').textContent,sum:$('total-sum').textContent,cardHTML:$('c31-card').innerHTML,cardHidden:$('c31-card').hidden,selfHidden:self.hidden,debtHidden:debtNote.hidden,debtHTML:debtNote.innerHTML}};saveAttempt=attempt;const operation=originals.closeCheck();uiSaveBarrier=true;sync();return Promise.resolve(operation).finally(()=>{uiSaveBarrier=false;const confirmed=lastToast.serial>attempt.toastSerial&&/^(Чек №.+ (сохранён|обновлён)|Чек закрыт\. Бонусы подтверждены\.)$/.test(lastToast.text)&&!Object.values(cart).some(n=>n>0)&&!window.AnikinaLoyalty?.isPending()&&!window.CashierLoyaltyCorrections?.isPending();saveAttempt=null;if(confirmed){successView=attempt.view;successUntil=performance.now()+260;close.textContent='Готово';close.hidden=false;clearTimeout(successTimer);successTimer=setTimeout(()=>{successUntil=0;sync();},270);}updateCart();if(confirmed){KMotion.flash(close);KMotion.tilesOut([...grid.querySelectorAll('.k-tile')].filter(t=>attempt.names.includes(t.dataset.name)),{brak:attempt.brak});}});};
@@ -162,7 +170,7 @@
    if((saveAttempt&&empty)||(successUntil>performance.now()&&empty)){close.hidden=false;if(successUntil>performance.now()){if(close.textContent!=='Готово')close.textContent='Готово';close.classList.remove('k-close--wait');}}
    if(!empty){if(previousSum!==$('total-sum').textContent)KMotion.tick($('c31-sum'));if(previousQuantity!==qty)KMotion.bump($('c31-cart').querySelector('.k-cnt'));}previousSum=$('total-sum').textContent;previousQuantity=qty;previousEmpty=empty;
    decorateSellers();decorateLoyalty();const pushFallback=$('c31-push-fallback'),promoFallback=$('c31-promo-fallback');if(pushFallback)pushFallback.hidden=Boolean($('cashier-push-setup').textContent);if(promoFallback){promoFallback.hidden=Boolean($('promotion-status').textContent);promoFallback.textContent=promotionConfig?'Сейчас нет':'Информация об акции пока не обновлена';}
-   kassa.querySelectorAll('button,input,textarea').forEach(el=>{if(el.closest('#loyalty-pending,#loyalty-correction-pending,#c31-confirm-sheet'))return;if(closeCheckInFlight||uiSaveBarrier){if(!el.hasAttribute('data-c31-saving'))el.dataset.c31Saving=String(el.disabled);if(!el.disabled)el.disabled=true;}});
+   kassa.querySelectorAll('button,input,textarea').forEach(el=>{if(el.closest('#loyalty-pending,#loyalty-correction-pending,#c31-confirm-sheet'))return;if(closeCheckInFlight||uiSaveBarrier){if(!el.hasAttribute('data-c31-saving-inert'))el.dataset.c31SavingInert=String(el.inert);if(!el.inert)el.inert=true;}});
  }
  // Journal: local-only search; identity/actions remain the original receipt handlers.
  const journal=$('screen-journal');journal.querySelector('.sec-label').hidden=true;const header=node('div','k-head',`<div><h2>Журнал</h2><small>Последние 100 чеков</small></div><div class="c31-head-actions"><button class="k-chip k-chip--icon" id="c31-search-open" aria-label="Поиск">${icon('search')}</button></div>`);header.querySelector('.c31-head-actions').append($('journal-refresh'));journal.prepend(header);
