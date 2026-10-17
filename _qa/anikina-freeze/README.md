@@ -1,5 +1,17 @@
 # Cashier state audit — 16 October 2026
 
+## 17 October follow-up: preserve newer restock input
+
+`restock-draft.cjs` adds ten groups per point for acknowledgement ownership: a
+lost-reply retry must keep its exact original payload while retaining any active
+new exact-quantity draft, including zero, empty/invalid input, leading zeroes and
+the upper bound. It also covers reload followed by a separate new submission,
+qualitative 6+, a newer committed value, other flavors/supplies and another lost
+reply. It uses `shift-harness.cjs`, supports `QA_PUBLIC_BASE`/`QA_OUTPUT`, and never
+falls back to production business APIs. Run `node _qa/anikina-freeze/restock-draft.cjs`.
+Only matching acknowledged committed facts and their inactive matching saved
+drafts may be cleared; an open editor owns its draft until explicit Done.
+
 Local branch: `fix/cashier-state-audit-20261016`. Baseline: `4f2294a8d76dc0eeb2cf4824ed0b0ba2889baaed`.
 
 The initial audit was held locally. The owner subsequently authorized deployment of all three cashiers on 16 October, including immediate publication of the points during opening hours. Publish sequentially: Anikina, verify, Novogodnyaya, verify, Sovetskaya, verify. Never force a client reload or clear client data. No production receipts, wallet operations, device enrollment or restock requests may be created for QA.

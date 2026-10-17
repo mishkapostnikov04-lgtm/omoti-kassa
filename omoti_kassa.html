@@ -475,7 +475,12 @@ function clearAcknowledgedRestockItems(payload){
   for(const item of payload.items){
     if(item.itemType==='moti'){
       const name=Object.keys(restockMotiFacts).find(n=>n===item.label||n===item.legacyFlavorName),fact=restockMotiFacts[name];
-      if(fact&&fact.mode===item.mode&&Number(fact.qty)===Number(item.qty)){delete restockMotiFacts[name];delete restockExactDrafts[name];}
+      if(fact&&fact.mode===item.mode&&Number(fact.qty)===Number(item.qty)){
+        delete restockMotiFacts[name];
+        // An acknowledgement owns the sent fact, not an active or newer editor draft.
+        const draft=restockExactDrafts[name];
+        if(restockExactEditorFlavor!==name&&item.mode==='exact'&&String(draft??'').trim()===String(Number(item.qty)))delete restockExactDrafts[name];
+      }
     }else for(const el of document.querySelectorAll('#restock-supplies .restock-option'))if(el.dataset.restockValue===item.supplyItemId)el.classList.remove('active');
   }
   renderRestockOptions();
