@@ -54,7 +54,8 @@ try{for(const point of Object.keys(H.files).filter(p=>!process.env.QA_POINT||pro
  });
  await test(point,'explicit continue without card clears a restored candidate safely',async t=>{
   const {page:p,s}=t;await H.add(p);await H.pay(p,'Безналичный');await H.card(p);await H.ready(p);await H.dismiss(p);await p.reload();await p.waitForFunction(()=>(window.AnikinaBoot||PointsBoot).state==='ready'&&promotionConfig);
-  await p.locator('#close-btn').click();assert.equal(await p.evaluate(()=>C31UI.state.opened),'card');await p.locator('#loyalty-manual-toggle').click();await p.locator('#loyalty-card').fill('7654321');await H.dismiss(p);
+  // The recovered card is now revalidated automatically. Edit its candidate explicitly.
+  await p.locator('#c31-card').click();await p.waitForFunction(()=>document.getElementById('loyalty-panel').classList.contains('is-selected'));await p.locator('#loyalty-clear').click();await p.locator('#loyalty-manual-toggle').click();await p.locator('#loyalty-card').fill('7654321');await H.dismiss(p);
   await p.locator('#cashier-draft-notice').getByRole('button',{name:'Продолжить без карты',exact:true}).click();assert.equal(await p.evaluate(()=>AnikinaLoyalty.isActive()),false);await H.close(p);await idle(p,point);
   assert.equal(s.calls.filter(c=>c.action==='checkout').length,0);assert.equal(s.calls.filter(c=>c.action==='save_check').length,1);
  });

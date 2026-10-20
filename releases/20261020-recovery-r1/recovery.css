@@ -1,0 +1,7 @@
+/* Modal interaction and draft actions only; point layouts and financial states unchanged. */
+.c31-active .k-scrim{z-index:7}
+.c31-active #c31-card-sheet>.k-done{display:block;flex:none;margin-top:8px}
+.c31-active #c31-card-sheet .loyalty-heading>.k-x{display:flex}
+.c31-active .c31-discard{flex:none;margin-top:8px}
+.c31-active .c31-read-error p{margin:0 0 8px;overflow-wrap:anywhere}
+.c31-active .c31-read-error[hidden],.c31-active .c31-discard[hidden]{display:none!important}
