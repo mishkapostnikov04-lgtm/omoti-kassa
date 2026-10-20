@@ -11,7 +11,7 @@ html:not([data-cashier-boot="ready"]) .app{visibility:hidden!important;opacity:0
 <script id="points-boot-controller">/* Points startup supervisor (adapted from reviewed Anikina R2). No pricing, API transport, queue or bonus ownership. */
 (() => {
  'use strict';
- const BUILD='points-boot-20261015-r1',RELEASE='points-recovery-20261020-r1',KEY='omoti_sovetskaya_boot_draft_v1',DIAG='omoti_sovetskaya_boot_diag_v1';
+ const BUILD='points-boot-20261015-r1',RELEASE='points-scanner-20261020-r1',KEY='omoti_sovetskaya_boot_draft_v1',DIAG='omoti_sovetskaya_boot_diag_v1';
  const root=document.documentElement;let state='loading',ui=false,native=false,attached=false,restored=false,wasReady=false,needsCard=false,lastIssue=null,saving=false,retained=null;
  let activeOperations=0;const records=[],$=id=>document.getElementById(id),app=()=>document.querySelector('.app');
  function path(value){try{const u=new URL(value,location.href);return u.pathname+(u.searchParams.has('v')?'?v='+u.searchParams.get('v'):'');}catch(_){return 'inline';}}
@@ -353,7 +353,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 </dialog>
 <script src="./cashier-registration-qr-v1.js?v=20261004" data-boot-resource="cashier-registration-qr-v1.js" integrity="sha384-DF9Nz5WDKrofbAyql6ER8H74c+yHtN1K5LmQ2Z3mnXQ12zfNPC/giYOCidQCgmnm" crossorigin="anonymous" onload="PointsBoot.resourceReady(this)" onerror="PointsBoot.resourceFailed(this)"></script>
 <script src="./releases/20261016-state-r3/cashier-loyalty-connection-v1.js?v=20261006&amp;fix=20261016-state-r2" data-boot-resource="cashier-loyalty-connection-v1.js" integrity="sha384-qsHk5iD2XmMX1yrAAm5QDO7mAWOQzTQVhVqKmnUjh/64CesgPRQViDESdonTjsWX" crossorigin="anonymous" onload="PointsBoot.resourceReady(this)" onerror="PointsBoot.resourceFailed(this)"></script>
-<script src="./releases/20261020-recovery-r1/anikina-loyalty-v1.js?v=20261009-history-fix&amp;fix=20261016-state-r2" data-boot-resource="anikina-loyalty-v1.js" integrity="sha384-16bQG/1XHdMQ2wHM+R8LwJeC9HIBAfWDn/jsAz4KggvFpZzd18+VrwcGS0PoOmTq" crossorigin="anonymous" onload="PointsBoot.resourceReady(this)" onerror="PointsBoot.resourceFailed(this)"></script>
+<script src="./releases/20261020-scanner-r1/anikina-loyalty-v1.js?v=20261009-history-fix&amp;fix=20261016-state-r2" data-boot-resource="anikina-loyalty-v1.js" integrity="sha384-v4RymLiSK9noRz4hnV53Cmk6W5yGotO4vhIDcEM9RDUwxipJ4RrrMxM8ocAxqqel" crossorigin="anonymous" onload="PointsBoot.resourceReady(this)" onerror="PointsBoot.resourceFailed(this)"></script>
 <script>
 /* Preserve ordinary sales if the separately cached bonus module fails to load.
  * Missing bonus code must never route a bonus correction into the offline queue. */
