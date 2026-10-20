@@ -12,6 +12,7 @@ function drawFixture(spec){
 (async()=>{const server=await H.server(),browser=await pw[engine].launch(engine==='chromium'?{executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'}:{}),rows=[];
 try{for(const point of Object.keys(H.files).filter(p=>!process.env.QA_POINT||p===process.env.QA_POINT)){
  const t=await H.context(browser,server.url,point),p=t.page;try{
+  if(process.env.QA_PUBLIC_BASE)assert.match(await p.evaluate(()=>(window.AnikinaBoot||window.PointsBoot).build),/scanner-20261020-r1/);
   await p.evaluate(()=>AnikinaLoyalty.loadDecoder());await p.evaluate('window.drawScannerFixture='+drawFixture.toString());
   const result=await p.evaluate(()=>{
    const modes=[[false,true,0],[true,true,0],[false,false,0],[true,false,0],[false,true,-12],[true,true,-12],[false,true,12],[true,true,12],[false,true,-24],[true,true,-24],[false,true,24],[true,true,24]],cases=[];
