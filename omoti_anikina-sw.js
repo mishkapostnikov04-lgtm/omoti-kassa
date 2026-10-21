@@ -36,9 +36,9 @@ self.addEventListener('fetch',event=>{
   return response;
  }catch(_){return startupUnavailable();}})());
 });
-// Optional feedback r1. Isolated from HTML, prices, operations and all existing caches.
-const feedbackCache='omoti-anikina-feedback-20261021-r1';
-const feedbackAssets=["kassa-feedback/feedback.js", "kassa-feedback/sounds/01-sale-done.mp3", "kassa-feedback/sounds/02-saved-offline.mp3", "kassa-feedback/sounds/03-queue-sent.mp3", "kassa-feedback/sounds/04-service-saved.mp3", "kassa-feedback/sounds/05-card-found.mp3", "kassa-feedback/sounds/06-need-input.mp3", "kassa-feedback/sounds/07-error.mp3", "kassa-feedback/sounds/08-restock-sent.mp3", "kassa-feedback/sounds/09-notice.mp3"];
-const feedbackURLs=new Set(feedbackAssets.map(file=>new URL('./'+file+'?v=20261021-r1',self.location.href).href));
+// Optional feedback r2. Isolated from HTML, prices, operations and all existing caches.
+const feedbackCache='omoti-anikina-feedback-20261021-r2';
+const feedbackAssets=["kassa-feedback/v2/feedback.js", "kassa-feedback/sounds/01-sale-done.mp3", "kassa-feedback/sounds/02-saved-offline.mp3", "kassa-feedback/sounds/03-queue-sent.mp3", "kassa-feedback/sounds/04-service-saved.mp3", "kassa-feedback/sounds/05-card-found.mp3", "kassa-feedback/sounds/06-need-input.mp3", "kassa-feedback/sounds/07-error.mp3", "kassa-feedback/sounds/08-restock-sent.mp3", "kassa-feedback/sounds/09-notice.mp3"];
+const feedbackURLs=new Set(feedbackAssets.map(file=>new URL('./'+file+'?v='+(file.endsWith('/feedback.js')?'20261021-r2':'20261021-r1'),self.location.href).href));
 self.addEventListener('install',event=>event.waitUntil((async()=>{try{const cache=await caches.open(feedbackCache);await Promise.all([...feedbackURLs].map(async url=>{try{const response=await fetch(url,{cache:'reload'});if(response.ok)await cache.put(url,response);}catch(_){}}));}catch(_){}})()));
 self.addEventListener('fetch',event=>{if(event.request.method!=='GET'||!feedbackURLs.has(event.request.url))return;event.respondWith((async()=>{try{const cache=await caches.open(feedbackCache),hit=await cache.match(event.request);if(hit)return hit;const response=await fetch(event.request);if(response.ok)await cache.put(event.request,response.clone());return response;}catch(_){return new Response('',{status:503});}})());});
