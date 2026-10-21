@@ -67,12 +67,10 @@ try{for(const point of Object.keys(H.files).filter(p=>!process.env.QA_POINT||pro
  });
  await test(point,'bonus correction cancel and confirm leave next check usable',async t=>{
   const {page:p,s}=t;await H.add(p);await H.pay(p,'Безналичный');await H.card(p);await H.ready(p);await H.close(p);const receipt=s.checks[0];
-  await p.locator('.k-nav button').nth(1).click();await p.locator('[data-check="'+receipt.num+'"]').click();await p.locator('#c31-edit').click();await p.locator('[data-name="Смородина"] .k-tile__hit').click();await H.ready(p);
-  if(point==='anikina'){await p.locator('#close-btn').click();await p.locator('.c31-confirm-actions button').nth(0).click();await p.waitForFunction(()=>!C31UI.state.busy);}
-  else{p.once('dialog',d=>d.dismiss());await p.locator('#close-btn').click();await p.waitForFunction(()=>!C31UI.state.busy);}
+  await p.locator('.k-nav button').nth(1).click();await p.locator('[data-check="'+receipt.num+'"]').click();await p.locator('#c31-edit').click();await p.getByRole('button',{name:'Изменить состав и оплату',exact:true}).click();await p.locator('[data-name="Смородина"] .k-tile__hit').click();await H.ready(p);
+  await p.locator('#close-btn').click();await p.locator('.c31-confirm-actions button').nth(0).click();await p.waitForFunction(()=>!C31UI.state.busy);
   assert.equal(s.calls.filter(c=>c.action==='checkout').length,1);
-  if(point==='anikina'){await p.locator('#close-btn').click();await p.locator('.c31-confirm-actions button').nth(1).click();}
-  else{p.once('dialog',d=>d.accept());await p.locator('#close-btn').click();}
+  await p.locator('#close-btn').click();await p.locator('.c31-confirm-actions button').nth(1).click();
   await p.waitForFunction(()=>!CashierLoyaltyCorrections.isPending()&&!Object.values(cart).some(q=>q>0));await p.waitForTimeout(300);await idle(p,point);
   assert.equal(s.calls.filter(c=>c.action==='checkout').length,2);assert.equal(s.checks.length,1);
   await H.add(p);await H.pay(p,'Брак');await H.close(p);await idle(p,point);

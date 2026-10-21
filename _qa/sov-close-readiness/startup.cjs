@@ -1,13 +1,13 @@
 const POINT=process.env.QA_POINT||'sovetskaya';
 const fs=require('fs'),path=require('path'),assert=require('assert/strict');
 const H=require(path.resolve(__dirname,'../anikina-freeze/shift-harness.cjs'));
-const out=path.join(__dirname,'../../../_local_artifacts/sovetskaya-close-block-20261021/local');
+const out=process.env.QA_OUT||path.join(__dirname,'../../../_local_artifacts/sovetskaya-close-block-20261021/local');
 (async()=>{fs.mkdirSync(out,{recursive:true});const local=await H.server(),browser=await H.chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'}),results=[];
 try{
- for(const asset of ['loyalty.js',POINT==='anikina'?'anikina-interface.js':'points-interface.js','editor.js','editor.css']){
+ for(const asset of ['loyalty.js',POINT==='anikina'?'anikina-interface.js':'points-interface.js','editor.js','editor.css','connection.js']){
   const t=await H.context(browser,local.url,POINT),p=t.page;try{
    await p.evaluate(()=>localStorage.setItem('fixture-preserve','unchanged'));
-   const release=['loyalty.js','points-interface.js'].includes(asset)?'20261021-sov-card-readiness-r1':'20261021-card-edit-camera-r1';const pattern='**/releases/'+release+'/'+asset+'?*';await t.ctx.route(pattern,r=>r.abort());await p.reload();await p.waitForFunction(()=>(window.PointsBoot||window.AnikinaBoot).state==='error');assert.equal(await p.evaluate(()=>document.querySelector('.app').inert),true);assert.equal(await p.evaluate(()=>(window.PointsBoot||window.AnikinaBoot).canOperate()),false);assert.ok(await p.evaluate(asset=>(window.PointsBoot||window.AnikinaBoot).diagnostics.some(x=>x.resource.includes(asset)),asset));assert.equal(await p.evaluate(()=>localStorage.getItem('fixture-preserve')),'unchanged');await t.ctx.unroute(pattern);await p.reload();await p.waitForFunction(()=>(window.PointsBoot||window.AnikinaBoot).state==='ready');results.push({label:'abort/recover '+asset,status:'PASS'});
+   const pattern=await p.evaluate(asset=>[...document.querySelectorAll('[data-boot-resource]')].map(e=>e.src||e.href).find(url=>new URL(url).pathname.endsWith('/'+asset)),asset);assert.ok(pattern,asset+' must be a boot resource');await t.ctx.route(pattern,r=>r.abort());await p.reload();await p.waitForFunction(()=>(window.PointsBoot||window.AnikinaBoot).state==='error');assert.equal(await p.evaluate(()=>document.querySelector('.app').inert),true);assert.equal(await p.evaluate(()=>(window.PointsBoot||window.AnikinaBoot).canOperate()),false);assert.ok(await p.evaluate(asset=>(window.PointsBoot||window.AnikinaBoot).diagnostics.some(x=>x.resource.includes(asset)),asset));assert.equal(await p.evaluate(()=>localStorage.getItem('fixture-preserve')),'unchanged');await t.ctx.unroute(pattern);await p.reload();await p.waitForFunction(()=>(window.PointsBoot||window.AnikinaBoot).state==='ready');results.push({label:'abort/recover '+asset,status:'PASS'});
   }finally{await t.ctx.close();}
  }
  const t=await H.context(browser,local.url,POINT),p=t.page;
