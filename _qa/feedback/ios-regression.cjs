@@ -1,5 +1,5 @@
 const H=require('../anikina-freeze/shift-harness.cjs'),assert=require('assert/strict'),fs=require('fs'),path=require('path');
-const out=path.resolve(__dirname,'../../../_local_artifacts/kassa-feedback-20261021/iphone-fix',process.env.QA_PUBLIC_BASE?'public':'local');fs.mkdirSync(out,{recursive:true});
+const out=process.env.QA_OUT||path.resolve(__dirname,'../../../_local_artifacts/kassa-feedback-20261021/iphone-fix',process.env.QA_PUBLIC_BASE?'public':'local');fs.mkdirSync(out,{recursive:true});
 (async()=>{const server=await H.server(),browser=await H.chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'}),rows=[];async function check(name,fn){const t=await H.context(browser,server.url,'anikina');try{await t.ctx.addInitScript(()=>{
  Object.defineProperty(navigator,'userAgent',{configurable:true,value:'iPhone Safari'});Object.defineProperty(navigator,'vibrate',{configurable:true,value:undefined});
  window.iosProbe={audio:0,unlock:0};const make=AudioContext.prototype.createBufferSource;AudioContext.prototype.createBufferSource=function(){const s=make.call(this),start=s.start;s.start=function(...a){if(s.buffer?.length===1)iosProbe.unlock++;else iosProbe.audio++;return start.apply(this,a)};return s;};

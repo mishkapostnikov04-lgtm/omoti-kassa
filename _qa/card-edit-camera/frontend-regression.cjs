@@ -1,7 +1,7 @@
 const POINT=process.env.QA_POINT||'sovetskaya';
 const fs=require('fs'),path=require('path'),assert=require('assert/strict');
 const H=require(path.resolve(__dirname,'../anikina-freeze/shift-harness.cjs'));
-const out=path.join(__dirname,'../../../_local_artifacts/cashier-card-edit-rollout-20261021',process.env.QA_PUBLIC_BASE?'public-ui/'+POINT:'local-ui/'+POINT);
+const out=process.env.QA_OUT||path.join(__dirname,'../../../_local_artifacts/cashier-card-edit-rollout-20261021',process.env.QA_PUBLIC_BASE?'public-ui/'+POINT:'local-ui/'+POINT);
 const check={num:'fixture9001',receiptNumber:'9001',date:'20.10.2026',time:'18:21',seller:'Евгений',pay:'Безналичный',sum:740,earn:120,revision:0,saleKey:'fixture-sale-9001',items:[{name:'Смородина',qty:3,price:180,sum:540},{name:'Криспи',qty:1,price:200,sum:200}],loyalty:{cardCode:'1111111',cardSuffix:'1111',earnMinor:3700,redeemMinor:0,revision:0}};
 (async()=>{fs.mkdirSync(out,{recursive:true});const local=await H.server(),browser=await H.chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'}),results=[];
 async function test(label,fn){const t=await H.context(browser,local.url,POINT);try{await fn(t);assert.deepEqual(t.s.errors,[]);assert.deepEqual(t.s.leaks.filter(x=>!x.endsWith('.kaspersky-labs.com')),[]);results.push({label,status:'PASS'});console.log('PASS',label);}catch(e){console.log(label,await t.page.evaluate(()=>({editNum,checks:allChecks.length,view:CashierLoyaltyCorrections.view(),draft:localStorage.getItem('omoti_'+CASHIER_ACCESS_POINT+'_loyalty_correction_pending_v1_draft')})));await t.page.screenshot({path:path.join(out,'regression-failure.png')});throw e;}finally{await t.ctx.close();}}

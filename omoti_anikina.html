@@ -272,8 +272,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
   <button type="button" id="registration-qr-return" class="registration-qr-return">Вернуться к продаже</button>
 </dialog>
 <script src="./cashier-registration-qr-v1.js?v=anikina-boot-20261015-r1" data-boot-resource="cashier-registration-qr-v1.js" integrity="sha384-DF9Nz5WDKrofbAyql6ER8H74c+yHtN1K5LmQ2Z3mnXQ12zfNPC/giYOCidQCgmnm" crossorigin="anonymous" onload="AnikinaBoot.resourceReady(this)" onerror="AnikinaBoot.resourceFailed(this)"></script>
-<script src="./releases/20261016-state-r3/cashier-loyalty-connection-v1.js?v=anikina-boot-20261015-r1&amp;fix=20261016-state-r2" data-boot-resource="cashier-loyalty-connection-v1.js" integrity="sha384-qsHk5iD2XmMX1yrAAm5QDO7mAWOQzTQVhVqKmnUjh/64CesgPRQViDESdonTjsWX" crossorigin="anonymous" onload="AnikinaBoot.resourceReady(this)" onerror="AnikinaBoot.resourceFailed(this)"></script>
-<script src="./releases/20261021-card-edit-camera-r1/loyalty.js?v=20261021-r1" data-boot-resource="anikina-loyalty-v1.js" integrity="sha384-1cEnJABg7yU6XkBd1B/wVmcBaufOXOIe8Vs70z94yKo0N5VTckR/qDhndf6OYOEX" crossorigin="anonymous" onload="AnikinaBoot.resourceReady(this)" onerror="AnikinaBoot.resourceFailed(this)"></script>
+<script data-cashier-point="anikina" src="./releases/20261021-cashier-readiness-r1/connection.js?v=20261021-readiness-r1" data-boot-resource="cashier-loyalty-connection-v1.js" integrity="sha384-8AE4V85s3QZnXPUQj9ty7XI18Hh75NeQ5gPonOlIeVZyN+GC9YsY+5Q/JrENCCjK" crossorigin="anonymous" onload="AnikinaBoot.resourceReady(this)" onerror="AnikinaBoot.resourceFailed(this)"></script>
+<script src="./releases/20261021-cashier-readiness-r1/loyalty.js?v=20261021-readiness-r1" data-boot-resource="anikina-loyalty-v1.js" integrity="sha384-eMsoLvcSqETI0F/q/1c2htmUynCemlBLI8DDF38PX6Ei8oeratC+jD8gr6gfGLNy" crossorigin="anonymous" onload="AnikinaBoot.resourceReady(this)" onerror="AnikinaBoot.resourceFailed(this)"></script>
 <script>
 /* Preserve ordinary sales if the separately cached bonus module fails to load.
  * Missing bonus code must never route a bonus correction into the offline queue. */
@@ -568,7 +568,7 @@ async function fetchWithTimeout(url,opts,ms){
   opts=Object.assign({},opts,{headers:Object.assign({},opts&&opts.headers,{Authorization:'Bearer '+token})});
   var controller=typeof AbortController!=='undefined'?new AbortController():null;
   var timer=null;
-  var p=fetch(url,Object.assign({},opts,controller?{signal:controller.signal}:{}));
+  var p=fetch(url,Object.assign({},opts,controller?{signal:controller.signal}:{})).then(async function(response){await response.clone().arrayBuffer();return response;});
   var timeout=new Promise(function(_,rej){timer=setTimeout(function(){if(controller)controller.abort(); rej(new Error('timeout'));},ms);});
   return Promise.race([p,timeout]).then(function(r){clearTimeout(timer);if(r.status===401||r.status===403||(r.status===503&&r.headers.get('x-omoti-auth-required')==='1')){cashierAuthPromise=null;cashierAuthMessage('Доступ кассы не подтверждён. Ранее сохранённые чеки останутся в очереди.');cashierAuthRetry();}return r;}).catch(function(e){clearTimeout(timer);throw e;});
 }
@@ -601,6 +601,8 @@ function initializeAnikinaLoyalty(){
 if(window.AnikinaLoyalty&&!loyaltyPurchaseInitialized){
   loyaltyPurchaseInitialized=true;
   AnikinaLoyalty.init({
+    paymentIssue:total=>payType==='Смешанная'&&!mixedPaymentIsValid(total),
+    refreshReadContext:()=>loadPromotionConfig(true),
     total:cartTotal,payment:function(){return payType;},editing:function(){return !!editNum;},
     busy:function(){return closeCheckInFlight;},refresh:function(){updateCart();},
     paymentOptions:function(allowed){
@@ -710,7 +712,7 @@ window.AnikinaBoot?.nativeReady();
 <script src="./anikina-c31/motion.js?v=anikina-boot-20261015-r1" data-boot-resource="anikina-c31/motion.js" integrity="sha384-ZhhT9ds69c3dg3Be6jxM+ye+tHtVByTib42+yV9pVAFURi0jSR+O7IAwPVX2QCXN" crossorigin="anonymous" onload="AnikinaBoot.resourceReady(this)" onerror="AnikinaBoot.resourceFailed(this)"></script>
 <script src="./releases/20261017-itogi-labels-r1/anikina-c31/itogi.js?v=itogi-labels-20261017-r1" data-boot-resource="anikina-c31/itogi.js" integrity="sha384-XjHVOR1wA/Ifk9bcMxkFqEVO/rT9R/JtG/pakffulEs5NPNlu/+WevVyVSkCfp1w" crossorigin="anonymous" onload="AnikinaBoot.resourceReady(this)" onerror="AnikinaBoot.resourceFailed(this)"></script>
 <script async src="./kassa-feedback/v2/feedback.js?v=20261021-r2" integrity="sha384-2B5DEgZvndM9GGYyBOL/Z5L/eJxoUzO7Vru3ejjOEhGV7vs5v0pxCnwiaHZmoME+" crossorigin="anonymous" onload="document.dispatchEvent(new Event('kassa-feedback-ready'))"></script>
-<script src="./releases/20261021-feedback-r2/anikina-interface.js?v=20261021-feedback-r2" data-boot-resource="anikina-c31/interface.js" integrity="sha384-LZorT8W+FJ+eNzrFhz+B/9Qbi6xyexV4ejW3/pAH64J3rNCrSuiXFPFqSZVxYB1C" crossorigin="anonymous" onload="AnikinaBoot.resourceReady(this)" onerror="AnikinaBoot.resourceFailed(this)"></script>
+<script src="./releases/20261021-cashier-readiness-r1/anikina-interface.js?v=20261021-readiness-r1" data-boot-resource="anikina-c31/interface.js" integrity="sha384-IR7Df/pV/zOiJd2W5yZeg60ksq2q+5hmckSnMQaEVVIK1fS/CrSHwkFV3LFkrZDV" crossorigin="anonymous" onload="AnikinaBoot.resourceReady(this)" onerror="AnikinaBoot.resourceFailed(this)"></script>
 <script src="./releases/20261021-card-edit-camera-r1/editor.js?v=20261021-r1" data-boot-resource="cashier-card-edit.js" integrity="sha384-0ajwWik8vD6N9xGGwQ+UmypghIUoA/UhY3IwkN5KHNy8rFcwVfTid4+w+4LMVr6m" crossorigin="anonymous" onload="AnikinaBoot.resourceReady(this)" onerror="AnikinaBoot.resourceFailed(this)"></script>
 </body>
 </html>

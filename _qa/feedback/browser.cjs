@@ -1,6 +1,6 @@
 const fs=require('fs'),path=require('path'),assert=require('assert/strict');
 const H=require('../anikina-freeze/shift-harness.cjs');
-const out=path.resolve(__dirname,'../../../_local_artifacts/kassa-feedback-20261021/iphone-fix',process.env.QA_PUBLIC_BASE?'public':'local');fs.mkdirSync(out,{recursive:true});
+const out=process.env.QA_OUT||path.resolve(__dirname,'../../../_local_artifacts/kassa-feedback-20261021/iphone-fix',process.env.QA_PUBLIC_BASE?'public':'local');fs.mkdirSync(out,{recursive:true});
 (async()=>{const local=await H.server(),browser=await H.chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'}),results=[];
 async function test(label,fn,{ios=false}={}){const t=await H.context(browser,local.url,'anikina');try{
  await t.ctx.addInitScript(({ios})=>{
