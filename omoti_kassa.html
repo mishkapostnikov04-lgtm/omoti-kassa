@@ -11,7 +11,7 @@ html:not([data-cashier-boot="ready"]) .app{visibility:hidden!important;opacity:0
 <script id="points-boot-controller">/* Points startup supervisor (adapted from reviewed Anikina R2). No pricing, API transport, queue or bonus ownership. */
 (() => {
  'use strict';
- const BUILD='points-boot-20261015-r1',RELEASE='post-sale-card-20261022-r1',KEY='omoti_novogodnyaya_boot_draft_v1',DIAG='omoti_novogodnyaya_boot_diag_v1';
+ const BUILD='points-boot-20261015-r1',RELEASE='standard-edit-20261022-r1',KEY='omoti_novogodnyaya_boot_draft_v1',DIAG='omoti_novogodnyaya_boot_diag_v1';
  const root=document.documentElement;let state='loading',ui=false,native=false,attached=false,restored=false,wasReady=false,needsCard=false,lastIssue=null,saving=false,retained=null;
  let activeOperations=0;const records=[],$=id=>document.getElementById(id),app=()=>document.querySelector('.app');
  function path(value){try{const u=new URL(value,location.href);return u.pathname+(u.searchParams.has('v')?'?v='+u.searchParams.get('v'):'');}catch(_){return 'inline';}}
@@ -203,7 +203,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 .loyalty.is-unconfirmed{border-color:#d5b774;background:#fff8e9}.loyalty.is-unconfirmed .loyalty-card-title,.loyalty.is-unconfirmed #loyalty-card-summary{color:#705014}.loyalty.is-unconfirmed .loyalty-card-title{font-size:14px;line-height:1.45}.loyalty.is-unconfirmed #loyalty-card-summary{font-size:14px}.loyalty-correction[hidden],.loyalty-correction [hidden]{display:none!important}
 </style>
 <link rel="stylesheet" href="./releases/20261020-recovery-r1/recovery.css?v=20261020-r1" data-boot-resource="cashier-recovery.css" integrity="sha384-3viTPr0iktPW01507LiiQ4iOxuPoGaTvvxfKW2dhLw864OfvePnVbeCy7QX60AIU" crossorigin="anonymous" onload="PointsBoot.resourceReady(this)" onerror="PointsBoot.resourceFailed(this)">
-<link rel="stylesheet" href="./releases/20261022-post-sale-card-r1/editor.css?v=20261022-r1" data-boot-resource="cashier-card-edit.css" integrity="sha384-y8zU3dBgTjXdM3ApgnDGL81usg4sECc0be7zRd2RxR/7R21UXXWePhBktiBjHoby" crossorigin="anonymous" onload="PointsBoot.resourceReady(this)" onerror="PointsBoot.resourceFailed(this)">
+<link rel="stylesheet" href="./releases/20261022-standard-edit-r1/editor.css?v=20261022-r1" data-boot-resource="cashier-card-edit.css" integrity="sha384-0Y7tTY8Bw5x9B2MkQ6lSkOrZXWdjVc7hDc/UgOYlKIV3KrPETqTcY92QK3RCqOQi" crossorigin="anonymous" onload="PointsBoot.resourceReady(this)" onerror="PointsBoot.resourceFailed(this)">
 </head>
 <body>
 <section id="cashier-boot" role="status" aria-live="polite"><div><h1 id="cashier-boot-title">Запускаем кассу</h1><p id="cashier-boot-message">Проверяем интерфейс C3.2 и обязательные кассовые модули.</p><button id="cashier-boot-retry" type="button" hidden>Повторить загрузку</button><details><summary>Диагностика запуска</summary><pre id="cashier-boot-diagnostic"></pre><button id="cashier-boot-copy" type="button">Скопировать диагностику</button></details><noscript><p>Для запуска кассы нужен JavaScript. Продажи заблокированы.</p><a href="./omoti_kassa.html">Повторить загрузку</a></noscript></div></section>
@@ -314,7 +314,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 </dialog>
 <script src="./cashier-registration-qr-v1.js?v=20261004" data-boot-resource="cashier-registration-qr-v1.js" integrity="sha384-DF9Nz5WDKrofbAyql6ER8H74c+yHtN1K5LmQ2Z3mnXQ12zfNPC/giYOCidQCgmnm" crossorigin="anonymous" onload="PointsBoot.resourceReady(this)" onerror="PointsBoot.resourceFailed(this)"></script>
 <script data-cashier-point="novogodnyaya" src="./releases/20261021-cashier-readiness-r1/connection.js?v=20261021-readiness-r1" data-boot-resource="cashier-loyalty-connection-v1.js" integrity="sha384-8AE4V85s3QZnXPUQj9ty7XI18Hh75NeQ5gPonOlIeVZyN+GC9YsY+5Q/JrENCCjK" crossorigin="anonymous" onload="PointsBoot.resourceReady(this)" onerror="PointsBoot.resourceFailed(this)"></script>
-<script src="./releases/20261022-post-sale-card-r1/loyalty.js?v=20261022-r1" data-boot-resource="anikina-loyalty-v1.js" integrity="sha384-fw2qU6ZloiMtPyWXfhQCIORbkX4bFkvDNHJEWbMXm8TumK7g6k2IUsY0A/OX0Da1" crossorigin="anonymous" onload="PointsBoot.resourceReady(this)" onerror="PointsBoot.resourceFailed(this)"></script>
+<script src="./releases/20261022-standard-edit-r1/loyalty.js?v=20261022-r1" data-boot-resource="anikina-loyalty-v1.js" integrity="sha384-CP7Ybu1GMY/I9sYsuzGxwL9y15CVSWjOFLmGR8gPMZZQd8EMwWI9gn4+a8jqbBpW" crossorigin="anonymous" onload="PointsBoot.resourceReady(this)" onerror="PointsBoot.resourceFailed(this)"></script>
 <script>
 /* Preserve ordinary sales if the separately cached bonus module fails to load.
  * Missing bonus code must never route a bonus correction into the offline queue. */
@@ -793,7 +793,7 @@ window.PointsBoot?.nativeReady();
 <script src="cashier-notices-client.js" data-point="novogodnyaya" data-page="omoti_kassa.html" data-boot-resource="cashier-notices-client.js" integrity="sha384-mK1UvA1s/e2LdzZ261ZHBehBl3zULByJJAo0wqhevqckc8jv8TlxD8sJne4IGkEo" crossorigin="anonymous" onload="PointsBoot.resourceReady(this)" onerror="PointsBoot.resourceFailed(this)"></script>
 <script src="./points-ui/c32-base/motion.js?v=points-c32-20261015-r2" data-boot-resource="points-ui/c32-base/motion.js" integrity="sha384-ZhhT9ds69c3dg3Be6jxM+ye+tHtVByTib42+yV9pVAFURi0jSR+O7IAwPVX2QCXN" crossorigin="anonymous" onload="PointsBoot.resourceReady(this)" onerror="PointsBoot.resourceFailed(this)"></script>
 <script src="./releases/20261020-no-staff-note-r1/points-ui/points-itogi.js?v=no-staff-note-20261020-r1" data-boot-resource="points-ui/points-itogi.js" integrity="sha384-WMKLH/utdgQyVIBiUlNBH0tl0sAVwmXKi4wtpWl5o51kyIQgIlOVDAopFOSn3G56" crossorigin="anonymous" onload="PointsBoot.resourceReady(this)" onerror="PointsBoot.resourceFailed(this)"></script>
-<script src="./releases/20261021-cashier-readiness-r1/points-interface.js?v=20261021-readiness-r1" data-boot-resource="points-ui/points-interface.js" integrity="sha384-BoseotPTrsp7ntb4+PrMGK8IEjc8En5YwmJRGzSqKFbzSxmDDRbTmSkbgQmJ5RJb" crossorigin="anonymous" onload="PointsBoot.resourceReady(this)" onerror="PointsBoot.resourceFailed(this)"></script>
-<script src="./releases/20261022-post-sale-card-r1/editor.js?v=20261022-r1" data-boot-resource="cashier-card-edit.js" integrity="sha384-ebM0A+FMJEmvEuagFxiS7hBDMFZ0ig6kiOFvGuq1opbNyK3x1JFRFU+z5LgAvkx0" crossorigin="anonymous" onload="PointsBoot.resourceReady(this)" onerror="PointsBoot.resourceFailed(this)"></script>
+<script src="./releases/20261022-standard-edit-r1/points-interface.js?v=20261021-readiness-r1" data-boot-resource="points-ui/points-interface.js" integrity="sha384-9BlEah5dRxut2rMFZIqqITlZ3u4br5FtI8O806i/trRQ4NR9waXeEaoC1zeK5rqF" crossorigin="anonymous" onload="PointsBoot.resourceReady(this)" onerror="PointsBoot.resourceFailed(this)"></script>
+<script src="./releases/20261022-standard-edit-r1/editor.js?v=20261022-r1" data-boot-resource="cashier-card-edit.js" integrity="sha384-zB2teUCV0vQRoGTZWNaVZvoQh9wKKOk8KfTFwAiywQhyyt1MxlDttSibXV5V/VZk" crossorigin="anonymous" onload="PointsBoot.resourceReady(this)" onerror="PointsBoot.resourceFailed(this)"></script>
 </body>
 </html>
