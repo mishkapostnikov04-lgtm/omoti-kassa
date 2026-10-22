@@ -1,0 +1,7 @@
+/* Same C3.2 components for new and edited receipts. */
+.c31-active #c31-card{max-width:48%;min-width:0;white-space:normal;overflow-wrap:anywhere;font-variant-numeric:tabular-nums;font-size:12px;line-height:1.3}
+.c31-active .k-mark{max-width:100%;overflow-wrap:anywhere;white-space:normal;font-variant-numeric:tabular-nums}
+.cashier-edit-reason{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.cashier-edit-reason[hidden]{display:none!important}
+.cashier-edit-reason label{font-size:13px;color:var(--k-muted)}
+.cashier-edit-reason input{width:100%;box-sizing:border-box;min-height:44px;font:inherit;font-size:16px;padding:12px;border:1px solid var(--k-line-soft);border-radius:12px;background:var(--k-field);color:var(--k-ink)}
