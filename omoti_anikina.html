@@ -11,7 +11,7 @@ html:not([data-cashier-boot="ready"]) .app{visibility:hidden!important;opacity:0
 <script id="anikina-boot-controller">/* Anikina startup supervisor. No pricing, API transport, queue or bonus ownership. */
 (() => {
  'use strict';
- const BUILD='anikina-boot-20261015-r1',RELEASE='sbp-link-20261027-r1',KEY='omoti_anikina_boot_draft_v1',DIAG='omoti_anikina_boot_diag_v1';
+ const BUILD='anikina-boot-20261015-r1',RELEASE='sbp-link-20261028-r2',KEY='omoti_anikina_boot_draft_v1',DIAG='omoti_anikina_boot_diag_v1';
  const root=document.documentElement;let state='loading',ui=false,native=false,attached=false,restored=false,wasReady=false,needsCard=false,lastIssue=null,saving=false,retained=null;
  const records=[],$=id=>document.getElementById(id),app=()=>document.querySelector('.app');
  function path(value){try{const u=new URL(value,location.href);return u.pathname+(u.searchParams.has('v')?'?v='+u.searchParams.get('v'):'');}catch(_){return 'inline';}}
@@ -161,7 +161,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 #loyalty-card-balance{font-size:16px;line-height:1.5;color:#514c44}#loyalty-load-note,#seller-context{color:#514c44}
 </style>
 <link rel="stylesheet" href="./releases/20261020-recovery-r1/recovery.css?v=20261020-r1" data-boot-resource="cashier-recovery.css" integrity="sha384-3viTPr0iktPW01507LiiQ4iOxuPoGaTvvxfKW2dhLw864OfvePnVbeCy7QX60AIU" crossorigin="anonymous" onload="AnikinaBoot.resourceReady(this)" onerror="AnikinaBoot.resourceFailed(this)">
-<link rel="stylesheet" href="./releases/20261027-sbp-link-r1/sbp-link.css?v=20261027-r1" integrity="sha384-kiZKGa8vPRNRkoV/iNj4xr1683gG1sEoNcl5Cip0ovc4EpWitfAu3JCkmGUxllLX" crossorigin="anonymous">
+<link rel="stylesheet" href="./releases/20261028-sbp-link-r2/sbp-link.css?v=20261028-r2" integrity="sha384-l+ia0c3Z57J7OmpTm5znOUQJMMj6WmXn1ASU4dsGjsL6nvm8m4rESK4Z+ypkvI/h" crossorigin="anonymous">
 <link rel="stylesheet" href="./releases/20261022-standard-edit-r1/editor.css?v=20261022-r1" data-boot-resource="cashier-card-edit.css" integrity="sha384-0Y7tTY8Bw5x9B2MkQ6lSkOrZXWdjVc7hDc/UgOYlKIV3KrPETqTcY92QK3RCqOQi" crossorigin="anonymous" onload="AnikinaBoot.resourceReady(this)" onerror="AnikinaBoot.resourceFailed(this)">
 </head>
 <body>
@@ -717,6 +717,6 @@ window.AnikinaBoot?.nativeReady();
 <script src="./releases/20261022-standard-edit-r1/anikina-interface.js?v=20261021-readiness-r1" data-boot-resource="anikina-c31/interface.js" integrity="sha384-hjkI/M1T0Ss1pCFm0emwF5BjjJMY+9rXXFkggYGmvVZJRvLyIDLm/JZErLPQ71B7" crossorigin="anonymous" onload="AnikinaBoot.resourceReady(this)" onerror="AnikinaBoot.resourceFailed(this)"></script>
 <script src="./releases/20261022-standard-edit-r1/editor.js?v=20261022-r1" data-boot-resource="cashier-card-edit.js" integrity="sha384-zB2teUCV0vQRoGTZWNaVZvoQh9wKKOk8KfTFwAiywQhyyt1MxlDttSibXV5V/VZk" crossorigin="anonymous" onload="AnikinaBoot.resourceReady(this)" onerror="AnikinaBoot.resourceFailed(this)"></script>
 <script src="./releases/20261027-sbp-link-r1/qrcode-generator-1.4.4.min.js?v=1.4.4" integrity="sha384-mZT2gIty7ZDdOGkxfP6joZcYdMW1Jvj9dRlfpTmaJAKKXTqzygtB22k7FLe+KZC1" crossorigin="anonymous" defer></script>
-<script src="./releases/20261027-sbp-link-r1/sbp-link.js?v=20261027-r1" integrity="sha384-qO1KIEH7CCCVQ1HFbnFqzat+eEnXkLjwjV6pgppP+QRJOwxFBkV9tpMGUGD6vfxo" crossorigin="anonymous" defer></script>
+<script src="./releases/20261028-sbp-link-r2/sbp-link.js?v=20261028-r2" integrity="sha384-p3TXAUhvq3rzyiL5cxFROdnNxYHHBT1iw4avdPoMi7HkWaV/jE8/RyAMwj6XJn8I" crossorigin="anonymous" defer></script>
 </body>
 </html>
