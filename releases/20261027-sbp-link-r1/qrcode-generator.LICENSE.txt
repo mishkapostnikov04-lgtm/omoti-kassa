@@ -1,0 +1,4 @@
+qrcode-generator 1.4.4 (c) Kazuhiko Arase, MIT License.
+https://github.com/kazuhikoarase/qrcode-generator
+Source: cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js
+sha512-ZDSPMa/JM1D+7kdg2x3BsruQ6T/JpJo3jWDWkCZsP+5yVyp1KfESqLI+7RqB5k24F7p2cV7i2YHh/890y6P6Sw== (matches cdnjs SRI 27.10.2026)

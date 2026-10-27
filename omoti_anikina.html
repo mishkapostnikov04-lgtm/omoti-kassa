@@ -11,7 +11,7 @@ html:not([data-cashier-boot="ready"]) .app{visibility:hidden!important;opacity:0
 <script id="anikina-boot-controller">/* Anikina startup supervisor. No pricing, API transport, queue or bonus ownership. */
 (() => {
  'use strict';
- const BUILD='anikina-boot-20261015-r1',RELEASE='standard-edit-20261022-r1',KEY='omoti_anikina_boot_draft_v1',DIAG='omoti_anikina_boot_diag_v1';
+ const BUILD='anikina-boot-20261015-r1',RELEASE='sbp-link-20261027-r1',KEY='omoti_anikina_boot_draft_v1',DIAG='omoti_anikina_boot_diag_v1';
  const root=document.documentElement;let state='loading',ui=false,native=false,attached=false,restored=false,wasReady=false,needsCard=false,lastIssue=null,saving=false,retained=null;
  const records=[],$=id=>document.getElementById(id),app=()=>document.querySelector('.app');
  function path(value){try{const u=new URL(value,location.href);return u.pathname+(u.searchParams.has('v')?'?v='+u.searchParams.get('v'):'');}catch(_){return 'inline';}}
@@ -161,12 +161,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 #loyalty-card-balance{font-size:16px;line-height:1.5;color:#514c44}#loyalty-load-note,#seller-context{color:#514c44}
 </style>
 <link rel="stylesheet" href="./releases/20261020-recovery-r1/recovery.css?v=20261020-r1" data-boot-resource="cashier-recovery.css" integrity="sha384-3viTPr0iktPW01507LiiQ4iOxuPoGaTvvxfKW2dhLw864OfvePnVbeCy7QX60AIU" crossorigin="anonymous" onload="AnikinaBoot.resourceReady(this)" onerror="AnikinaBoot.resourceFailed(this)">
+<link rel="stylesheet" href="./releases/20261027-sbp-link-r1/sbp-link.css?v=20261027-r1" integrity="sha384-kiZKGa8vPRNRkoV/iNj4xr1683gG1sEoNcl5Cip0ovc4EpWitfAu3JCkmGUxllLX" crossorigin="anonymous">
 <link rel="stylesheet" href="./releases/20261022-standard-edit-r1/editor.css?v=20261022-r1" data-boot-resource="cashier-card-edit.css" integrity="sha384-0Y7tTY8Bw5x9B2MkQ6lSkOrZXWdjVc7hDc/UgOYlKIV3KrPETqTcY92QK3RCqOQi" crossorigin="anonymous" onload="AnikinaBoot.resourceReady(this)" onerror="AnikinaBoot.resourceFailed(this)">
 </head>
 <body>
 <section id="cashier-boot" role="status" aria-live="polite"><div><h1 id="cashier-boot-title">Запускаем кассу</h1><p id="cashier-boot-message">Проверяем интерфейс C3.2 и обязательные кассовые модули.</p><button id="cashier-boot-retry" type="button" hidden>Повторить загрузку</button><details><summary>Диагностика запуска</summary><pre id="cashier-boot-diagnostic"></pre><button id="cashier-boot-copy" type="button">Скопировать диагностику</button></details><noscript><p>Для запуска кассы нужен JavaScript. Продажи заблокированы.</p><a href="./omoti_anikina.html">Повторить загрузку</a></noscript></div></section>
 <div class="app" inert>
-<div class="topbar"><span class="topbar-title">OMOTI · Аникина</span><div class="tab-switcher" role="tablist"><button class="tab-btn active" role="tab" aria-selected="true" onclick="switchTab('kassa')">Касса</button><button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab('journal')">Журнал</button><button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab('stats')">Итоги</button></div></div>
+<div class="topbar"><span class="topbar-title">OMOTI · Аникина</span><div class="tab-switcher" role="tablist"><button class="tab-btn active" role="tab" aria-selected="true" onclick="switchTab('kassa')">Касса</button><button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab('journal')">Журнал</button><button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab('stats')">Итоги</button><button class="tab-btn" id="tab-pay" role="tab" aria-selected="false" onclick="switchTab('pay')" hidden>Оплата</button></div></div>
 <div class="mirror-status" id="server-mirror-status"></div>
 <div class="promotion-status" id="promotion-status" role="status" aria-live="polite"></div>
 <div class="cashier-notice" id="cashier-notice" role="status" aria-live="polite"><strong>Сообщение для кассы</strong><span id="cashier-notice-text"></span><br><button type="button" onclick="acknowledgeCashierNotice()">Понятно</button></div>
@@ -236,6 +237,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 <div class="sec-label" style="margin-top:14px">Топ вкусов</div><div id="flavor-stat-list"></div>
 </div></div>
 
+<div class="screen" id="screen-pay"></div>
 </div>
 
 <div class="overlay" id="overlay" onclick="hideModal()"></div>
@@ -398,7 +400,7 @@ function setSeller(el,name){seller=name;rememberSeller(name); document.querySele
 function setPay(el,type){payType=type; document.querySelectorAll('.pay-btn').forEach(function(b){b.classList.remove('active');b.setAttribute('aria-pressed','false');}); el.classList.add('active'); el.setAttribute('aria-pressed','true'); document.getElementById('self-clarify').className='self-clarify'+(type==='Себе оплачено'?' visible':''); renderPromotionStatus(); updateCart();}
 function setSelfPay(el,type){selfPayType=type; document.querySelectorAll('.self-sub-btn').forEach(b=>b.classList.remove('active')); el.classList.add('active'); updateCart();}
 let dataLoaded = false;
-function switchTab(tab){if(window.AnikinaLoyalty)AnikinaLoyalty.stopCamera();document.querySelectorAll('.tab-btn').forEach(function(b,i){const active=['kassa','journal','stats'][i]===tab; b.classList.toggle('active',active); b.setAttribute('aria-selected',active?'true':'false');}); document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');}); document.getElementById('screen-'+tab).classList.add('active'); if(tab==='journal'){if(!dataLoaded) loadRemoteData(); else renderJournal(); return;} if(tab==='stats') loadStats();}
+function switchTab(tab){if(window.AnikinaLoyalty)AnikinaLoyalty.stopCamera();document.querySelectorAll('.tab-btn').forEach(function(b,i){const active=(b.id==='tab-pay'?'pay':['kassa','journal','stats'][i])===tab; b.classList.toggle('active',active); b.setAttribute('aria-selected',active?'true':'false');}); document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');}); document.getElementById('screen-'+tab).classList.add('active'); if(tab==='journal'){if(!dataLoaded) loadRemoteData(); else renderJournal(); return;} if(tab==='stats') loadStats();}
 let cashierLastCheckNum=0;
 function nextCheckNum(){cashierLastCheckNum=Math.max(Date.now(),cashierLastCheckNum+1);return cashierLastCheckNum;}
 function shortCheckId(num){const s=String(num||'').replace(/[^\d]/g,''); return s.length>6?s.slice(-6):s;}
@@ -714,5 +716,7 @@ window.AnikinaBoot?.nativeReady();
 <script async src="./kassa-feedback/v2/feedback.js?v=20261021-r2" integrity="sha384-2B5DEgZvndM9GGYyBOL/Z5L/eJxoUzO7Vru3ejjOEhGV7vs5v0pxCnwiaHZmoME+" crossorigin="anonymous" onload="document.dispatchEvent(new Event('kassa-feedback-ready'))"></script>
 <script src="./releases/20261022-standard-edit-r1/anikina-interface.js?v=20261021-readiness-r1" data-boot-resource="anikina-c31/interface.js" integrity="sha384-hjkI/M1T0Ss1pCFm0emwF5BjjJMY+9rXXFkggYGmvVZJRvLyIDLm/JZErLPQ71B7" crossorigin="anonymous" onload="AnikinaBoot.resourceReady(this)" onerror="AnikinaBoot.resourceFailed(this)"></script>
 <script src="./releases/20261022-standard-edit-r1/editor.js?v=20261022-r1" data-boot-resource="cashier-card-edit.js" integrity="sha384-zB2teUCV0vQRoGTZWNaVZvoQh9wKKOk8KfTFwAiywQhyyt1MxlDttSibXV5V/VZk" crossorigin="anonymous" onload="AnikinaBoot.resourceReady(this)" onerror="AnikinaBoot.resourceFailed(this)"></script>
+<script src="./releases/20261027-sbp-link-r1/qrcode-generator-1.4.4.min.js?v=1.4.4" integrity="sha384-mZT2gIty7ZDdOGkxfP6joZcYdMW1Jvj9dRlfpTmaJAKKXTqzygtB22k7FLe+KZC1" crossorigin="anonymous" defer></script>
+<script src="./releases/20261027-sbp-link-r1/sbp-link.js?v=20261027-r1" integrity="sha384-qO1KIEH7CCCVQ1HFbnFqzat+eEnXkLjwjV6pgppP+QRJOwxFBkV9tpMGUGD6vfxo" crossorigin="anonymous" defer></script>
 </body>
 </html>

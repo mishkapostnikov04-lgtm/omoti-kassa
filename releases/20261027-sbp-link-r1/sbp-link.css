@@ -1,0 +1,28 @@
+/* OMOTI · Аникина · вкладка «Оплата». Только #screen-pay; токены C3.2 из anikina-c31/tokens.css. */
+#screen-pay .sbp-body{gap:12px}
+#screen-pay .sbp-form,#screen-pay .sbp-result{gap:10px;flex:none}
+#screen-pay .sbp-muted{color:var(--k-muted-2);font-weight:400}
+#screen-pay .sbp-result__top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+#screen-pay .sbp-amount{font-size:28px;font-weight:800;letter-spacing:-.02em}
+#screen-pay .sbp-result p{margin:0}
+#screen-pay #sbp-result-link-box{display:flex;flex-direction:column;gap:10px}
+#screen-pay #sbp-result-link-box[hidden]{display:none}
+#screen-pay .sbp-link{font-size:14px;color:var(--k-ink-2);text-overflow:ellipsis}
+#screen-pay .sbp-qr{align-self:center;width:180px;height:180px;background:#fff;border-radius:12px;padding:6px;box-shadow:inset 0 0 0 1px var(--k-line)}
+#screen-pay .sbp-qr svg{display:block;width:100%;height:100%}
+#screen-pay .sbp-qr[hidden]{display:none}
+#screen-pay .sbp-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#screen-pay .sbp-actions .k-btn[hidden]{display:none}
+#screen-pay .sbp-actions:has(> [hidden]){grid-template-columns:1fr}
+#screen-pay .sbp-badge{flex:none;height:26px;border-radius:999px;padding:0 10px;font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;background:var(--k-amber-tint);color:#4A3000}
+#screen-pay .sbp-badge[data-tone="ok"]{background:#E3F1E3;color:var(--k-success)}
+#screen-pay .sbp-badge[data-tone="bad"]{background:var(--k-danger-tint);color:#8A2C05}
+#screen-pay .sbp-paid{background:#E3F1E3;color:#1F5A22;box-shadow:inset 0 0 0 1.5px #B9DDBA}
+#screen-pay .sbp-history-title{margin:6px 2px 0}
+#screen-pay .sbp-history{display:flex;flex-direction:column;gap:6px}
+#screen-pay .sbp-row{border:0;border-radius:14px;background:#fff;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;width:100%}
+#screen-pay .sbp-row__main{display:flex;flex-direction:column;gap:2px;min-width:0}
+#screen-pay .sbp-row__main b{font-size:16px}
+#screen-pay .sbp-row__main small{font-size:12.5px;color:var(--k-muted-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Без интерфейса C3 (резервный вид) экран — обычный блок. */
+body:not(.c31-active) #screen-pay .k-head,body:not(.c31-active) #screen-pay .k-list{position:static}
