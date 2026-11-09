@@ -116,6 +116,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 .flavors-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:1fr;gap:8px}
 .flavor-btn{position:relative;border:1px solid var(--border);background:#fff;color:var(--text);border-radius:12px;min-height:48px;padding:8px 6px;font-size:12px;line-height:1.15;cursor:pointer;text-align:center}
 .flavor-btn.gold{border-color:var(--gold)}.flavor-btn.active{background:#fff8eb;border-color:var(--gold);font-weight:600}
+/* cake-block-20261109: моти-кейки и мункейки — отдельный блок после моти, с новой строки; наборы в конце */
+.k-grid .k-tile--block-start{grid-column-start:1}.k-grid .k-tile--extra:not(.k-tile--on):not(.k-tile--edit){background:var(--k-surface);box-shadow:inset 0 0 0 1.5px var(--k-muted-2)}
 .qty-badge{position:absolute;right:6px;top:6px;min-width:18px;height:18px;padding:0 4px;border-radius:999px;background:var(--accent);color:#fff;font-size:11px;line-height:18px;font-weight:700}
 .pay-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .self-clarify{display:none;gap:8px;align-items:center;margin-top:10px}.self-clarify.visible{display:flex}
@@ -714,7 +716,7 @@ window.AnikinaBoot?.nativeReady();
 <script src="./anikina-c31/motion.js?v=anikina-boot-20261015-r1" data-boot-resource="anikina-c31/motion.js" integrity="sha384-ZhhT9ds69c3dg3Be6jxM+ye+tHtVByTib42+yV9pVAFURi0jSR+O7IAwPVX2QCXN" crossorigin="anonymous" onload="AnikinaBoot.resourceReady(this)" onerror="AnikinaBoot.resourceFailed(this)"></script>
 <script src="./releases/20261017-itogi-labels-r1/anikina-c31/itogi.js?v=itogi-labels-20261017-r1" data-boot-resource="anikina-c31/itogi.js" integrity="sha384-XjHVOR1wA/Ifk9bcMxkFqEVO/rT9R/JtG/pakffulEs5NPNlu/+WevVyVSkCfp1w" crossorigin="anonymous" onload="AnikinaBoot.resourceReady(this)" onerror="AnikinaBoot.resourceFailed(this)"></script>
 <script async src="./kassa-feedback/v2/feedback.js?v=20261021-r2" integrity="sha384-2B5DEgZvndM9GGYyBOL/Z5L/eJxoUzO7Vru3ejjOEhGV7vs5v0pxCnwiaHZmoME+" crossorigin="anonymous" onload="document.dispatchEvent(new Event('kassa-feedback-ready'))"></script>
-<script src="./releases/20261022-standard-edit-r1/anikina-interface.js?v=20261021-readiness-r1" data-boot-resource="anikina-c31/interface.js" integrity="sha384-hjkI/M1T0Ss1pCFm0emwF5BjjJMY+9rXXFkggYGmvVZJRvLyIDLm/JZErLPQ71B7" crossorigin="anonymous" onload="AnikinaBoot.resourceReady(this)" onerror="AnikinaBoot.resourceFailed(this)"></script>
+<script src="./releases/20261109-cake-block-r1/anikina-interface.js?v=20261109-cake-block-r1" data-boot-resource="anikina-c31/interface.js" integrity="sha384-k8lVdVKaSVM+o0ZHl/8S5trrMc4bCnDBj4O72IPEzVjMVXJhij3xOmmPbuN8m5ZD" crossorigin="anonymous" onload="AnikinaBoot.resourceReady(this)" onerror="AnikinaBoot.resourceFailed(this)"></script>
 <script src="./releases/20261022-standard-edit-r1/editor.js?v=20261022-r1" data-boot-resource="cashier-card-edit.js" integrity="sha384-zB2teUCV0vQRoGTZWNaVZvoQh9wKKOk8KfTFwAiywQhyyt1MxlDttSibXV5V/VZk" crossorigin="anonymous" onload="AnikinaBoot.resourceReady(this)" onerror="AnikinaBoot.resourceFailed(this)"></script>
 <script src="./releases/20261027-sbp-link-r1/qrcode-generator-1.4.4.min.js?v=1.4.4" integrity="sha384-mZT2gIty7ZDdOGkxfP6joZcYdMW1Jvj9dRlfpTmaJAKKXTqzygtB22k7FLe+KZC1" crossorigin="anonymous" defer></script>
 <script src="./releases/20261028-sbp-link-r2/sbp-link.js?v=20261028-r2" integrity="sha384-p3TXAUhvq3rzyiL5cxFROdnNxYHHBT1iw4avdPoMi7HkWaV/jE8/RyAMwj6XJn8I" crossorigin="anonymous" defer></script>
