@@ -9,8 +9,8 @@ const { pathToFileURL } = require('url');
 const crypto = require('crypto');
 const H = require('../anikina-freeze/shift-harness.cjs');
 const art = path.resolve(H.root, '..', '..', 'promo-or-bonus-20261110');
-const SERVER = { new: process.env.QA_SERVER_NEW || path.join(art, 'candidate-b2c'), old: process.env.QA_SERVER_OLD || path.join(art, 'baseline-b2c') };
-const KASSA = { new: H.root, main: process.env.QA_KASSA_MAIN || path.join(art, 'kassa-main') };
+const SERVER = { new: path.resolve(process.env.QA_SERVER_NEW || path.join(art, 'candidate-b2c')), old: path.resolve(process.env.QA_SERVER_OLD || path.join(art, 'baseline-b2c')) };
+const KASSA = { new: H.root, main: path.resolve(process.env.QA_KASSA_MAIN || path.join(art, 'kassa-main')) };
 const out = path.join(__dirname, 'local-browser'); fs.mkdirSync(out, { recursive: true });
 const points = process.env.QA_POINT ? [process.env.QA_POINT] : ['anikina', 'novogodnyaya', 'sovetskaya'];
 const SLUG = { anikina: 'аникина', novogodnyaya: 'новогодняя', sovetskaya: 'советская' };
@@ -43,7 +43,11 @@ async function loadServer(root) {
   const svc = await m('src/cashier/loyalty-service.js'), promo = await m('src/cashier/promotions.js');
   return { createLoyaltyService: svc.createLoyaltyService, serializePromotion: promo.serializePromotion };
 }
-function serverFor(lib, point) {
+// Моти-кейк не из прежнего списка касс: его цена и признак «Участвует в акциях» приходят из каталога продажи.
+const CAKE = 'cat_fistashka_moti_keyk', CAKE_NAME = 'Фисташка Моти кейк';
+const cakeCatalog = excluded => ({ [CAKE]: { catalogItemId: CAKE, name: CAKE_NAME, itemType: 'moti_flavor', visibleAtSale: true,
+  prices: { normal: 400, yandex: 400, self: 350 }, sellerPayout: null, promoExcluded: excluded === true } });
+function serverFor(lib, point, cake) {
   const intents = new Map(), calls = [], answers = [];
   const provider = {
     card: async () => ({ cardCode: '1234567', balanceMinor: 95000 }),
@@ -77,9 +81,11 @@ function serverFor(lib, point) {
       },
       cancel: async op => { op.state = 'cancelled'; },
     }) };
-  const store = { findApplicablePromotion: async (slug, pay) => PROMO_ROW.point_slugs.includes(slug) && PROMO_ROW.eligible_pay_types.includes(pay) ? PROMO_ROW : null };
-  const service = lib.createLoyaltyService({ store, operations, provider, point, enabled: true, writesEnabled: true, posId: 105901, accrualPercent: 5 });
-  const strip = input => ({ ...input, items: (input.items || []).map(({ catalogItemId, bundleVersion, ...rest }) => rest) });
+  const store = { ...(cake === undefined ? {} : { pool: {} }), findApplicablePromotion: async (slug, pay) => PROMO_ROW.point_slugs.includes(slug) && PROMO_ROW.eligible_pay_types.includes(pay) ? PROMO_ROW : null };
+  const service = lib.createLoyaltyService({ store, operations, provider, point, enabled: true, writesEnabled: true, posId: 105901, accrualPercent: 5,
+    ...(cake === undefined ? {} : { catalogLoader: async () => cakeCatalog(cake) }) });
+  // Подставные коды стенда (qa_N) серверу неизвестны — он узнаёт прежние вкусы по названию; код моти-кейка настоящий.
+  const strip = input => ({ ...input, items: (input.items || []).map(({ catalogItemId, bundleVersion, ...rest }) => catalogItemId === CAKE ? { ...rest, catalogItemId } : rest) });
   return {
     calls, answers,
     async handle(action, input) {
@@ -94,12 +100,13 @@ function serverFor(lib, point) {
   };
 }
 
-async function open(browser, base, point, serverLib) {
+async function open(browser, base, point, serverLib, cake) {
   const t = await H.context(browser, base, point);
-  const server = serverFor(serverLib, point);
+  const server = serverFor(serverLib, point, cake);
   // Добавленные позже маршруты имеют приоритет: акция и расчёт с картой — из кода сервера.
   await t.ctx.route('**/b2c/cashier/*/promotion', async r => {
-    const assortment = H.assortment;
+    const assortment = cake === undefined ? H.assortment : [...H.assortment, { name: CAKE_NAME, catalogItemId: CAKE, itemType: 'moti_flavor', legacy: false,
+      isPremium: false, cashierSeparate: true, promoExcluded: cake === true, prices: { normal: 400, self: 350, yandex: 400 } }];
     return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, serverNow: new Date().toISOString(),
       promotions: [serverLib.serializePromotion(PROMO_ROW)], assortment }) });
   });
@@ -142,9 +149,9 @@ const view = p => p.evaluate(() => ({ total: document.getElementById('total-sum'
   const sites = { new: await staticServer(KASSA.new) };
   if (fs.existsSync(path.join(KASSA.main, 'omoti_kassa.html'))) sites.main = await staticServer(KASSA.main);
   const browser = await H.chromium.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' }), results = [];
-  async function run(point, name, kassa, server, fn, width) {
-    const t = await open(browser, sites[kassa].url, point, LIB[server]);
-    if (width) await t.page.setViewportSize({ width, height: 844 });
+  async function run(point, name, kassa, server, fn, width, cake) {
+    const t = await open(browser, sites[kassa].url, point, LIB[server], cake);
+    if (width) await t.page.setViewportSize({ width, height: 844 });  // 0 — размер по умолчанию
     try {
       await fn(t.page, t);
       assert.deepEqual(t.s.errors, []); assert.deepEqual(t.s.leaks, []);
@@ -207,6 +214,31 @@ const view = p => p.evaluate(() => ({ total: document.getElementById('total-sum'
         await setRedeem(p, 50); await waitDue(p, '256 ₽');
         v = await view(p); assert.deepEqual([last(t).totalMinor, last(t).redeemMinor], [30600, 5000]); assert.equal(v.hint, '');
       });
+      await run(point, 'моти-кейк не участвует: без карты — скидка только на моти', 'new', 'new', async (p, t) => {
+        await basket(p); await p.locator('[data-name="' + CAKE_NAME + '"] .k-tile__hit').click();
+        assert.equal(await p.evaluate(() => cartTotal()), 706, '306 + 400');
+        await H.close(p);
+        const save = t.s.calls.filter(c => c.action === 'save_check').at(-1);
+        assert.ok(save.body.items.some(i => i.catalogItemId === CAKE));
+      }, 0, true);
+      await run(point, 'моти-кейк не участвует: с картой сумма совпадает с сервером, списание снимает скидку', 'new', 'new', async (p, t) => {
+        await basket(p); await p.locator('[data-name="' + CAKE_NAME + '"] .k-tile__hit').click(); await H.card(p);
+        await waitDue(p, '706 ₽');
+        assert.deepEqual([last(t).totalMinor, last(t).promotionDiscountMinor, last(t).redeemBasisTotalMinor], [70600, 5400, 76000]);
+        assert.equal(norm((await view(p)).hint), 'Сейчас скидка по акции −54 ₽. Бонусами можно списать до 228 ₽ вместо неё.');
+        await setRedeem(p, 50); await waitDue(p, '710 ₽');
+        assert.deepEqual([last(t).totalMinor, last(t).promotionWaived], [76000, true]);
+        await H.close(p);
+        const checkout = t.server.calls.filter(c => c.action === 'checkout').at(-1);
+        assert.deepEqual([checkout.input.redeemMinor, checkout.input.expectedTotalMinor], [5000, 76000]);
+        await p.screenshot({ path: path.join(out, point + '-cake-excluded.png') });
+      }, 0, true);
+      await run(point, 'моти-кейк участвует (переключатель включён): скидка и на него, касса и сервер сходятся', 'new', 'new', async (p, t) => {
+        await basket(p); await p.locator('[data-name="' + CAKE_NAME + '"] .k-tile__hit').click();
+        assert.equal(await p.evaluate(() => cartTotal()), 646);
+        await H.card(p); await waitDue(p, '646 ₽');
+        assert.equal(last(t).totalMinor, 64600);
+      }, 0, false);
       if (sites.main) await run(point, 'прежняя касса + новый сервер: расчёт верный, покупка проходит', 'main', 'new', async (p, t) => {
         await basket(p); await H.card(p); await waitDue(p, '306 ₽');
         await setRedeem(p, 50); await waitDue(p, '310 ₽');
