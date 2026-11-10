@@ -38,7 +38,7 @@ const grid=p=>p.evaluate(()=>[...document.getElementById('flavors-grid').childre
    await p.screenshot({path:path.join(out,point+'-block.png')});
   });
   await run(point,'cake sells as an ordinary item; selected tile is amber',{separate:true},async(p,t)=>{
-   await H.seller(p);const hit=p.locator('[data-name="'+CAKES[1]+'"] .k-tile__hit');await hit.scrollIntoViewIfNeeded();await hit.click();await hit.click();
+   await H.seller(p);const hit=p.locator('[data-name="'+CAKES[1]+'"] .k-tile__hit');await hit.click();await hit.click();
    const on=(await grid(p)).find(x=>x.name===CAKES[1]);assert.equal(on.bg,'rgb(255, 243, 220)','выбранная плитка блока — как у всех выбранных');
    assert.equal(await p.evaluate(()=>cartTotal()),700);
    await H.pay(p,'Безналичный');await H.close(p);
