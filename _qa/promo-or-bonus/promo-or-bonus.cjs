@@ -257,6 +257,23 @@ const view = p => p.evaluate(() => ({ total: document.getElementById('total-sum'
         const checkout = t.server.calls.filter(c => c.action === 'checkout').at(-1);
         assert.deepEqual([checkout.input.pay, checkout.input.redeemMinor, checkout.input.expectedTotalMinor], ['Безналичный', 5400, 18000]);
       });
+      await run(point, 'лист карты без сканирования: поле номера открыто сразу, QR под полем; надпись над суммой мелкая и серая', 'new', 'new', async (p, t) => {
+        await H.seller(p);
+        await p.locator('[data-name="Смородина"] .k-tile__hit').click();
+        const badge = await p.evaluate(() => { const b = getComputedStyle(document.getElementById('c31-sum-promo')); return [b.fontSize, b.color]; });
+        assert.deepEqual(badge, ['12px', 'rgb(163, 161, 155)'], 'плашка: 12 px, приглушённый серый');
+        await p.locator('#c31-card').click(); await p.waitForTimeout(400);
+        const sheet = () => p.evaluate(() => { const vis = id => { const e = document.getElementById(id); return !!e && !!e.offsetParent && e.getBoundingClientRect().height > 0; };
+          const qr = document.getElementById('registration-qr-open'), card = document.getElementById('loyalty-card');
+          return { scan: vis('loyalty-scan'), manualToggle: vis('loyalty-manual-toggle'), card: vis('loyalty-card'), qr: vis('registration-qr-open'),
+            qrBelow: qr.getBoundingClientRect().top >= card.getBoundingClientRect().bottom, camera: !!window.ZXing || [...document.scripts].some(s => /zxing/.test(s.src)) }; });
+        assert.deepEqual(await sheet(), { scan: false, manualToggle: false, card: true, qr: true, qrBelow: true, camera: false }, 'лист карты при открытии');
+        await p.screenshot({ path: path.join(out, point + '-card-sheet.png') });
+        await H.card(p); await p.waitForTimeout(600);
+        await p.locator('#loyalty-clear').click(); await p.waitForTimeout(300);
+        const again = await sheet();
+        assert.deepEqual([again.scan, again.manualToggle, again.card, again.qr], [false, false, true, true], 'после «Убрать карту» поле снова открыто');
+      });
       await run(point, 'моти-кейк не участвует: без карты — скидка только на моти', 'new', 'new', async (p, t) => {
         await basket(p); await p.locator('[data-name="' + CAKE_NAME + '"] .k-tile__hit').click();
         assert.equal(await p.evaluate(() => cartTotal()), 706, '306 + 400');

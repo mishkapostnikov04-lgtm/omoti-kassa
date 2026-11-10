@@ -27,20 +27,20 @@ try{for(const point of Object.keys(H.files).filter(p=>!process.env.QA_POINT||pro
  await test(point,'newer card wins and close cancels old read',async t=>{
   const {page:p,s}=t;let release,seen;const gate=new Promise(r=>release=r),started=new Promise(r=>seen=r);
   s.gates.card=async payload=>{if(payload.cardCode==='1111111'){seen();await gate;}};
-  try{await H.add(p);await H.pay(p,'Безналичный');await p.locator('#c31-card').click();await p.locator('#loyalty-manual-toggle').click();await p.locator('#loyalty-card').fill('1111111');await p.locator('#loyalty-card-confirm').click();await started;
+  try{await H.add(p);await H.pay(p,'Безналичный');await p.locator('#c31-card').click();await p.waitForFunction(()=>!document.getElementById('loyalty-manual').hidden);await p.locator('#loyalty-card').fill('1111111');await p.locator('#loyalty-card-confirm').click();await started;
    await p.locator('#loyalty-card').fill('2222222');await p.locator('#loyalty-card-confirm').click();await p.waitForFunction(()=>document.getElementById('loyalty-panel').classList.contains('is-selected'));release();await p.waitForTimeout(120);
    assert.equal(await p.locator('#loyalty-card').inputValue(),'2222222');await H.ready(p);await H.close(p);await idle(p,point);
   }finally{release();}
  });
  await test(point,'cancel lookup background resume then defect',async t=>{
   const {page:p,s}=t;let release;const gate=new Promise(r=>release=r);s.gates.card=gate;
-  try{await H.add(p);await p.locator('#c31-card').click();await p.locator('#loyalty-manual-toggle').click();await p.locator('#loyalty-card').fill('1234567');await p.locator('#loyalty-card-confirm').click();await H.dismiss(p);
+  try{await H.add(p);await p.locator('#c31-card').click();await p.waitForFunction(()=>!document.getElementById('loyalty-manual').hidden);await p.locator('#loyalty-card').fill('1234567');await p.locator('#loyalty-card-confirm').click();await H.dismiss(p);
    await p.evaluate(()=>{window.dispatchEvent(new PageTransitionEvent('pageshow',{persisted:true}));document.dispatchEvent(new Event('visibilitychange'));});
    assert.notEqual(await p.locator('#loyalty-card-confirm').textContent(),'Проверяем…');await H.pay(p,'Брак');release();await p.waitForTimeout(120);assert.equal(await p.evaluate(()=>payType),'Брак');await H.close(p);await idle(p,point);
   }finally{release();}
  });
  await test(point,'read transport failure retry then recover without restart',async t=>{
-  const {page:p,s}=t;s.fail.card=true;await H.add(p);await p.locator('#c31-card').click();await p.locator('#loyalty-manual-toggle').click();await p.locator('#loyalty-card').fill('1234567');await p.locator('#loyalty-card-confirm').click();await p.waitForFunction(()=>document.getElementById('loyalty-card-confirm').textContent==='Повторить поиск');
+  const {page:p,s}=t;s.fail.card=true;await H.add(p);await p.locator('#c31-card').click();await p.waitForFunction(()=>!document.getElementById('loyalty-manual').hidden);await p.locator('#loyalty-card').fill('1234567');await p.locator('#loyalty-card-confirm').click();await p.waitForFunction(()=>document.getElementById('loyalty-card-confirm').textContent==='Повторить поиск');
   assert.equal(await p.locator('#loyalty-card-confirm').isEnabled(),true);assert.equal(s.calls.filter(c=>c.action==='card').length,2);s.fail.card=false;
   await p.locator('#loyalty-card-confirm').click();await p.waitForFunction(()=>document.getElementById('loyalty-panel').classList.contains('is-selected'));await H.dismiss(p);await H.pay(p,'Безналичный');await H.ready(p);await H.close(p);await idle(p,point);
  });
@@ -55,7 +55,7 @@ try{for(const point of Object.keys(H.files).filter(p=>!process.env.QA_POINT||pro
  await test(point,'explicit continue without card clears a restored candidate safely',async t=>{
   const {page:p,s}=t;await H.add(p);await H.pay(p,'Безналичный');await H.card(p);await H.ready(p);await H.dismiss(p);await p.reload();await p.waitForFunction(()=>(window.AnikinaBoot||PointsBoot).state==='ready'&&promotionConfig);
   // The recovered card is now revalidated automatically. Edit its candidate explicitly.
-  await p.locator('#c31-card').click();await p.waitForFunction(()=>document.getElementById('loyalty-panel').classList.contains('is-selected'));await p.locator('#loyalty-clear').click();await p.locator('#loyalty-manual-toggle').click();await p.locator('#loyalty-card').fill('7654321');await H.dismiss(p);
+  await p.locator('#c31-card').click();await p.waitForFunction(()=>document.getElementById('loyalty-panel').classList.contains('is-selected'));await p.locator('#loyalty-clear').click();await p.waitForFunction(()=>!document.getElementById('loyalty-manual').hidden);await p.locator('#loyalty-card').fill('7654321');await H.dismiss(p);
   await p.locator('#cashier-draft-notice').getByRole('button',{name:'Продолжить без карты',exact:true}).click();assert.equal(await p.evaluate(()=>AnikinaLoyalty.isActive()),false);await H.close(p);await idle(p,point);
   assert.equal(s.calls.filter(c=>c.action==='checkout').length,0);assert.equal(s.calls.filter(c=>c.action==='save_check').length,1);
  });

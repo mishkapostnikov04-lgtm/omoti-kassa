@@ -66,7 +66,7 @@ async function pay(p,type){if(['Безналичный','Наличный','Пе
 async function dismiss(p){await p.keyboard.press('Escape');}
 async function card(p,number='1234567'){
  if(await p.evaluate(()=>C31UI.state.opened!=='card'))await p.locator('#c31-card').click();
- if(await p.locator('#loyalty-manual').evaluate(el=>el.hidden))await p.locator('#loyalty-manual-toggle').click();
+ if(await p.locator('#loyalty-manual').evaluate(el=>el.hidden)&&await p.locator('#loyalty-manual-toggle').isVisible())await p.locator('#loyalty-manual-toggle').click();/* до 10.11.2026 поле открывалось кнопкой «Ввести номер» */await p.waitForFunction(()=>!document.getElementById('loyalty-manual').hidden);
  await p.locator('#loyalty-card').fill(number);await p.locator('#loyalty-card-confirm').click();
  await p.waitForFunction(()=>document.getElementById('loyalty-panel').matches('.is-selected,.is-unconfirmed'));
 }
