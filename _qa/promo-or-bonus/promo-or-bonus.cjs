@@ -214,6 +214,25 @@ const view = p => p.evaluate(() => ({ total: document.getElementById('total-sum'
         await setRedeem(p, 50); await waitDue(p, '256 ₽');
         v = await view(p); assert.deepEqual([last(t).totalMinor, last(t).redeemMinor], [30600, 5000]); assert.equal(v.hint, '');
       });
+      await run(point, 'порядок продавца: карта и бонусы до выбора оплаты — сразу сумма сервера, затем оплата и покупка', 'new', 'new', async (p, t) => {
+        await H.seller(p);
+        const hit = p.locator('[data-name="Смородина"] .k-tile__hit'); await hit.click(); await hit.click();
+        await H.card(p);
+        const settled = async text => { await p.waitForFunction(x => (document.getElementById('loyalty-due')?.textContent || '').replace(/[  ]/g, ' ').trim() === x
+          && document.getElementById('loyalty-preview-note').hidden, text, { timeout: 8000 }); await p.waitForTimeout(150); };
+        await settled('306 ₽');
+        assert.equal(norm((await view(p)).hint), 'Сейчас скидка по акции −54 ₽. Бонусами можно списать до 108 ₽ вместо неё.');
+        await setRedeem(p, 50); await settled('310 ₽');
+        assert.deepEqual([last(t).totalMinor, last(t).promotionWaived], [36000, true]);
+        assert.equal((await view(p)).closeDisabled, true, 'без оплаты чек не закрыть');
+        assert.ok(t.server.calls.filter(c => c.action === 'quote').every(c => c.input.pay === 'Безналичный'));
+        await p.screenshot({ path: path.join(out, point + '-before-payment.png') });
+        await H.dismiss(p); await H.pay(p, 'Наличный'); await waitDue(p, '310 ₽');
+        assert.equal(t.server.calls.filter(c => c.action === 'quote').at(-1).input.pay, 'Наличный');
+        await H.close(p);
+        const checkout = t.server.calls.filter(c => c.action === 'checkout').at(-1);
+        assert.deepEqual([checkout.input.pay, checkout.input.redeemMinor, checkout.input.expectedTotalMinor], ['Наличный', 5000, 36000]);
+      });
       await run(point, 'моти-кейк не участвует: без карты — скидка только на моти', 'new', 'new', async (p, t) => {
         await basket(p); await p.locator('[data-name="' + CAKE_NAME + '"] .k-tile__hit').click();
         assert.equal(await p.evaluate(() => cartTotal()), 706, '306 + 400');
