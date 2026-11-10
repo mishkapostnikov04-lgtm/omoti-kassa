@@ -233,6 +233,30 @@ const view = p => p.evaluate(() => ({ total: document.getElementById('total-sum'
         const checkout = t.server.calls.filter(c => c.action === 'checkout').at(-1);
         assert.deepEqual([checkout.input.pay, checkout.input.redeemMinor, checkout.input.expectedTotalMinor], ['Наличный', 5000, 36000]);
       });
+      await run(point, 'док: сумма не моргает при выборе оплаты, над суммой видно скидку или бонусы', 'new', 'new', async (p, t) => {
+        await H.seller(p);
+        await p.locator('[data-name="Смородина"] .k-tile__hit').click();
+        const dock = () => p.evaluate(() => ({ sum: document.getElementById('total-sum').textContent.replace(/[  ]/g, ' ').trim(),
+          badge: document.getElementById('c31-sum-promo')?.hidden ? '' : (document.getElementById('c31-sum-promo')?.textContent || '').replace(/[  ]/g, ' ') }));
+        assert.deepEqual(await dock(), { sum: '153 ₽', badge: '−15% · 27 ₽' }, 'без карты: скидка по корзине');
+        await H.card(p);
+        await p.waitForFunction(() => document.getElementById('loyalty-preview-note').hidden && /153/.test(document.getElementById('loyalty-due').textContent));
+        await p.waitForTimeout(200);
+        assert.deepEqual(await dock(), { sum: '153 ₽', badge: '−15% · 27 ₽' }, 'карта без списания: скидка из ответа сервера');
+        await p.locator('#loyalty-max').click();
+        await p.waitForFunction(() => /126/.test(document.getElementById('loyalty-due').textContent) && document.getElementById('loyalty-preview-note').hidden);
+        await p.waitForTimeout(200); await H.dismiss(p); await p.waitForTimeout(200);
+        assert.deepEqual(await dock(), { sum: '126 ₽', badge: 'бонусы −54 ₽' }, 'списание видно над суммой');
+        await p.screenshot({ path: path.join(out, point + '-dock-bonus.png') });
+        const seen = new Set();
+        const sampling = (async () => { for (let i = 0; i < 75; i++) { seen.add((await dock()).sum); await p.waitForTimeout(20); } })();
+        await H.pay(p, 'Безналичный'); await sampling;
+        assert.deepEqual([...seen], ['126 ₽'], 'сумма при смене оплаты не меняется: ' + [...seen].join(', '));
+        await waitDue(p, '126 ₽');
+        await H.close(p);
+        const checkout = t.server.calls.filter(c => c.action === 'checkout').at(-1);
+        assert.deepEqual([checkout.input.pay, checkout.input.redeemMinor, checkout.input.expectedTotalMinor], ['Безналичный', 5400, 18000]);
+      });
       await run(point, 'моти-кейк не участвует: без карты — скидка только на моти', 'new', 'new', async (p, t) => {
         await basket(p); await p.locator('[data-name="' + CAKE_NAME + '"] .k-tile__hit').click();
         assert.equal(await p.evaluate(() => cartTotal()), 706, '306 + 400');
