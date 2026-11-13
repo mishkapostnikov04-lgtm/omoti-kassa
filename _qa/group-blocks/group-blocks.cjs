@@ -61,7 +61,7 @@ async function shoot(p,name){
   await run(point,'variant b: captions «Кейки» then «Мункейки», each block on a new row, sets after',{},async p=>{
    await settle(p);const g=await grid(p),moti=g.filter(x=>x.tile&&!x.extra&&x.name!==SET),caps=g.filter(x=>x.cap);
    assert.deepEqual(order(g),[...moti.map(x=>x.name),'#Кейки',...CAKES,'#Мункейки','Мункейки',SET],'моти → «Кейки» → «Мункейки» → наборы');
-   assert.deepEqual(g.filter(x=>x.start).map(x=>x.name),[CAKES[0],'Мункейки'],'каждый блок начинается с новой строки');
+   assert.deepEqual(g.filter(x=>x.start).map(x=>x.name),[CAKES[0],'Мункейки',SET],'каждый блок и наборы начинаются с новой строки');
    const first=g[0].left,cake=g.find(x=>x.name===CAKES[0]),moon=g.find(x=>x.name==='Мункейки'),lastCake=g.find(x=>x.name===CAKES.at(-1));
    assert.equal(cake.left,first);assert.equal(moon.left,first);assert.ok(cake.top>moti.at(-1).bottom);assert.ok(moon.top>lastCake.bottom,'«Мункейки» ниже последнего кейка');
    for(const c of caps){assert.ok(c.height<=18.01&&c.height>=12,'высота подписи '+c.height);assert.equal(c.left,first,'подпись от первой колонки');assert.equal(c.color,'rgb(119, 117, 111)','серая подпись --k-muted-2');assert.equal(c.fs,'11.5px');}
@@ -75,14 +75,14 @@ async function shoot(p,name){
    await settle(p);const g=await grid(p),moti=g.filter(x=>x.tile&&!x.extra&&x.name!==SET);
    assert.ok(g.every(x=>x.tile),'без подписей — в сетке только плитки');
    assert.deepEqual(order(g),[...moti.map(x=>x.name),...CAKES,'Мункейки',SET]);
-   assert.deepEqual(g.filter(x=>x.start).map(x=>x.name),[CAKES[0],'Мункейки']);
+   assert.deepEqual(g.filter(x=>x.start).map(x=>x.name),[CAKES[0],'Мункейки',SET]);
    const cake=g.find(x=>x.name===CAKES[0]),moon=g.find(x=>x.name==='Мункейки');assert.equal(cake.left,g[0].left);assert.equal(moon.left,g[0].left);assert.ok(moon.top>g.find(x=>x.name===CAKES.at(-1)).bottom);
    await shoot(p,point+'-a-rows');
   });
   await run(point,'server before the release (no cashierBlock): exactly one block as now',{mode:'old'},async p=>{
    await settle(p);const g=await grid(p),moti=g.filter(x=>x.tile&&!x.extra&&x.name!==SET);
    assert.ok(g.every(x=>x.tile),'без заголовков');assert.deepEqual(order(g),[...moti.map(x=>x.name),...CAKES,'Мункейки',SET]);
-   assert.deepEqual(g.filter(x=>x.start).map(x=>x.name),[CAKES[0]],'одна новая строка — как сейчас');
+   assert.deepEqual(g.filter(x=>x.start).map(x=>x.name),[CAKES[0],SET],'один блок как сейчас, наборы с новой строки (решение владельца 14.11)');
    const moon=g.find(x=>x.name==='Мункейки'),last=g.find(x=>x.name===CAKES.at(-1));assert.equal(moon.top,last.top,'«Мункейки» в той же строке, что и последний кейк (как сейчас)');
    if(point==='sovetskaya')await shoot(p,point+'-old-server');
   });
@@ -93,7 +93,7 @@ async function shoot(p,name){
   await run(point,'item with cashierBlock null: common block first, no caption, then «Кейки», «Мункейки»',{mode:'free'},async p=>{
    await settle(p);const g=await grid(p),moti=g.filter(x=>x.tile&&!x.extra&&x.name!==SET&&x.name!==FREE);
    assert.deepEqual(order(g),[...moti.map(x=>x.name),FREE,'#Кейки',...CAKES,'#Мункейки','Мункейки',SET]);
-   assert.deepEqual(g.filter(x=>x.start).map(x=>x.name),[FREE,CAKES[0],'Мункейки']);
+   assert.deepEqual(g.filter(x=>x.start).map(x=>x.name),[FREE,CAKES[0],'Мункейки',SET]);
   });
   await run(point,'sale from every block (moti, Кейки, Мункейки, set) through the intercepted transport; captions survive re-render',{},async(p,t)=>{
    await H.seller(p);await settle(p);
