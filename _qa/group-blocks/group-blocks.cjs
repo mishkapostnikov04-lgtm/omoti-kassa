@@ -9,7 +9,8 @@ const fs=require('fs'),path=require('path'),http=require('http'),crypto=require(
 const out=path.join(__dirname,'local-browser');fs.mkdirSync(out,{recursive:true});
 const shots=process.env.QA_SHOTS||out;fs.mkdirSync(shots,{recursive:true});
 const points=process.env.QA_POINT?[process.env.QA_POINT]:['anikina','novogodnyaya','sovetskaya'];
-const RELEASE='releases/20261114-group-blocks-r1/';
+// The layer the HTML loads now (20261114-transfer-kind-r1 is a copy of group-blocks-r1 with the same constant).
+const RELEASE=process.env.QA_GROUP_BLOCKS_RELEASE||'releases/20261114-transfer-kind-r1/';
 const CAKES=['Банан чизкейк','Клубника мак чизкейк','Манго маракуйя чизкейк','Фисташка чизкей'],SET='Набор на 4 шт',FREE='Новинка без группы';
 const B_CAKES={id:'cakes',name:'Кейки',order:20},B_MOON={id:'mooncakes',name:'Мункейки',order:30};
 const base=H.assortment.map(x=>({...x}));

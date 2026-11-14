@@ -62,7 +62,7 @@ async function context(browser,base,point){
 }
 async function seller(p){if(!await p.evaluate(()=>Boolean(seller))){await p.locator('#c31-staff').click();await p.getByRole('button',{name:'Евгений',exact:true}).click();}}
 async function add(p){await seller(p);await p.locator('[data-name="Смородина"] .k-tile__hit').click();}
-async function pay(p,type){if(['Безналичный','Наличный','Перевод'].includes(type))await p.locator('.k-dock__r2 [data-pay="'+type+'"]').click();else{await p.getByRole('button',{name:'Ещё',exact:true}).click();await p.locator('#c31-more-sheet [data-pay="'+type+'"]').click();}}
+async function pay(p,type){if(['Безналичный','Наличный','Перевод'].includes(type))await p.locator('.k-dock__r2 [data-pay="'+type+'"]').click();else{await p.getByRole('button',{name:'Ещё',exact:true}).click();await p.locator('#c31-more-sheet [data-pay="'+type+'"]').click();}/* с 14.11.2026 «Перевод» уточняется: по умолчанию «По ссылке» (касса без под-выбора — как раньше) */if(type==='Перевод'&&await p.locator('#transfer-clarify:not([hidden])').count())await p.locator('#transfer-clarify [data-transfer-kind="link"]').click();}
 async function dismiss(p){await p.keyboard.press('Escape');}
 async function card(p,number='1234567'){
  if(await p.evaluate(()=>C31UI.state.opened!=='card'))await p.locator('#c31-card').click();
