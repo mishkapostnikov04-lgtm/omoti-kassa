@@ -1,8 +1,9 @@
 'use strict';
 // «Остатки» по разделам «Моти» / «Кейки» / «Мункейки» (решение владельца 14.11.2026), три кассы.
 // Новогодняя и Советская: разделы в прежнем списке пересчёта, ввод и отправка как раньше.
-// Аникина: новая вкладка «Остатки» ТОЛЬКО ДЛЯ ПРОСМОТРА — GET /b2c-api/point-restock/stock?locationId=anikina, без полей и отправки.
-// Подставные данные: все запросы к orders.omoti.ru перехвачены (shift-harness + перехват GET остатков Аникиной ниже),
+// Аникина: новая вкладка «Остатки» ТОЛЬКО ДЛЯ ПРОСМОТРА — POST /b2c-api/point-restock/requests {action:'stock'} (r2: GET /stock
+// закрыт в nginx Basic Auth), без полей и отправки. Каждый адрес, к которому обращается касса, сверяется со снимком nginx.
+// Подставные данные: все запросы к orders.omoti.ru перехвачены (shift-harness + перехват чтения остатков Аникиной ниже),
 // service worker заблокирован, настоящих чеков, пересчётов и устройств нет.
 // Запуск встроенным Node с Playwright из корня репозитория: node _qa/stock-groups/stock-groups.cjs
 // QA_SHOTS=<папка> — куда класть снимки; QA_POINT=anikina|novogodnyaya|sovetskaya — одна касса.
@@ -31,15 +32,26 @@ function anikinaStock(version=1){
  items.push({catalogItemId:null,legacyFlavorName:'Банан-Нутелла',itemType:'moti_flavor',qty:121},{catalogItemId:'qa_not_sold',legacyFlavorName:'Не продаётся на кассе',itemType:'moti_flavor',qty:9});
  return {ok:true,locationId:'central_anikina',readOnly:true,items,generatedAt:version===1?'2026-11-14T07:05:00.000Z':'2026-11-14T08:41:00.000Z'};
 }
+// r2: the Anikina cashier reads via POST /b2c-api/point-restock/requests {action:'stock', locationId:'anikina'} — the only
+// point-restock address nginx opens for the cashiers. Any other Anikina point-restock request is a leak (and is aborted).
+// The points' requests fall through to shift-harness unchanged.
 async function stockRoute(t){
  t.stock={reads:[],mode:'ok',version:1};
- await t.ctx.route('https://orders.omoti.ru/b2c-api/point-restock/stock**',async r=>{const req=r.request(),u=new URL(req.url());
-  t.stock.reads.push({method:req.method(),search:u.search,auth:(await req.allHeaders()).authorization||''});
-  if(req.method()!=='GET'){t.s.leaks.push('non-GET stock '+req.method());return r.abort();}
+ await t.ctx.route('https://orders.omoti.ru/b2c-api/point-restock/**',async r=>{const req=r.request(),u=new URL(req.url());
+  if(t.s.point!=='anikina')return r.fallback();
+  let body=null;try{body=JSON.parse(req.postData()||'null');}catch(_){body='unparsed';}
+  const h=await req.allHeaders();t.stock.reads.push({method:req.method(),path:u.pathname,search:u.search,body,auth:h.authorization||'',type:h['content-type']||''});
+  if(req.method()!=='POST'||u.pathname!=='/b2c-api/point-restock/requests'||u.search||!body||typeof body!=='object'||body.action!=='stock'||body.locationId!=='anikina'||Object.keys(body).length!==2){t.s.leaks.push('Anikina point-restock: '+req.method()+' '+u.pathname+u.search+' '+JSON.stringify(body));return r.abort();}
   if(t.stock.mode==='fail')return r.abort('connectionreset');
   if(t.stock.mode==='old')return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:false,error:'Point restock is allowed only for novogodnyaya or sovetskaya'})});
   return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(anikinaStock(t.stock.version))});});
 }
+// Every address a cashier calls must be one nginx serves without Basic Auth (snapshot of the live config; any other path is
+// 401 for a cashier — the r1 GET /stock passed the tests and failed on the server for exactly this reason).
+const NGINX=require('./nginx-open-locations.json');
+const openInNginx=p=>NGINX.exact.includes(p)||NGINX.prefix.some(x=>p.startsWith(x));
+function assertNginxOpen(t){const used=[...t.s.calls,...t.stock.reads].map(c=>c.method+' '+c.path);assert.ok(used.length>0);
+ assert.deepEqual([...new Set(used.filter(x=>!openInNginx(x.slice(x.indexOf(' ')+1))))],[],'касса обращается только к адресам, открытым в nginx');}
 // Points: titles and cards of #restock-flavors in DOM order.
 const pointList=p=>p.evaluate(()=>[...document.getElementById('restock-flavors').children].map(el=>el.classList.contains('restock-group-title')?{title:el.querySelector('span').textContent,count:el.querySelector('small').textContent,group:el.dataset.stockGroup,role:el.getAttribute('role'),color:getComputedStyle(el).color,fs:getComputedStyle(el).fontSize,mt:getComputedStyle(el).marginTop}:{card:el.querySelector('.restock-fact-name')?.textContent,pill:el.querySelector('.restock-stock-pill')?.textContent||''}));
 const anikinaList=p=>p.evaluate(()=>[...document.querySelectorAll('#anikina-stock-list .stock-group')].map(g=>({title:g.querySelector('.stock-group-title span').textContent,count:g.querySelector('.stock-group-title small').textContent,rows:[...g.querySelectorAll('.stock-row')].map(r=>[r.querySelector('.stock-name').textContent,r.querySelector('.stock-qty').textContent])})));
@@ -61,7 +73,7 @@ async function shoot(p,point){
  const srv=await H.server(),browser=await H.chromium.launch({executablePath:process.env.OMOTI_CHROME_EXE||'C:/Program Files/Google/Chrome/Application/chrome.exe'}),results=[];
  async function run(point,name,{mode='groups'}={},fn){const moon=setCatalog(point,mode);const t=await H.context(browser,srv.url,point),consoleErrors=[];await stockRoute(t);
   t.page.on('console',m=>{if(m.type()==='error')consoleErrors.push(m.text());});
-  try{await fn(t.page,t,moon);assert.deepEqual(t.s.errors,[]);assert.deepEqual(t.s.leaks,[]);assert.deepEqual(consoleErrors.filter(x=>!/net::ERR_CONNECTION_RESET|Failed to load resource/.test(x)),[],'ошибок консоли нет');
+  try{await fn(t.page,t,moon);assertNginxOpen(t);assert.deepEqual(t.s.errors,[]);assert.deepEqual(t.s.leaks,[]);assert.deepEqual(consoleErrors.filter(x=>!/net::ERR_CONNECTION_RESET|Failed to load resource/.test(x)),[],'ошибок консоли нет');
    assert.equal(await t.page.evaluate(()=>(window.AnikinaBoot||window.PointsBoot)?.state),'ready','касса загрузилась (SRI сошёлся)');
    results.push({point,name,status:'PASS'});console.log('PASS',point,name);}
   catch(e){results.push({point,name,status:'FAIL',error:String(e&&e.stack||e)});console.log('FAIL',point,name,e&&e.message);await t.page.screenshot({path:path.join(out,'FAIL-'+point+'-'+name.replace(/\W+/gu,'-').slice(0,60)+'.png')}).catch(()=>{});}
@@ -110,7 +122,7 @@ async function shoot(p,point){
     assert.deepEqual(sections(await pointList(p)).map(s=>s.title),['Моти','Мункейки','Кейки']);
    });
   }else{
-   await run(point,'5 tabs in one row; «Остатки» read only: GET with the device token, sections, «Пульс» numbers, negative as 0, no inputs, no sending',{},async(p,t,moon)=>{
+   await run(point,'5 tabs in one row; «Остатки» read only: POST /requests {action:stock} with the device token (nginx-open address), sections, «Пульс» numbers, negative as 0, no inputs, no sending',{},async(p,t,moon)=>{
     const tabs=await p.evaluate(()=>[...document.querySelectorAll('.k-nav button')].filter(b=>!b.hidden).map(b=>b.textContent.trim()));
     assert.deepEqual(tabs,['Касса','Журнал','Итоги','Остатки','Оплата'],'пять вкладок: «Оплата» добавляет sbp-link');
     const nav=await p.evaluate(()=>{const b=[...document.querySelectorAll('.k-nav button')].filter(x=>!x.hidden).map(x=>x.getBoundingClientRect());return {tops:[...new Set(b.map(r=>Math.round(r.top)))],widths:b.map(r=>Math.round(r.width))};});
@@ -118,7 +130,7 @@ async function shoot(p,point){
     assert.equal(t.stock.reads.length,0,'остатки не читаются, пока вкладка не открыта');
     await openRestock(p);await p.waitForSelector('#anikina-stock-list .stock-row');
     assert.equal(await p.locator('.k-nav button').nth(3).getAttribute('aria-current'),'page');
-    assert.deepEqual(t.stock.reads,[{method:'GET',search:'?locationId=anikina',auth:'Bearer fixture-token'}]);
+    assert.deepEqual(t.stock.reads,[{method:'POST',path:'/b2c-api/point-restock/requests',search:'',body:{action:'stock',locationId:'anikina'},auth:'Bearer fixture-token',type:'text/plain;charset=utf-8'}],'чтение — POST /requests {action:stock}, как у точек');
     const list=await anikinaList(p);
     assert.deepEqual(list.map(g=>[g.title,g.count,g.rows.length]),[['Моти','22 вкуса',22],['Кейки','4 вкуса',4],['Мункейки','1 вкус',1]]);
     assert.deepEqual(list[0].rows.map(r=>r[0]),motiSorted);assert.deepEqual(list[1].rows.map(r=>r[0]),CAKES);
@@ -131,7 +143,8 @@ async function shoot(p,point){
     assert.equal(screen.title,'Остатки');assert.equal(screen.sub,'Обновлено 14:05 · только просмотр');
     const st=await p.evaluate(()=>{const g=document.querySelector('.stock-group-title'),r=document.querySelector('.stock-rows'),q=document.querySelector('.stock-row .stock-qty');return {color:getComputedStyle(g).color,fs:getComputedStyle(g).fontSize,bg:getComputedStyle(r).backgroundColor,qfs:getComputedStyle(q).fontSize};});
     assert.deepEqual(st,{color:'rgb(119, 117, 111)',fs:'12.5px',bg:'rgb(255, 255, 255)',qfs:'15px'});
-    assert.ok(t.s.calls.every(c=>!c.path.includes('/point-restock/')),'POST к пересчёту не было');
+    assert.ok(t.s.calls.every(c=>!c.path.includes('/point-restock/')),'других запросов к пересчёту не было');
+    assert.ok(t.stock.reads.every(r=>r.body?.action==='stock'),'у Аникиной только action stock');
     await shoot(p,point);
    });
    await run(point,'«Обновить» reads again and shows the new numbers and time; errors keep the last numbers',{},async(p,t)=>{
@@ -144,7 +157,7 @@ async function shoot(p,point){
     assert.equal(Object.fromEntries((await anikinaList(p)).flatMap(g=>g.rows))['Смородина'],'38 шт','прежние цифры остаются');
     t.stock.mode='ok';await p.locator('.k-nav button').nth(0).click();await openRestock(p);await p.waitForFunction(()=>document.getElementById('anikina-stock-status').hidden);
     assert.equal(t.stock.reads.length,4,'каждое открытие вкладки читает заново');
-    assert.ok(t.s.calls.every(c=>!c.path.includes('/point-restock/')));
+    assert.ok(t.s.calls.every(c=>!c.path.includes('/point-restock/')));assert.ok(t.stock.reads.every(r=>r.method==='POST'&&r.body?.action==='stock'&&r.body?.locationId==='anikina'));
    });
    await run(point,'first read fails / server before the release answers ok:false: a clear message, no numbers, no crash',{},async(p,t)=>{
     t.stock.mode='old';await openRestock(p);await p.waitForFunction(()=>!anikinaStockLoading&&!document.getElementById('anikina-stock-status').hidden);
