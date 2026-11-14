@@ -129,7 +129,8 @@ async function journalOf(p, num) {
         await H.add(p);
         let d = await dock(p);
         assert.ok(d.inDock && d.hidden, 'до выбора оплаты под-выбора нет');
-        await H.pay(p, 'Перевод');
+        // Прямое нажатие: общий помощник H.pay сам выбирает «По ссылке», а здесь проверяется, что заранее ничего не выбрано.
+        await p.locator('.k-dock__r2 [data-pay="Перевод"]').click();
         d = await dock(p);
         assert.ok(!d.hidden && d.selfHidden, 'под-выбор виден, «Как оплатили» скрыт');
         assert.equal(d.text, 'Куда перевели: По ссылке На карту Анне');
@@ -185,7 +186,8 @@ async function journalOf(p, num) {
         await p.locator('.k-dock__r2 .k-chosen').click();
         let d = await dock(p);
         assert.ok(d.hidden, 'после ✕ под-выбора нет');
-        await H.pay(p, 'Перевод');
+        // Прямое нажатие: общий помощник H.pay сам выбирает «По ссылке», а здесь проверяется, что заранее ничего не выбрано.
+        await p.locator('.k-dock__r2 [data-pay="Перевод"]').click();
         d = await dock(p);
         assert.deepEqual(d.pressed, ['false', 'false'], 'выбор не остаётся от прошлого раза');
         await p.locator('.k-dock__r2 .k-chosen').click();
