@@ -157,6 +157,8 @@ async function shoot(p,point){
    await run(point,'sale after visiting «Остатки»: dock and grid back, check saved through the intercepted transport',{},async(p,t)=>{
     await openRestock(p);await p.waitForSelector('#anikina-stock-list .stock-row');await p.locator('.k-nav button').nth(0).click();
     await p.waitForFunction(()=>document.querySelector('.screen.active')?.id==='screen-kassa');
+    for(const [w,h] of [[390,844],[768,1024],[1280,800]]){await p.setViewportSize({width:w,height:h});await p.waitForTimeout(250);await noHorizontalScroll(p,w);await p.screenshot({path:path.join(shots,'anikina-kassa-nav-'+w+'.png')});}
+    await p.setViewportSize({width:390,height:844});
     await H.add(p);await H.pay(p,'Безналичный');await H.close(p);
     assert.equal(t.s.checks.length,1);assert.deepEqual(t.s.checks[0].items.map(i=>[i.name,i.qty]),[['Смородина',1]]);
     await openRestock(p);assert.equal(await p.locator('.k-nav button').nth(3).getAttribute('aria-current'),'page');
